@@ -2,8 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: 'export',  // Static HTML 내보내기 설정
+  images: {
+    unoptimized: true, // GitHub Pages를 위한 이미지 설정
+  },
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/altweb' : '', // 레포지토리 이름으로 수정
+  basePath: process.env.NODE_ENV === 'production' ? '/altweb' : '', // 레포지토리 이름으로 수정
   webpack: (config) => {
-    // GLB/GLTF 파일 처리를 위한 규칙 추가
     config.module.rules.push({
       test: /\.(glb|gltf)$/,
       type: 'asset/resource',
@@ -14,10 +19,7 @@ const nextConfig: NextConfig = {
 
     return config;
   },
-  // Three.js 관련 패키지들을 위한 transpile 설정
-  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
-  // src 디렉토리 사용 설정
-  distDir: '.next',
+  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei']
 };
 
 export default nextConfig;
