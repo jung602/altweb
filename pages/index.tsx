@@ -45,7 +45,6 @@ export default function Home() {
         <Scene />
       </div>
       
-      {/* Optional: Overlay content */}
       <div className="relative z-10 text-center">
         Working in Progress
       </div>

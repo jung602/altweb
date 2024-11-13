@@ -1,25 +1,32 @@
 // components/Scene.tsx
 'use client';
 
+import dynamic from 'next/dynamic';
 import React, { Suspense, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
-import { Altblock } from '../models/altblock';
-import * as THREE from 'three';
+import { Canvas, type GroupProps } from '@react-three/fiber';
+import type * as THREE from 'three';
+
+// drei 컴포넌트들을 동적으로 임포트
+const OrbitControls = dynamic(() => import('@react-three/drei').then(mod => mod.OrbitControls), { ssr: false });
+const PerspectiveCamera = dynamic(() => import('@react-three/drei').then(mod => mod.PerspectiveCamera), { ssr: false });
+
+// Altblock 컴포넌트를 동적으로 임포트
+const Altblock = dynamic(() => import('../models/altblock').then(mod => mod.Altblock), { ssr: false });
 
 // 조명과 모델이 함께 회전하는 컴포넌트
-function RotatingGroup() {
+function RotatingGroup(props: GroupProps) {
   const groupRef = useRef<THREE.Group>(null);
   
-  useFrame((state, delta) => {
+  const useFrame = require('@react-three/fiber').useFrame;
+  
+  useFrame((state: any, delta: number) => {
     if (groupRef.current) {
       groupRef.current.rotation.y += delta * 0.2;
     }
   });
 
   return (
-    <group ref={groupRef}>
-      {/* 조명도 그룹 안에 포함 */}
+    <group ref={groupRef} {...props}>
       <directionalLight
         position={[0, 10, 0]}
         intensity={1}
@@ -31,7 +38,8 @@ function RotatingGroup() {
   );
 }
 
-export default function Scene() {
+// Scene 컴포넌트 내용
+function SceneContent() {
   return (
     <div className="w-full h-full">
       <Canvas
@@ -51,9 +59,7 @@ export default function Scene() {
             position={[0, 6.5, 10]}
             fov={45}
           />
-        
           
-          {/* 회전하는 그룹 (조명 + 모델) */}
           <group position={[0, 0, 0]} scale={1}>
             <RotatingGroup />
           </group>
@@ -68,7 +74,6 @@ export default function Scene() {
             maxPolarAngle={Math.PI / 1.5}
           />
           
-          {/* 그림자를 받는 바닥면 */}
           <mesh 
             rotation={[-Math.PI / 2, 0, 0]} 
             position={[0, -1.01, 0]} 
@@ -82,3 +87,7 @@ export default function Scene() {
     </div>
   );
 }
+
+// Scene 컴포넌트를 동적으로 내보내기
+const Scene = dynamic(() => Promise.resolve(SceneContent), { ssr: false });
+export default Scene;
