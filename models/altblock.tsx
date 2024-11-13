@@ -1,10 +1,9 @@
-// models/altblock.tsx
-import * as THREE from 'three'
-import React from 'react'
-import { useGLTF } from '@react-three/drei'
-import { GLTF } from 'three-stdlib'
-import { GroupProps } from '@react-three/fiber'
+// src/models/altblock.tsx
 import dynamic from 'next/dynamic'
+import React from 'react'
+import { type GroupProps } from '@react-three/fiber'
+import { type GLTF } from 'three-stdlib'
+import type * as THREE from 'three'
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -15,10 +14,10 @@ type GLTFResult = GLTF & {
   }
 }
 
-// 동적으로 로드될 컴포넌트 생성
+// 실제 컴포넌트 구현
 const AltblockComponent = (props: GroupProps) => {
   const { useGLTF } = require('@react-three/drei')
-  const { nodes, materials } = useGLTF('./gltf/altblock.glb') as GLTFResult
+  const { nodes, materials } = useGLTF('/gltf/altblock.glb') as GLTFResult
   
   return (
     <group {...props} dispose={null}>
@@ -31,19 +30,16 @@ const AltblockComponent = (props: GroupProps) => {
   )
 }
 
-// SSR을 비활성화하고 동적 임포트 설정
-const Altblock = dynamic(
+// 동적 임포트로 내보내기
+export const Altblock = dynamic(
   () => Promise.resolve(AltblockComponent),
   {
-    ssr: false,
+    ssr: false
   }
 )
 
-// 컴포넌트 내보내기
-export { Altblock }
-
-// 모델 프리로드 (브라우저 환경에서만 실행)
+// GLB 파일 프리로드 (클라이언트 사이드에서만)
 if (typeof window !== 'undefined') {
   const { useGLTF } = require('@react-three/drei')
-  useGLTF.preload('./gltf/altblock.glb')
+  useGLTF.preload('/gltf/altblock.glb')
 }

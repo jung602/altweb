@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import localFont from "next/font/local";
 
-const Scene = dynamic(() => import('./components/Scene'), {
+const Scene = dynamic(() => import('../components/Scene'), {
   ssr: false,
   loading: () => (
     <div className="h-screen w-full flex items-center justify-center">

@@ -12,16 +12,12 @@ const nextConfig: NextConfig = {
       }
     });
 
-    // draco 압축을 위한 worker 설정 (선택사항)
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'three-stdlib': require.resolve('three-stdlib'),
-    };
-
     return config;
   },
   // Three.js 관련 패키지들을 위한 transpile 설정
   transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
+  // src 디렉토리 사용 설정
+  distDir: '.next',
 };
 
 export default nextConfig;
