@@ -17,7 +17,7 @@ type GLTFResult = GLTF & {
 // 실제 컴포넌트 구현
 const AltblockComponent = (props: GroupProps) => {
   const { useGLTF } = require('@react-three/drei')
-  const { nodes, materials } = useGLTF('/gltf/altblock.glb') as GLTFResult
+  const { nodes, materials } = useGLTF('./gltf/altblock.glb') as GLTFResult
   
   return (
     <group {...props} dispose={null}>
@@ -41,5 +41,5 @@ export const Altblock = dynamic(
 // GLB 파일 프리로드 (클라이언트 사이드에서만)
 if (typeof window !== 'undefined') {
   const { useGLTF } = require('@react-three/drei')
-  useGLTF.preload('/gltf/altblock.glb')
+  useGLTF.preload('./gltf/altblock.glb')
 }
