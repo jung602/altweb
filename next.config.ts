@@ -1,13 +1,24 @@
 import type { NextConfig } from "next";
 
+const isGithubActions = process.env.GITHUB_ACTIONS || false
+
+let assetPrefix = ''
+let basePath = ''
+
+if (isGithubActions) {
+  const repo = process.env.GITHUB_REPOSITORY?.replace(/.*?\//, '')
+  assetPrefix = `/${repo}/`
+  basePath = `/${repo}`
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: 'export',  // Static HTML 내보내기 설정
+  output: 'export',
   images: {
-    unoptimized: true, // GitHub Pages를 위한 이미지 설정
+    unoptimized: true,
   },
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/altweb' : '', // 레포지토리 이름으로 수정
-  basePath: process.env.NODE_ENV === 'production' ? '/altweb' : '', // 레포지토리 이름으로 수정
+  assetPrefix: assetPrefix,
+  basePath: basePath,
   webpack: (config) => {
     config.module.rules.push({
       test: /\.(glb|gltf)$/,
