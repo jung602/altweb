@@ -1,3 +1,4 @@
+// components/Scene.tsx
 'use client';
 
 import dynamic from 'next/dynamic';
@@ -15,6 +16,9 @@ const DynamicOrbitControls = dynamic(() => import('@react-three/drei').then(mod 
   ssr: false
 });
 const DynamicPerspectiveCamera = dynamic(() => import('@react-three/drei').then(mod => mod.PerspectiveCamera), {
+  ssr: false
+});
+const DynamicEnvironment = dynamic(() => import('@react-three/drei').then(mod => mod.Environment), {
   ssr: false
 });
 
@@ -92,15 +96,18 @@ export function Scene({ config, isActive }: SceneProps) {
           
           <mesh 
             rotation={[-Math.PI / 2, 0, 0]} 
-            position={[0, -1.01, 0]} 
+            position={config.shadowPlane.position} 
             receiveShadow
           >
             <planeGeometry args={[30, 30]} />
-            <shadowMaterial transparent opacity={.7} />
+            <shadowMaterial transparent opacity={config.shadowPlane.opacity} />
           </mesh>
           
           <ambientLight intensity={0.5} />
-          <color attach="background" args={['#f1f5f9']} />
+          <color attach="background" args={[config.background.color]} />
+          {config.environment.preset !== 'none' && (
+            <DynamicEnvironment preset={config.environment.preset} />
+          )}
         </Suspense>
       </DynamicCanvas>
     </div>

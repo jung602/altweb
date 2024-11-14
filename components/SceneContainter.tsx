@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, TouchEvent } from 'react';
 import { useSceneStore } from '../store/sceneStore';
 import { Scene } from './Scene';
 import { useInView } from 'react-intersection-observer';
@@ -13,8 +13,31 @@ export function SceneContainer() {
   const setCurrentScene = useSceneStore((state) => state.setCurrentScene);
   const setTransitioning = useSceneStore((state) => state.setTransitioning);
   
-  const lastScrollTimeRef = useRef(0);
-  const scrollCooldown = 500;
+  const lastInteractionTimeRef = useRef(0);
+  const touchStartRef = useRef(0);
+  const interactionCooldown = 500;
+  const directionRef = useRef<'up' | 'down' | null>(null);
+
+  const handleSceneChange = (direction: 'up' | 'down') => {
+    const currentTime = performance.now();
+    if (currentTime - lastInteractionTimeRef.current < interactionCooldown) return;
+    
+    lastInteractionTimeRef.current = currentTime;
+    
+    if (direction === 'down' && currentIndex < scenes.length - 1) {
+      setCurrentScene(currentIndex + 1);
+      directionRef.current = 'down';
+    } else if (direction === 'up' && currentIndex > 0) {
+      setCurrentScene(currentIndex - 1);
+      directionRef.current = 'up';
+    }
+
+    setTransitioning(true);
+    setTimeout(() => {
+      setTransitioning(false);
+      directionRef.current = null;
+    }, interactionCooldown);
+  };
 
   useEffect(() => {
     const container = containerRef.current;
@@ -22,84 +45,89 @@ export function SceneContainer() {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-
-      const currentTime = performance.now();
-      if (currentTime - lastScrollTimeRef.current < scrollCooldown) return;
-
-      const delta = e.deltaY;
-      if (Math.abs(delta) > 30) {
-        lastScrollTimeRef.current = currentTime;
-        
-        if (delta > 0 && currentIndex < scenes.length - 1) {
-          setCurrentScene(currentIndex + 1);
-        } else if (delta < 0 && currentIndex > 0) {
-          setCurrentScene(currentIndex - 1);
-        }
-
-        setTransitioning(true);
-        setTimeout(() => {
-          setTransitioning(false);
-        }, scrollCooldown);
-      }
+      const direction = e.deltaY > 30 ? 'down' : e.deltaY < -30 ? 'up' : null;
+      if (direction) handleSceneChange(direction);
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
-  }, [currentIndex, scenes.length, setCurrentScene, setTransitioning]);
+  }, [currentIndex, scenes.length]);
+
+  const handleTouchStart = (e: TouchEvent) => {
+    touchStartRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (touchStartRef.current === 0) return;
+    
+    const touchEnd = e.touches[0].clientY;
+    const delta = touchStartRef.current - touchEnd;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(delta) > minSwipeDistance) {
+      const direction = delta > 0 ? 'down' : 'up';
+      handleSceneChange(direction);
+      touchStartRef.current = 0;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartRef.current = 0;
+  };
 
   return (
     <div 
       ref={containerRef} 
       className="w-full h-screen overflow-hidden relative"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {scenes.map((sceneConfig, index) => {
-        const [ref] = useInView({
-          threshold: 0,
-          rootMargin: '100% 0px',
-          triggerOnce: true
-        });
-
-        // 현재 인덱스와의 거리 계산
         const distance = index - currentIndex;
         const shouldRender = Math.abs(distance) <= 1;
         
-        // z-index 계산: 현재 보이는 씬이 항상 위에 오도록
-        const zIndex = distance === 0 ? 2 : 
-                      distance === 1 ? 1 : 
-                      distance === -1 ? 1 : 0;
+        // 다음 씬이 현재 씬 위에 올라오도록 zIndex 조정
+        const zIndex = distance === 1 ? 2 : 1;
+
+        const getTransform = () => {
+          // 현재 씬은 항상 제자리
+          if (distance === 0) {
+            return 'translateY(0%)';
+          }
+          
+          // 다음 씬 (아래에서 위로 덮어씌우기)
+          if (distance === 1) {
+            return isTransitioning && directionRef.current === 'down'
+              ? 'translateY(0%)'  // 덮어씌우는 중
+              : 'translateY(100%)';  // 대기 위치 (아래)
+          }
+          
+          // 이전 씬 (현재 씬이 아래로 빠지면서 드러나기)
+          if (distance === -1) {
+            return 'translateY(0%)';  // 항상 제자리
+          }
+          
+          return 'translateY(100%)';
+        };
+
+        if (!shouldRender) return null;
 
         return (
           <div
             key={sceneConfig.id}
-            ref={ref}
             className="absolute inset-0 w-full h-full"
             style={{
               zIndex,
-              transform: `translateY(${distance > 0 ? 100 : 0}%)`,
-              transition: 'transform 500ms ease-out',
+              transform: getTransform(),
+              transition: 'transform 500ms cubic-bezier(0.4, 0.0, 0.2, 1)',
               willChange: 'transform',
-              visibility: shouldRender ? 'visible' : 'hidden'
             }}
           >
-            {shouldRender && (
-              <div 
-                className="w-full h-full"
-                style={{
-                  transform: `translateY(${
-                    distance === 0 ? '0%' :
-                    distance === 1 ? `${-100 + (isTransitioning ? 100 : 0)}%` :
-                    distance === -1 ? `${100 + (isTransitioning ? -100 : 0)}%` : '0%'
-                  })`,
-                  transition: 'transform 500ms ease-out',
-                  willChange: 'transform'
-                }}
-              >
-                <Scene 
-                  config={sceneConfig} 
-                  isActive={index === currentIndex || Math.abs(index - currentIndex) === 1} 
-                />
-              </div>
-            )}
+            <Scene 
+              config={sceneConfig} 
+              isActive={index === currentIndex || Math.abs(index - currentIndex) === 1} 
+            />
           </div>
         );
       })}
