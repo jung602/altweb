@@ -29,8 +29,8 @@ export const scenesData: SceneConfig[] = [
     author: "LUCAS FRATI",
     model: {
       component: "Alt2",
-      scale: 1,
-      position: [0, 0, 0]
+      scale: 1.2,
+      position: [0, .5, 0]
     },
     camera: {
       position: [0, 6.5, 10],
@@ -38,9 +38,10 @@ export const scenesData: SceneConfig[] = [
     },
     lights: {
       directional: {
-        position: [0, 10, 0],
-        intensity: 1
+        position: [5, 10, 5],
+        intensity: 100
       }
+    
     }
   },
 ];

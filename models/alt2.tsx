@@ -6,10 +6,28 @@ import type * as THREE from 'three'
 
 type GLTFResult = GLTF & {
   nodes: {
-    Cube_Baked: THREE.Mesh
+    mesh004: THREE.Mesh
+    mesh004_1: THREE.Mesh
+    mesh004_2: THREE.Mesh
+    mesh004_3: THREE.Mesh
+    mesh004_4: THREE.Mesh
+    mesh004_5: THREE.Mesh
+    mesh004_6: THREE.Mesh
+    mesh004_7: THREE.Mesh
+    mesh004_8: THREE.Mesh
+    mesh004_9: THREE.Mesh
   }
   materials: {
-    ['Cube_Baked.001']: THREE.MeshStandardMaterial
+    ['omeko metal4']: THREE.MeshStandardMaterial
+    ['omeko metal.001']: THREE.MeshStandardMaterial
+    ['omeko metal4.003']: THREE.MeshStandardMaterial
+    ['omeko metal3']: THREE.MeshStandardMaterial
+    ['omeko metal2']: THREE.MeshStandardMaterial
+    black: THREE.MeshStandardMaterial
+    white: THREE.MeshStandardMaterial
+    ['omeko logo']: THREE.MeshPhysicalMaterial
+    bulb: THREE.MeshStandardMaterial
+    Steel: THREE.MeshStandardMaterial
   }
 }
 
@@ -22,8 +40,63 @@ const Alt2Component = (props: GroupProps) => {
     <group {...props} dispose={null}>
       <mesh
         castShadow
-        geometry={nodes.Cube_Baked.geometry}
-        material={materials['Cube_Baked.001']}
+        receiveShadow
+        geometry={nodes.mesh004.geometry}
+        material={materials['omeko metal4']}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.mesh004_1.geometry}
+        material={materials['omeko metal.001']}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.mesh004_2.geometry}
+        material={materials['omeko metal4.003']}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.mesh004_3.geometry}
+        material={materials['omeko metal3']}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.mesh004_4.geometry}
+        material={materials['omeko metal2']}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.mesh004_5.geometry}
+        material={materials.black}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.mesh004_6.geometry}
+        material={materials.white}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.mesh004_7.geometry}
+        material={materials['omeko logo']}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.mesh004_8.geometry}
+        material={materials.bulb}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.mesh004_9.geometry}
+        material={materials.Steel}
       />
     </group>
   )
