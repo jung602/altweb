@@ -1,72 +1,88 @@
-// components/Scene.tsx
 'use client';
 
 import dynamic from 'next/dynamic';
-import React, { Suspense, useRef } from 'react';
-import { Canvas, type GroupProps } from '@react-three/fiber';
+import { Suspense, useRef } from 'react';
+import type { GroupProps } from '@react-three/fiber';
 import type * as THREE from 'three';
+import type { RootState } from '@react-three/fiber';
+import type { SceneConfig } from '../types/scene';
+import { ModelComponents } from '../types/scene';
 
-// drei 컴포넌트들을 동적으로 임포트
-const OrbitControls = dynamic(() => import('@react-three/drei').then(mod => mod.OrbitControls), { ssr: false });
-const PerspectiveCamera = dynamic(() => import('@react-three/drei').then(mod => mod.PerspectiveCamera), { ssr: false });
+const DynamicCanvas = dynamic(() => import('@react-three/fiber').then(mod => mod.Canvas), {
+  ssr: false
+});
+const DynamicOrbitControls = dynamic(() => import('@react-three/drei').then(mod => mod.OrbitControls), {
+  ssr: false
+});
+const DynamicPerspectiveCamera = dynamic(() => import('@react-three/drei').then(mod => mod.PerspectiveCamera), {
+  ssr: false
+});
 
-// Altblock 컴포넌트를 동적으로 임포트
-const Altblock = dynamic(() => import('../models/altblock').then(mod => mod.Altblock), { ssr: false });
+interface SceneProps {
+  config: SceneConfig;
+  isActive: boolean;
+}
 
-// 조명과 모델이 함께 회전하는 컴포넌트
-function RotatingGroup(props: GroupProps) {
+function RotatingGroup({ config, ...props }: GroupProps & { config: SceneConfig }) {
   const groupRef = useRef<THREE.Group>(null);
   
   const useFrame = require('@react-three/fiber').useFrame;
-  
-  useFrame((state: any, delta: number) => {
+  useFrame((_: RootState, delta: number) => {
     if (groupRef.current) {
       groupRef.current.rotation.y += delta * 0.2;
     }
   });
 
+  const ModelComponent = ModelComponents[config.model.component];
+
   return (
-    <group ref={groupRef} {...props}>
+    <group 
+      ref={groupRef} 
+      scale={config.model.scale} 
+      position={config.model.position as [number, number, number]}
+      {...props}
+    >
       <directionalLight
-        position={[0, 10, 0]}
-        intensity={1}
+        position={config.lights.directional.position}
+        intensity={config.lights.directional.intensity}
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
-      <Altblock />
+      <ModelComponent />
     </group>
   );
 }
 
-// Scene 컴포넌트 내용
-function SceneContent() {
+export function Scene({ config, isActive }: SceneProps) {
+  if (!isActive) return null;
+
   return (
     <div className="w-full h-full">
-      <Canvas
+      <DynamicCanvas
         flat
         shadows
         dpr={[1, 2]}
         camera={{
-          position: [0, 10, 10],
-          fov: 30,
+          position: config.camera.position,
+          fov: config.camera.fov,
           near: 0.1,
           far: 1000
         }}
       >
         <Suspense fallback={null}>
-          <PerspectiveCamera
+          <DynamicPerspectiveCamera
             makeDefault
-            position={[0, 6.5, 10]}
-            fov={45}
+            position={config.camera.position}
+            fov={config.camera.fov}
           />
           
-          <group position={[0, 0, 0]} scale={1}>
-            <RotatingGroup />
+          <group position={[0, 0, 0]}>
+            <RotatingGroup config={config} />
           </group>
           
-          <OrbitControls 
-            enableZoom={true}
-            enablePan={true}
+          <DynamicOrbitControls 
+            enableZoom={false}
+            enablePan={false}
             enableRotate={true}
             minDistance={5}
             maxDistance={20}
@@ -82,12 +98,11 @@ function SceneContent() {
             <planeGeometry args={[30, 30]} />
             <shadowMaterial transparent opacity={.7} />
           </mesh>
+          
+          <ambientLight intensity={0.5} />
+          <color attach="background" args={['#f1f5f9']} />
         </Suspense>
-      </Canvas>
+      </DynamicCanvas>
     </div>
   );
 }
-
-// Scene 컴포넌트를 동적으로 내보내기
-const Scene = dynamic(() => Promise.resolve(SceneContent), { ssr: false });
-export default Scene;

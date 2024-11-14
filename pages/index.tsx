@@ -1,21 +1,17 @@
 // pages/index.tsx
-import dynamic from 'next/dynamic';
-import localFont from "next/font/local";
+'use client';
 
-const Scene = dynamic(() => import('../components/Scene'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-screen w-full flex items-center justify-center">
-      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
-    </div>
-  )
-});
+import { SceneContainer } from '../components/SceneContainter';
+import Titles from '../components/Titles';
+import localFont from "next/font/local";
+import { useEffect } from 'react';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
   weight: "100 900",
 });
+
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
@@ -23,6 +19,14 @@ const geistMono = localFont({
 });
 
 export default function Home() {
+  // 전체 페이지 스크롤 방지
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   return (
     <main 
       className={`
@@ -30,6 +34,8 @@ export default function Home() {
         ${geistMono.variable} 
         min-h-screen 
         w-full
+        fixed 
+        inset-0
         flex 
         flex-col 
         items-center 
@@ -41,12 +47,14 @@ export default function Home() {
         relative
       `}
     >
+      {/* Scene Container (3D 모델들) */}
       <div className="w-full h-screen absolute inset-0">
-        <Scene />
+        <SceneContainer />
       </div>
       
-      <div className="relative z-10 text-center">
-        Working in Progress
+      {/* Titles (텍스트 오버레이) */}
+      <div className="relative z-10">
+        <Titles />
       </div>
     </main>
   );
