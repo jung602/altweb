@@ -1,38 +1,32 @@
 /** @type {import('next').NextConfig} */
 
 const isGithubActions = process.env.GITHUB_ACTIONS || false
-
-let assetPrefix = ''
-let basePath = ''
-
-if (isGithubActions) {
-  const repo = process.env.GITHUB_REPOSITORY?.replace(/.*?\//, '')
-  assetPrefix = `/${repo}/`
-  basePath = `/${repo}`
-}
+const repo = process.env.GITHUB_REPOSITORY?.replace(/.*?\//, '') || ''
 
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   output: 'export',
   images: {
     unoptimized: true,
   },
-  assetPrefix: assetPrefix,
-  basePath: basePath,
+  assetPrefix: isGithubActions ? `/${repo}/` : '',
+  basePath: isGithubActions ? `/${repo}` : '',
+  env: {
+    NEXT_PUBLIC_BASE_PATH: process.env.NEXT_PUBLIC_BASE_PATH
+  },
+  
+  // GLB 파일 처리를 위한 webpack 설정
   webpack: (config) => {
     config.module.rules.push({
       test: /\.(glb|gltf)$/,
       type: 'asset/resource',
       generator: {
-        filename: 'static/chunks/[path][name].[hash][ext]'
+        filename: 'static/chunks/[path][name].[hash][ext]',
+        publicPath: isGithubActions ? `/${repo}/_next/` : '/_next/',
       }
     });
 
     return config;
-  },
-  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
-  experimental: {
-    esmExternals: 'loose'
   }
 };
 

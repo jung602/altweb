@@ -143,8 +143,9 @@ type GLTFResult = GLTF & {
 // 실제 컴포넌트 구현
 const Alt2Component = (props: GroupProps) => {
   const { useGLTF } = require('@react-three/drei')
-  const { nodes, materials } = useGLTF('./gltf/alt2-2.glb') as GLTFResult
-  
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+  const { nodes, materials } = useGLTF(`${basePath}/gltf/alt2-2.glb`) as GLTFResult
+
   return (
     <group {...props} dispose={null}>
       <mesh
@@ -211,4 +212,6 @@ export const Alt2 = dynamic(
 // GLB 파일 프리로드 (클라이언트 사이드에서만)
 if (typeof window !== 'undefined') {
   const { useGLTF } = require('@react-three/drei')
-  useGLTF.preload('./gltf/alt2-2.glb')}
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+  useGLTF.preload(`${basePath}/gltf/alt2-2.glb`)
+}
