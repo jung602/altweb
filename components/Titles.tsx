@@ -60,7 +60,7 @@ export function HorizontalTitles() {
   }, [windowWidth]);
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex items-center pointer-events-none overflow-hidden">
+    <div className="fixed inset-0 w-screen h-[100dvh] flex items-center pointer-events-none overflow-hidden">
       <div className="flex w-full">
         <div className="flex-shrink-0 w-[calc(50vw-200px)]" />
         <div className="relative w-[400px]">
@@ -89,7 +89,7 @@ export function VerticalTitles() {
   }, [windowHeight]);
 
   return (
-    <div className="fixed inset-0 w-screen h-screen pointer-events-none overflow-hidden">
+    <div className="fixed inset-0 w-screen h-[100dvh] pointer-events-none overflow-hidden">
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative">
           {scenes.map((scene, index) => (
