@@ -1,4 +1,3 @@
-// data/scenes.ts
 import { SceneConfig } from '../types/scene';
 
 export const scenesData: SceneConfig[] = [
@@ -15,7 +14,7 @@ export const scenesData: SceneConfig[] = [
     },
     camera: {
       position: [0, 6.5, 10],
-      fov: 45
+      fov: 30
     },
     lights: {
       directional: {
@@ -24,7 +23,7 @@ export const scenesData: SceneConfig[] = [
       }
     },
     background: {
-      color: '#f1f5f9'
+      color: '#000000'
     },
     shadowPlane: {
       position: [0, -1.01, 0],
@@ -41,29 +40,29 @@ export const scenesData: SceneConfig[] = [
     author: "LUCAS FRATI",
     model: {
       component: "Alt2",
-      scale: 1.2,
-      position: [0, 0, 0],
+      scale: 1,
+      position: [0, -1, 0],
       rotation: [0, 0, 0],
     },
     camera: {
       position: [0, 5, 10],
-      fov: 45
+      fov: 30
     },
     lights: {
       directional: {
         position: [5, 10, 5],
-        intensity: 30
+        intensity: 0
       }
     },
     background: {
-      color: '#333333'
+      color: '#000000'
     },
     shadowPlane: {
       position: [0, -1.5, 0],
-      opacity: 0.5
+      opacity: 0
     },
     environment: {
-      preset: 'studio'
+      preset: 'none'
     }
   },
 ];

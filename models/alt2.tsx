@@ -4,7 +4,7 @@ import { type GroupProps } from '@react-three/fiber'
 import { type GLTF } from 'three-stdlib'
 import type * as THREE from 'three'
 
-type GLTFResult = GLTF & {
+{/* type GLTFResult = GLTF & {
   nodes: {
     mesh004: THREE.Mesh
     mesh004_1: THREE.Mesh
@@ -114,4 +114,101 @@ export const Alt2 = dynamic(
 if (typeof window !== 'undefined') {
   const { useGLTF } = require('@react-three/drei')
   useGLTF.preload('./gltf/alt2.glb')
+} */}
+
+type GLTFResult = GLTF & {
+  nodes: {
+    Stick_Notes068: THREE.Mesh
+    Stick_Notes068_1: THREE.Mesh
+    Stick_Notes068_2: THREE.Mesh
+    Stick_Notes068_3: THREE.Mesh
+    Stick_Notes068_4: THREE.Mesh
+    Stick_Notes068_5: THREE.Mesh
+    Stick_Notes068_6: THREE.Mesh
+    Stick_Notes068_7: THREE.Mesh
+  }
+  materials: {
+    back: THREE.MeshStandardMaterial
+    ['glass.001']: THREE.MeshPhysicalMaterial
+    light: THREE.MeshStandardMaterial
+    bed: THREE.MeshStandardMaterial
+    desk: THREE.MeshStandardMaterial
+    miniLight: THREE.MeshStandardMaterial
+    etc: THREE.MeshStandardMaterial
+    ['glass.002']: THREE.MeshPhysicalMaterial
+  }
 }
+
+
+// 실제 컴포넌트 구현
+const Alt2Component = (props: GroupProps) => {
+  const { useGLTF } = require('@react-three/drei')
+  const { nodes, materials } = useGLTF('./gltf/alt2-2.glb') as GLTFResult
+  
+  return (
+    <group {...props} dispose={null}>
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.Stick_Notes068.geometry}
+        material={materials.back}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.Stick_Notes068_1.geometry}
+        material={materials['glass.001']}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.Stick_Notes068_2.geometry}
+        material={materials.light}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.Stick_Notes068_3.geometry}
+        material={materials.bed}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.Stick_Notes068_4.geometry}
+        material={materials.desk}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.Stick_Notes068_5.geometry}
+        material={materials.miniLight}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.Stick_Notes068_6.geometry}
+        material={materials.etc}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.Stick_Notes068_7.geometry}
+        material={materials['glass.002']}
+      />
+    </group>
+  )
+}
+
+
+// 동적 임포트로 내보내기
+export const Alt2 = dynamic(
+  () => Promise.resolve(Alt2Component),
+  {
+    ssr: false
+  }
+)
+
+// GLB 파일 프리로드 (클라이언트 사이드에서만)
+if (typeof window !== 'undefined') {
+  const { useGLTF } = require('@react-three/drei')
+  useGLTF.preload('./gltf/alt2-2.glb')}

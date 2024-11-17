@@ -2,10 +2,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Suspense, useRef } from 'react';
+import { Suspense, useRef, useEffect } from 'react';
 import type { GroupProps } from '@react-three/fiber';
-import type * as THREE from 'three';
-import type { RootState } from '@react-three/fiber';
+import * as THREE from 'three';
 import type { SceneConfig } from '../types/scene';
 import { ModelComponents } from '../types/scene';
 
@@ -25,23 +24,15 @@ const DynamicEnvironment = dynamic(() => import('@react-three/drei').then(mod =>
 interface SceneProps {
   config: SceneConfig;
   isActive: boolean;
+  width?: number;
+  height?: number;
 }
 
 function RotatingGroup({ config, ...props }: GroupProps & { config: SceneConfig }) {
-  const groupRef = useRef<THREE.Group>(null);
-  
-  const useFrame = require('@react-three/fiber').useFrame;
-  useFrame((_: RootState, delta: number) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.2;
-    }
-  });
-
   const ModelComponent = ModelComponents[config.model.component];
 
   return (
     <group 
-      ref={groupRef} 
       scale={config.model.scale} 
       position={config.model.position as [number, number, number]}
       {...props}
@@ -50,27 +41,64 @@ function RotatingGroup({ config, ...props }: GroupProps & { config: SceneConfig 
         position={config.lights.directional.position}
         intensity={config.lights.directional.intensity}
         castShadow
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[2048, 2048]}
       />
       <ModelComponent />
     </group>
   );
 }
 
-export function Scene({ config, isActive }: SceneProps) {
+
+export function Scene({ config, isActive, width = 2000, height = 2000 }: SceneProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      canvasRef.current.width = width;
+      canvasRef.current.height = height;
+    }
+  }, [width, height]);
+
   if (!isActive) return null;
 
   return (
-    <div className="w-full h-full">
+    <div 
+      ref={containerRef} 
+      className="w-full h-full"
+      style={{
+        width: `${width}px`,
+        height: `${height}px`
+      }}
+    >
       <DynamicCanvas
+        ref={canvasRef}
         flat
         shadows
-        dpr={[1, 2]}
+        style={{
+          width: `${width}px`,
+          height: `${height}px`
+        }}
+        gl={{
+          antialias: true,
+          preserveDrawingBuffer: true,
+          alpha: true,
+          stencil: true,
+          depth: true,
+          powerPreference: "high-performance",
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.2,
+          outputColorSpace: THREE.SRGBColorSpace
+        }}
         camera={{
           position: config.camera.position,
           fov: config.camera.fov,
           near: 0.1,
           far: 1000
+        }}
+        onCreated={({ gl }) => {
+          gl.setSize(width, height);
+          gl.setPixelRatio(window.devicePixelRatio || 1);
         }}
       >
         <Suspense fallback={null}>
@@ -88,6 +116,8 @@ export function Scene({ config, isActive }: SceneProps) {
             enableZoom={false}
             enablePan={false}
             enableRotate={true}
+            autoRotate={true}
+            autoRotateSpeed={1}
             minDistance={5}
             maxDistance={20}
             target={[0, 0, 0]}
@@ -104,9 +134,13 @@ export function Scene({ config, isActive }: SceneProps) {
           </mesh>
           
           <ambientLight intensity={0.5} />
-          <color attach="background" args={[config.background.color]} />
           {config.environment.preset !== 'none' && (
-            <DynamicEnvironment preset={config.environment.preset} />
+            <DynamicEnvironment 
+              preset={config.environment.preset} 
+              background 
+              blur={0.5}
+              resolution={1024}
+            />
           )}
         </Suspense>
       </DynamicCanvas>

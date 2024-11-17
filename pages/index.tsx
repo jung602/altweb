@@ -1,10 +1,20 @@
 // pages/index.tsx
 'use client';
 
-import { SceneContainer } from '../components/SceneContainter';
-import Titles from '../components/Titles';
+import dynamic from 'next/dynamic';
 import localFont from "next/font/local";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Navigation } from '../components/Nav';
+
+const HorizontalSceneScroll = dynamic(
+  () => import('../components/HorizontalScene'),
+  { ssr: false }
+);
+
+const VerticalSceneScroll = dynamic(
+  () => import('../components/VerticalScene'),
+  { ssr: false }
+);
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -19,7 +29,8 @@ const geistMono = localFont({
 });
 
 export default function Home() {
-  // 전체 페이지 스크롤 방지
+  const [isVerticalLayout, setIsVerticalLayout] = useState(true);
+
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
@@ -40,21 +51,19 @@ export default function Home() {
         flex-col 
         items-center 
         justify-center 
-        bg-gradient-to-b 
-        from-gray-50 
-        to-gray-100
+        bg-black
         overflow-hidden
         relative
       `}
     >
-      {/* Scene Container (3D 모델들) */}
-      <div className="w-full h-screen absolute inset-0">
-        <SceneContainer />
-      </div>
+      <Navigation onLayoutChange={setIsVerticalLayout} />
       
-      {/* Titles (텍스트 오버레이) */}
-      <div className="relative z-10">
-        <Titles />
+      <div className="w-full h-screen absolute inset-0">
+        {isVerticalLayout ? (
+          <VerticalSceneScroll />
+        ) : (
+          <HorizontalSceneScroll />
+        )}
       </div>
     </main>
   );
