@@ -6,10 +6,24 @@ import type * as THREE from 'three'
 
 type GLTFResult = GLTF & {
   nodes: {
-    Cube_Baked: THREE.Mesh
+    Plane020: THREE.Mesh
+    Plane020_1: THREE.Mesh
+    Plane020_2: THREE.Mesh
+    Plane020_3: THREE.Mesh
+    Plane020_4: THREE.Mesh
+    Plane020_5: THREE.Mesh
+    Plane020_6: THREE.Mesh
+    Plane020_7: THREE.Mesh
   }
   materials: {
-    ['Cube_Baked.001']: THREE.MeshStandardMaterial
+    walls: THREE.MeshStandardMaterial
+    desk: THREE.MeshStandardMaterial
+    bed: THREE.MeshStandardMaterial
+    tv: THREE.MeshStandardMaterial
+    mirror: THREE.MeshStandardMaterial
+    metal: THREE.MeshStandardMaterial
+    black: THREE.MeshStandardMaterial
+    glassforgltf: THREE.MeshPhysicalMaterial
   }
 }
 
@@ -17,15 +31,20 @@ type GLTFResult = GLTF & {
 const Alt1Component = (props: GroupProps) => {
   const { useGLTF } = require('@react-three/drei')
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-  const { nodes, materials } = useGLTF(`${basePath}/gltf/alt1.glb`) as GLTFResult
+  const { nodes, materials } = useGLTF(`${basePath}/gltf/klar.glb`) as GLTFResult
   
   return (
     <group {...props} dispose={null}>
-      <mesh
-        castShadow
-        geometry={nodes.Cube_Baked.geometry}
-        material={materials['Cube_Baked.001']}
-      />
+      <group>
+        <mesh geometry={nodes.Plane020.geometry} material={materials.walls} />
+        <mesh geometry={nodes.Plane020_1.geometry} material={materials.desk} />
+        <mesh geometry={nodes.Plane020_2.geometry} material={materials.bed} />
+        <mesh geometry={nodes.Plane020_3.geometry} material={materials.tv} />
+        <mesh geometry={nodes.Plane020_4.geometry} material={materials.mirror} />
+        <mesh geometry={nodes.Plane020_5.geometry} material={materials.metal} />
+        <mesh geometry={nodes.Plane020_6.geometry} material={materials.black} />
+        <mesh geometry={nodes.Plane020_7.geometry} material={materials.glassforgltf} />
+      </group>
     </group>
   )
 }
@@ -42,5 +61,5 @@ export const Alt1 = dynamic(
 if (typeof window !== 'undefined') {
   const { useGLTF } = require('@react-three/drei')
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-  useGLTF.preload(`${basePath}/gltf/alt1.glb`)
+  useGLTF.preload(`${basePath}/gltf/klar.glb`)
 }

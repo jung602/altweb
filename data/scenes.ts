@@ -3,23 +3,23 @@ import { SceneConfig } from '../types/scene';
 export const scenesData: SceneConfig[] = [
   {
     id: 1,
-    title: "CHAPTER 01",
-    subtitle: "THE PROPHECY",
-    author: "LUCAS FRATI",
+    title: "Klar's Room",
+    subtitle: "Tokyo, Japan",
+    author: "Chapter 01",
     model: {
       component: "Alt1",
       scale: 1,
-      position: [0, 0, 0],
+      position: [0, -1.2, 0],
       rotation: [0, 0, 0],
     },
     camera: {
-      position: [0, 6.5, 10],
+      position: [0, 6.5, -10],
       fov: 30
     },
     lights: {
       directional: {
-        position: [0, 10, 0],
-        intensity: 1
+        position: [5, 10, 5],
+        intensity: 50
       }
     },
     background: {
@@ -35,17 +35,17 @@ export const scenesData: SceneConfig[] = [
   },
   {
     id: 2,
-    title: "CHAPTER 02",
-    subtitle: "THE Candy",
-    author: "LUCAS FRATI",
+    title: "Lee's Room",
+    subtitle: "Seoul, South Korea",
+    author: "CHAPTER 02",
     model: {
       component: "Alt2",
-      scale: 1,
+      scale: .8,
       position: [0, -1, 0],
       rotation: [0, 0, 0],
     },
     camera: {
-      position: [0, 5, 10],
+      position: [0, 6.5, 10],
       fov: 30
     },
     lights: {
