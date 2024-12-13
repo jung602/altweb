@@ -118,84 +118,34 @@ if (typeof window !== 'undefined') {
 
 type GLTFResult = GLTF & {
   nodes: {
-    Stick_Notes068: THREE.Mesh
-    Stick_Notes068_1: THREE.Mesh
-    Stick_Notes068_2: THREE.Mesh
-    Stick_Notes068_3: THREE.Mesh
-    Stick_Notes068_4: THREE.Mesh
-    Stick_Notes068_5: THREE.Mesh
-    Stick_Notes068_6: THREE.Mesh
-    Stick_Notes068_7: THREE.Mesh
+    Plane003: THREE.Mesh
+    Plane003_1: THREE.Mesh
+    Plane003_2: THREE.Mesh
+    Plane003_3: THREE.Mesh
+    Plane003_4: THREE.Mesh
   }
   materials: {
-    back: THREE.MeshStandardMaterial
-    ['glass.001']: THREE.MeshPhysicalMaterial
-    light: THREE.MeshStandardMaterial
-    bed: THREE.MeshStandardMaterial
-    desk: THREE.MeshStandardMaterial
-    miniLight: THREE.MeshStandardMaterial
-    etc: THREE.MeshStandardMaterial
-    ['glass.002']: THREE.MeshPhysicalMaterial
+    walls: THREE.MeshStandardMaterial
+    blacks: THREE.MeshStandardMaterial
+    metal2: THREE.MeshStandardMaterial
+    metal: THREE.MeshPhysicalMaterial
+    rooms: THREE.MeshStandardMaterial
   }
 }
-
 
 // 실제 컴포넌트 구현
 const Alt2Component = (props: GroupProps) => {
   const { useGLTF } = require('@react-three/drei')
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-  const { nodes, materials } = useGLTF(`${basePath}/gltf/alt2-2.glb`) as GLTFResult
+  const { nodes, materials } = useGLTF(`${basePath}/gltf/lees.glb`) as GLTFResult
 
   return (
     <group {...props} dispose={null}>
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Stick_Notes068.geometry}
-        material={materials.back}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Stick_Notes068_1.geometry}
-        material={materials['glass.001']}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Stick_Notes068_2.geometry}
-        material={materials.light}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Stick_Notes068_3.geometry}
-        material={materials.bed}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Stick_Notes068_4.geometry}
-        material={materials.desk}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Stick_Notes068_5.geometry}
-        material={materials.miniLight}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Stick_Notes068_6.geometry}
-        material={materials.etc}
-      />
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Stick_Notes068_7.geometry}
-        material={materials['glass.002']}
-      />
+      <mesh geometry={nodes.Plane003.geometry} material={materials.walls} />
+      <mesh geometry={nodes.Plane003_1.geometry} material={materials.blacks} />
+      <mesh geometry={nodes.Plane003_2.geometry} material={materials.metal2} />
+      <mesh geometry={nodes.Plane003_3.geometry} material={materials.metal} />
+      <mesh geometry={nodes.Plane003_4.geometry} material={materials.rooms} />
     </group>
   )
 }
@@ -213,5 +163,5 @@ export const Alt2 = dynamic(
 if (typeof window !== 'undefined') {
   const { useGLTF } = require('@react-three/drei')
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-  useGLTF.preload(`${basePath}/gltf/alt2-2.glb`)
+  useGLTF.preload(`${basePath}/gltf/lees.glb`)
 }

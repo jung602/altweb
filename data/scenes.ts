@@ -40,26 +40,26 @@ export const scenesData: SceneConfig[] = [
     author: "CHAPTER 02",
     model: {
       component: "Alt2",
-      scale: .8,
-      position: [0, -1, 0],
+      scale: .9,
+      position: [0, -1.2, 0],
       rotation: [0, 0, 0],
     },
     camera: {
-      position: [0, 6.5, 10],
+      position: [0, 6.5, -10],
       fov: 30
     },
     lights: {
       directional: {
         position: [5, 10, 5],
-        intensity: 0
+        intensity: 10
       }
     },
     background: {
       color: '#000000'
     },
     shadowPlane: {
-      position: [0, -1.5, 0],
-      opacity: 0
+      position: [0, -1.01, 0],
+      opacity: 0.7
     },
     environment: {
       preset: 'none'

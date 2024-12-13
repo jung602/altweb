@@ -117,11 +117,16 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
             enablePan={false}
             enableRotate={true}
             autoRotate={true}
-            autoRotateSpeed={1}
+            autoRotateSpeed={0.3}
             minDistance={5}
             maxDistance={20}
             target={[0, 0, 0]}
-            maxPolarAngle={Math.PI / 1.5}
+            // 카메라의 수직 각도를 현재 위치 근처로 고정
+            minPolarAngle={Math.PI / 3}
+            maxPolarAngle={Math.PI / 3}
+            // Y축 무제한 360도 회전 허용
+            minAzimuthAngle={-Infinity}
+            maxAzimuthAngle={Infinity}
           />
           
           <mesh 

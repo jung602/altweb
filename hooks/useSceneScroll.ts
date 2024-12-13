@@ -76,7 +76,7 @@ export const useSceneScroll = () => {
   }, [currentIndex, scenes.length]);
 
   const baseSize = useMemo(() => {
-    const minSize = 300;
+    const minSize = 460;
     const maxSize = 1440;
     const size = Math.min(dimensions.width * 0.8, dimensions.height * 0.8);
     return Math.max(minSize, Math.min(size, maxSize));
