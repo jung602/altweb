@@ -13,13 +13,13 @@ export const scenesData: SceneConfig[] = [
       rotation: [0, 0, 0],
     },
     camera: {
-      position: [0, 6.5, -10],
-      fov: 30
+      position: [5, 6.5, -10],
+      fov: 135
     },
     lights: {
       directional: {
         position: [5, 10, 5],
-        intensity: 50
+        intensity: 10
       }
     },
     background: {
@@ -45,8 +45,8 @@ export const scenesData: SceneConfig[] = [
       rotation: [0, 0, 0],
     },
     camera: {
-      position: [0, 6.5, -10],
-      fov: 30
+      position: [1, 6.5, -10],
+      fov: 135
     },
     lights: {
       directional: {

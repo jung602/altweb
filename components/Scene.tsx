@@ -14,7 +14,7 @@ const DynamicCanvas = dynamic(() => import('@react-three/fiber').then(mod => mod
 const DynamicOrbitControls = dynamic(() => import('@react-three/drei').then(mod => mod.OrbitControls), {
   ssr: false
 });
-const DynamicPerspectiveCamera = dynamic(() => import('@react-three/drei').then(mod => mod.PerspectiveCamera), {
+const DynamicOrthographicCamera = dynamic(() => import('@react-three/drei').then(mod => mod.OrthographicCamera), {
   ssr: false
 });
 const DynamicEnvironment = dynamic(() => import('@react-three/drei').then(mod => mod.Environment), {
@@ -90,11 +90,13 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
           toneMappingExposure: 1.2,
           outputColorSpace: THREE.SRGBColorSpace
         }}
+        orthographic
         camera={{
           position: config.camera.position,
-          fov: config.camera.fov,
+          zoom: config.camera.fov,
           near: 0.1,
           far: 1000
+          
         }}
         onCreated={({ gl }) => {
           gl.setSize(width, height);
@@ -102,10 +104,10 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
         }}
       >
         <Suspense fallback={null}>
-          <DynamicPerspectiveCamera
+          <DynamicOrthographicCamera
             makeDefault
             position={config.camera.position}
-            fov={config.camera.fov}
+            zoom={config.camera.fov}
           />
           
           <group position={[0, 0, 0]}>
