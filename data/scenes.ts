@@ -14,7 +14,7 @@ export const scenesData: SceneConfig[] = [
     },
     camera: {
       position: [5, 6.5, -10],
-      fov: 180
+      fov: 160
     },
     lights: {
       directional: {
@@ -46,7 +46,7 @@ export const scenesData: SceneConfig[] = [
     },
     camera: {
       position: [5, 6.5, -10],
-      fov: 180
+      fov: 160
     },
     lights: {
       directional: {
