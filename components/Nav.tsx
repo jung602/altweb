@@ -1,13 +1,17 @@
 // components/Navigation.tsx
 import { useState } from 'react';
 import { ArrowRight, ArrowDown } from 'lucide-react';
+import { useSceneStore } from '../store/sceneStore';
 
 interface NavigationProps {
   onLayoutChange: (isVertical: boolean) => void;
 }
 
 export const Navigation = ({ onLayoutChange }: NavigationProps) => {
+  const isExpanded = useSceneStore((state) => state.isExpanded);
   const [isVertical, setIsVertical] = useState(true);
+
+  if (isExpanded) return null;
 
   const handleLayoutChange = () => {
     const newIsVertical = !isVertical;

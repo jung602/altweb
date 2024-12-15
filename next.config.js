@@ -4,10 +4,13 @@ const isGithubActions = process.env.GITHUB_ACTIONS || false
 const repo = process.env.GITHUB_REPOSITORY?.replace(/.*?\//, '') || ''
 
 const nextConfig = {
-  reactStrictMode: false,
+  reactStrictMode: true,
   output: 'export',
   images: {
     unoptimized: true,
+  },
+  experimental: {
+    appDir: false
   },
   assetPrefix: isGithubActions ? `/${repo}/` : '',
   basePath: isGithubActions ? `/${repo}` : '',

@@ -2,6 +2,7 @@ import dynamic from 'next/dynamic';
 import { Suspense, useRef, useEffect, useState } from 'react';
 import type { GroupProps } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useSceneStore } from '../store/sceneStore';
 import type { SceneConfig } from '../types/scene';
 import { ModelComponents } from '../types/scene';
 
@@ -50,6 +51,9 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(config.camera.fov);
   const aspect = width / height;
+  
+  const isExpanded = useSceneStore((state) => state.isExpanded);
+  const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
 
   useEffect(() => {
     const handleResize = () => {
@@ -63,8 +67,20 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
     return () => window.removeEventListener('resize', handleResize);
   }, [config.camera.fov, width, height]);
 
+  const handleSceneClick = () => {
+    if (!isActive || isExpanded) return;
+    toggleExpanded();
+  };
+
+
+
   return (
-    <div ref={containerRef} className="w-full h-full">
+    <div 
+      ref={containerRef} 
+      className={`w-full h-full transition-all duration-500 ease-out cursor-pointer
+        ${isExpanded ? 'scale-110' : 'scale-100'}`}
+      onClick={handleSceneClick}
+    >
       <DynamicCanvas
         ref={canvasRef}
         flat
@@ -76,6 +92,11 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.2,
+        }}
+        style={{ 
+          width: '100%', 
+          height: '100%',
+           pointerEvents: 'auto'
         }}
       >
         <Suspense fallback={null}>
@@ -92,16 +113,16 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
           </group>
           
           <DynamicOrbitControls 
-            enableZoom={false}
-            enablePan={false}
-            enableRotate={true}
-            autoRotate={true}
-            autoRotateSpeed={0.3}
-            minPolarAngle={Math.PI / 3}
-            maxPolarAngle={Math.PI / 3}
-            minAzimuthAngle={-Infinity}
-            maxAzimuthAngle={Infinity}
-          />
+          enableZoom={false}
+          enablePan={false}
+          enableRotate={true}
+          autoRotate={true}
+          autoRotateSpeed={0.3}
+          minPolarAngle={isExpanded ? 0 : Math.PI / 3}
+          maxPolarAngle={isExpanded ? Math.PI : Math.PI / 3}
+          minAzimuthAngle={-Infinity}
+          maxAzimuthAngle={Infinity}
+        />
           
           <ambientLight intensity={0.5} />
           {config.environment.preset !== 'none' && (

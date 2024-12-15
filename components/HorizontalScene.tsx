@@ -1,10 +1,9 @@
-// components/HorizontalSceneScroll.tsx
-'use client';
-
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Scene } from './Scene';
 import { VerticalTitles } from './Titles';
 import { useSceneScroll } from '../hooks/useSceneScroll';
+import { useSceneStore } from '../store/sceneStore';
+import { X } from 'lucide-react';
 
 export default function HorizontalSceneScroll() {
   const {
@@ -17,7 +16,10 @@ export default function HorizontalSceneScroll() {
     handleTouch
   } = useSceneScroll();
 
-  const horizontalGap = useMemo(() => {
+  const isExpanded = useSceneStore((state) => state.isExpanded);
+  const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
+
+  const horizontalGap = React.useMemo(() => {
     return dimensions.width < 768 ? 150 : 50;
   }, [dimensions.width]);
 
@@ -29,6 +31,16 @@ export default function HorizontalSceneScroll() {
       onTouchMove={handleTouch.move}
       onTouchEnd={handleTouch.end}
     >
+      {isExpanded && (
+        <button
+          onClick={toggleExpanded}
+          className="fixed top-6 right-6 z-50 p-2 rounded-full bg-white/10 
+            hover:bg-white/20 transition-colors"
+        >
+          <X className="w-6 h-6 text-white" />
+        </button>
+      )}
+
       <div className="absolute inset-0 flex items-center justify-center z-10">
         <div 
           className="relative w-full flex items-center justify-center"
@@ -53,9 +65,11 @@ export default function HorizontalSceneScroll() {
                   height: `${baseSize}px`,
                   transform: `translate(-50%, -50%) translateX(${offset}vw)`,
                   transformOrigin: 'center center',
-                  transition: isInitialized ? 'transform 800ms ease' : 'none',
+                  transition: isInitialized ? 'all 800ms ease' : 'none',
                   willChange: 'transform',
-                  zIndex
+                  zIndex,
+                  opacity: isExpanded && !isCenter ? 0 : 1,
+                  visibility: isExpanded && !isCenter ? 'hidden' : 'visible'
                 }}
               >
                 <div 

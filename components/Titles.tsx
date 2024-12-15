@@ -4,29 +4,31 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSceneStore } from '../store/sceneStore';
 import { SceneConfig } from '../types/scene';
 
-// 공통으로 사용되는 Title 컴포넌트
-const TitleItem = ({ scene, opacity, transform }: {
+const TitleItem = ({ scene, opacity, transform, isExpanded }: {
   scene: SceneConfig;
   opacity: number;
   transform: string;
+  isExpanded?: boolean;
 }) => (
   <div
-    key={scene.id}
-    className="absolute text-center w-[400px]"
+    className={`absolute w-[400px] text-center transition-all duration-500 ease-out
+      ${isExpanded ? '-top-[48dvh]' : 'top-0'}`}
     style={{
-      transform,
+      transform: isExpanded ? 'none' : transform,
       opacity,
-      transition: 'all 800ms ease',
       visibility: opacity === 0 ? 'hidden' : 'visible'
     }}
   >
-    <p className="text-sm text-gray-400 font-geist-mono">{scene.author}</p>
-    <h2 className="text-sm text-white font-geist-sans">{scene.title}</h2>
-    <h3 className="text-sm font-geist-sans text-gray-400">{scene.subtitle}</h3>
+    <p className={`font-geist-mono ${isExpanded ? 'text-gray-400 text-xl' : 'text-sm text-gray-400'}`}>{scene.author}</p>
+    <h2 className={`font-geist-sans ${isExpanded ? 'text-2xl' : 'text-sm'} text-white`}>
+      {scene.title}
+    </h2>
+    <h3 className={`font-geist-mono ${isExpanded ? 'text-gray-400 text-xl' : 'text-sm text-gray-400'}`}>
+    {scene.subtitle}
+    </h3>
   </div>
 );
 
-// 공통으로 사용되는 Hook
 const useWindowSize = (isHorizontal: boolean) => {
   const [size, setSize] = useState(0);
 
@@ -34,7 +36,6 @@ const useWindowSize = (isHorizontal: boolean) => {
     const updateSize = () => {
       setSize(isHorizontal ? window.innerWidth : window.innerHeight);
     };
-
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
@@ -43,7 +44,6 @@ const useWindowSize = (isHorizontal: boolean) => {
   return size;
 };
 
-// 공통으로 사용되는 opacity 계산 함수
 const calculateOpacity = (distance: number) => {
   if (distance === 0) return 1;
   if (distance === 1) return 0.6;
@@ -53,6 +53,7 @@ const calculateOpacity = (distance: number) => {
 export function HorizontalTitles() {
   const scenes = useSceneStore((state) => state.scenes);
   const currentIndex = useSceneStore((state) => state.currentIndex);
+  const isExpanded = useSceneStore((state) => state.isExpanded);
   const windowWidth = useWindowSize(true);
 
   const titleSpacing = useMemo(() => {
@@ -64,14 +65,20 @@ export function HorizontalTitles() {
       <div className="flex w-full">
         <div className="flex-shrink-0 w-[calc(50vw-200px)]" />
         <div className="relative w-[400px]">
-          {scenes.map((scene, index) => (
-            <TitleItem
-              key={scene.id}
-              scene={scene}
-              opacity={calculateOpacity(Math.abs(index - currentIndex))}
-              transform={`translateX(${(index - currentIndex) * titleSpacing}px)`}
-            />
-          ))}
+          {scenes.map((scene, index) => {
+            const distance = Math.abs(index - currentIndex);
+            if (isExpanded && distance !== 0) return null;
+            
+            return (
+              <TitleItem
+                key={scene.id}
+                scene={scene}
+                opacity={calculateOpacity(distance)}
+                transform={`translateX(${(index - currentIndex) * titleSpacing}px)`}
+                isExpanded={isExpanded}
+              />
+            );
+          })}
         </div>
         <div className="flex-shrink-0 w-[calc(50vw-200px)]" />
       </div>
@@ -82,6 +89,7 @@ export function HorizontalTitles() {
 export function VerticalTitles() {
   const scenes = useSceneStore((state) => state.scenes);
   const currentIndex = useSceneStore((state) => state.currentIndex);
+  const isExpanded = useSceneStore((state) => state.isExpanded);
   const windowHeight = useWindowSize(false);
 
   const titleSpacing = useMemo(() => {
@@ -92,14 +100,20 @@ export function VerticalTitles() {
     <div className="fixed inset-0 w-screen h-[100dvh] pointer-events-none overflow-hidden">
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative">
-          {scenes.map((scene, index) => (
-            <TitleItem
-              key={scene.id}
-              scene={scene}
-              opacity={calculateOpacity(Math.abs(index - currentIndex))}
-              transform={`translate(-50%, ${(index - currentIndex) * titleSpacing}px)`}
-            />
-          ))}
+          {scenes.map((scene, index) => {
+            const distance = Math.abs(index - currentIndex);
+            if (isExpanded && distance !== 0) return null;
+            
+            return (
+              <TitleItem
+                key={scene.id}
+                scene={scene}
+                opacity={calculateOpacity(distance)}
+                transform={`translate(-50%, ${(index - currentIndex) * titleSpacing}px)`}
+                isExpanded={isExpanded}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
