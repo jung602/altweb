@@ -118,11 +118,11 @@ if (typeof window !== 'undefined') {
 
 type GLTFResult = GLTF & {
   nodes: {
-    Plane003: THREE.Mesh
-    Plane003_1: THREE.Mesh
-    Plane003_2: THREE.Mesh
-    Plane003_3: THREE.Mesh
-    Plane003_4: THREE.Mesh
+    Plane001: THREE.Mesh
+    Plane001_1: THREE.Mesh
+    Plane001_2: THREE.Mesh
+    Plane001_3: THREE.Mesh
+    Plane001_4: THREE.Mesh
   }
   materials: {
     walls: THREE.MeshStandardMaterial
@@ -141,11 +141,11 @@ const Alt2Component = (props: GroupProps) => {
 
   return (
     <group {...props} dispose={null}>
-      <mesh geometry={nodes.Plane003.geometry} material={materials.walls} />
-      <mesh geometry={nodes.Plane003_1.geometry} material={materials.blacks} />
-      <mesh geometry={nodes.Plane003_2.geometry} material={materials.metal2} />
-      <mesh geometry={nodes.Plane003_3.geometry} material={materials.metal} />
-      <mesh geometry={nodes.Plane003_4.geometry} material={materials.rooms} />
+      <mesh geometry={nodes.Plane001.geometry} material={materials.walls} />
+      <mesh geometry={nodes.Plane001_1.geometry} material={materials.blacks} />
+      <mesh geometry={nodes.Plane001_2.geometry} material={materials.metal2} />
+      <mesh geometry={nodes.Plane001_3.geometry} material={materials.metal} />
+      <mesh geometry={nodes.Plane001_4.geometry} material={materials.rooms} />
     </group>
   )
 }

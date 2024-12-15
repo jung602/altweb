@@ -15,6 +15,7 @@ export default function VerticalSceneScroll() {
     isInitialized,
     handleTouch
   } = useSceneScroll();
+  
 
   const verticalGap = 50;
 

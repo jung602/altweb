@@ -3,7 +3,6 @@
 import { useRef, useEffect, TouchEvent } from 'react';
 import { useSceneStore } from '../store/sceneStore';
 import { Scene } from './Scene';
-import { useInView } from 'react-intersection-observer';
 
 export function SceneContainer() {
   const containerRef = useRef<HTMLDivElement>(null);

@@ -1,8 +1,5 @@
-// components/Scene.tsx
-'use client';
-
 import dynamic from 'next/dynamic';
-import { Suspense, useRef, useEffect } from 'react';
+import { Suspense, useRef, useEffect, useState } from 'react';
 import type { GroupProps } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { SceneConfig } from '../types/scene';
@@ -14,7 +11,7 @@ const DynamicCanvas = dynamic(() => import('@react-three/fiber').then(mod => mod
 const DynamicOrbitControls = dynamic(() => import('@react-three/drei').then(mod => mod.OrbitControls), {
   ssr: false
 });
-const DynamicPerspectiveCamera = dynamic(() => import('@react-three/drei').then(mod => mod.PerspectiveCamera), {
+const DynamicOrthographicCamera = dynamic(() => import('@react-three/drei').then(mod => mod.OrthographicCamera), {
   ssr: false
 });
 const DynamicEnvironment = dynamic(() => import('@react-three/drei').then(mod => mod.Environment), {
@@ -48,64 +45,46 @@ function RotatingGroup({ config, ...props }: GroupProps & { config: SceneConfig 
   );
 }
 
-
 export function Scene({ config, isActive, width = 2000, height = 2000 }: SceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [zoom, setZoom] = useState(config.camera.fov);
+  const aspect = width / height;
 
   useEffect(() => {
-    if (canvasRef.current) {
-      canvasRef.current.width = width;
-      canvasRef.current.height = height;
-    }
-  }, [width, height]);
+    const handleResize = () => {
+      const baseZoom = config.camera.fov;
+      const scaleFactor = Math.min(width, height) / 1000;
+      setZoom(baseZoom * scaleFactor);
+    };
 
-  if (!isActive) return null;
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [config.camera.fov, width, height]);
 
   return (
-    <div 
-      ref={containerRef} 
-      className="w-full h-full"
-      style={{
-        width: `${width}px`,
-        height: `${height}px`
-      }}
-    >
+    <div ref={containerRef} className="w-full h-full">
       <DynamicCanvas
         ref={canvasRef}
         flat
         shadows
-        style={{
-          width: `${width}px`,
-          height: `${height}px`
-        }}
         gl={{
           antialias: true,
           preserveDrawingBuffer: true,
           alpha: true,
-          stencil: true,
-          depth: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.2,
-          outputColorSpace: THREE.SRGBColorSpace
-        }}
-        camera={{
-          position: config.camera.position,
-          fov: config.camera.fov,
-          near: 0.1,
-          far: 1000
-        }}
-        onCreated={({ gl }) => {
-          gl.setSize(width, height);
-          gl.setPixelRatio(window.devicePixelRatio || 1);
         }}
       >
         <Suspense fallback={null}>
-          <DynamicPerspectiveCamera
+          <DynamicOrthographicCamera
             makeDefault
             position={config.camera.position}
-            fov={config.camera.fov}
+            zoom={zoom}
+            near={0.1}
+            far={1000}
           />
           
           <group position={[0, 0, 0]}>
@@ -118,25 +97,11 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
             enableRotate={true}
             autoRotate={true}
             autoRotateSpeed={0.3}
-            minDistance={5}
-            maxDistance={20}
-            target={[0, 0, 0]}
-            // 카메라의 수직 각도를 현재 위치 근처로 고정
             minPolarAngle={Math.PI / 3}
             maxPolarAngle={Math.PI / 3}
-            // Y축 무제한 360도 회전 허용
             minAzimuthAngle={-Infinity}
             maxAzimuthAngle={Infinity}
           />
-          
-          <mesh 
-            rotation={[-Math.PI / 2, 0, 0]} 
-            position={config.shadowPlane.position} 
-            receiveShadow
-          >
-            <planeGeometry args={[30, 30]} />
-            <shadowMaterial transparent opacity={config.shadowPlane.opacity} />
-          </mesh>
           
           <ambientLight intensity={0.5} />
           {config.environment.preset !== 'none' && (
