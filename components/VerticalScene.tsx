@@ -33,10 +33,10 @@ export default function VerticalSceneScroll() {
         {isExpanded && (
           <button
             onClick={toggleExpanded}
-            className="fixed top-6 right-6 z-50 p-2 rounded-full bg-white/10 
-              hover:bg-white/20 transition-colors"
+            className="fixed top-4 right-4 z-50 rounded-full
+               transition-colors"
           >
-            <X className="w-6 h-6 text-white" />
+            <X className="w-5 h-5 text-white hover:text-white/70" />
           </button>
         )}
         

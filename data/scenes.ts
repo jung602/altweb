@@ -5,7 +5,6 @@ export const scenesData: SceneConfig[] = [
     id: 1,
     title: "Klar's Room",
     subtitle: "Tokyo, Japan",
-    author: "(01)",
     model: {
       component: "Alt1",
       scale: 1,
@@ -37,7 +36,6 @@ export const scenesData: SceneConfig[] = [
     id: 2,
     title: "Lee's Room",
     subtitle: "Seoul, South Korea",
-    author: "(02)",
     model: {
       component: "Alt2",
       scale: .9,

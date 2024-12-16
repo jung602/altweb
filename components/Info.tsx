@@ -1,0 +1,76 @@
+import { useEffect, useState } from 'react';
+import { X , CornerDownRight } from 'lucide-react';
+
+interface InfoProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const Info = ({ isOpen, onClose }: InfoProps) => {
+  const [mounted, setMounted] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && !mounted) {
+      setMounted(true);
+      setTimeout(() => setIsAnimating(true), 50);
+      document.body.style.overflow = 'hidden';
+    } 
+    
+    if (!isOpen && mounted) {
+      setIsAnimating(false);
+      document.body.style.overflow = 'unset';
+      const timer = setTimeout(() => setMounted(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, mounted]);
+
+  if (!mounted) return null;
+
+  return (
+    <>
+     <div 
+        className="fixed inset-0 z-40 bg-transparent"
+        onClick={onClose}
+      />
+      <div 
+        onClick={onClose}
+        className={`fixed inset-x-0 top-0 z-50 w-[100dvw] transition-opacity duration-100 ease-in-out
+          ${isAnimating ? 'opacity-100' : 'opacity-0'}`}
+      >
+      <div 
+        className="bg-slate-50/50 backdrop-blur p-1 rounded-md m-2"
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="md:block hidden absolute top-2 right-2 p-1 transition-colors"
+        >
+          <X className="w-4 h-4 text-slate-800 hover:text-slate-800/70" />
+        </button>
+        <div className='grid grid-cols-1 leading-4 md:grid-cols-2 items-end bg-slate-50/50 p-2 rounded text-sm font-geist-sans text-slate-800'>
+          <div>
+            <p>
+            <b>Altroom</b> brings real spaces into the digital realm through digital twins, faithfully recreating their essence.
+  It’s not just about replication. We capture the unique characteristics of each space and reimagine its possibilities from a fresh perspective.
+  Using digital technology, we transfer the physical form of a space into the virtual world, paying close attention to even the smallest details.
+  But it’s more than just a copy. It’s a reinterpretation, a reconfiguration, a proposal for something new.
+  What we create is not simply a ‘replica of a space’—it’s a ‘space with a new meaning.’
+  Through 3D modeling and rendering, we evolve existing spaces in ways that push them toward new potential.
+  We experiment with reality in the digital realm, seeking out untapped possibilities within the familiar.
+            </p>
+          </div>
+          <div className='grid cursor-pointer mt-4 ml-0 md:mt-0 md:ml-2'>
+           <a className='flex items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Email </a>
+           <a className='flex items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Instagram </a>
+           <a className='flex items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Tiktok </a>
+           <a className='flex items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Guestbook </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    </>
+  );
+};
+
+export default Info;

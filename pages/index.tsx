@@ -56,6 +56,7 @@ export default function Home() {
         relative
       `}
     >
+      <div className='fixed top-[18px] left-[20px] text-slate-50 text-sm font-geist-sans z-[30]'><b>Altroom</b></div>
       <Navigation onLayoutChange={setIsVerticalLayout} />
       
       <div className="w-full h-screen absolute inset-0">

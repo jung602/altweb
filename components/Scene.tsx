@@ -59,7 +59,7 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
     const handleResize = () => {
       const baseZoom = config.camera.fov;
       const scaleFactor = Math.min(width, height) / 1000;
-      setZoom(baseZoom * scaleFactor * (isExpanded ? 1.2 : 1));
+      setZoom(baseZoom * scaleFactor * (isExpanded ? 1.15 : 1));
     };
 
     handleResize();

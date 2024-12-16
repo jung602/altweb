@@ -54,7 +54,7 @@ export function SceneContainer() {
               className="absolute inset-0 w-full h-full transition-all duration-500"
               style={{
                 opacity: isExpanded && distance !== 0 ? 0 : 1,
-                transform: `${getTransform(distance)} ${isExpanded ? 'scale(1.3)' : 'scale(1)'}`,
+                transform: `${getTransform(distance)} ${isExpanded ? 'scale(1.2)' : 'scale(1)'}`,
                 zIndex: distance === 0 ? 2 : 1,
                 pointerEvents: isExpanded && distance !== 0 ? 'none' : 'auto'
               }}

@@ -11,7 +11,6 @@ export interface SceneConfig {
   id: number
   title: string
   subtitle: string
-  author: string
   model: {
     component: keyof typeof ModelComponents
     scale: number
