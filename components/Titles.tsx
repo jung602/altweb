@@ -11,19 +11,19 @@ const TitleItem = ({ scene, opacity, transform, isExpanded }: {
   isExpanded?: boolean;
 }) => (
   <div
-    className={`absolute w-[400px] text-center transition-all duration-500 ease-out
-      ${isExpanded ? '-top-[48dvh]' : 'top-0'}`}
+    className={`absolute text-center transition-all duration-500 ease-out
+      ${isExpanded ? 'top-5' : 'top-[50dvh]'}`}
     style={{
-      transform: isExpanded ? 'none' : transform,
+      transform: isExpanded ? 'translate-x-1/2' : transform,
       opacity,
       visibility: opacity === 0 ? 'hidden' : 'visible'
     }}
   >
-    <p className={`font-geist-mono ${isExpanded ? 'text-gray-400 text-xl' : 'text-sm text-gray-400'}`}>{scene.author}</p>
-    <h2 className={`font-geist-sans ${isExpanded ? 'text-2xl' : 'text-sm'} text-white`}>
+    <p className={`font-geist-mono ${isExpanded ? 'text-gray-400 text-l' : 'text-sm text-gray-400'}`}>{scene.author}</p>
+    <h2 className={`font-geist-sans ${isExpanded ? 'text-xl' : 'text-sm'} text-white`}>
       {scene.title}
     </h2>
-    <h3 className={`font-geist-mono ${isExpanded ? 'text-gray-400 text-xl' : 'text-sm text-gray-400'}`}>
+    <h3 className={`font-geist-mono mt-[-4px] ${isExpanded ? 'text-gray-400 text-l' : 'text-sm text-gray-400'}`}>
     {scene.subtitle}
     </h3>
   </div>
@@ -61,10 +61,9 @@ export function HorizontalTitles() {
   }, [windowWidth]);
 
   return (
-    <div className="fixed inset-0 w-screen h-[100dvh] flex items-center pointer-events-none overflow-hidden">
-      <div className="flex w-full">
-        <div className="flex-shrink-0 w-[calc(50vw-200px)]" />
-        <div className="relative w-[400px]">
+    <div className="fixed inset-0 w-[100dvw] h-[100dvh] flex items-center pointer-events-none overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="flex items-center justify-center">
           {scenes.map((scene, index) => {
             const distance = Math.abs(index - currentIndex);
             if (isExpanded && distance !== 0) return null;
@@ -80,7 +79,6 @@ export function HorizontalTitles() {
             );
           })}
         </div>
-        <div className="flex-shrink-0 w-[calc(50vw-200px)]" />
       </div>
     </div>
   );
@@ -97,9 +95,9 @@ export function VerticalTitles() {
   }, [windowHeight]);
 
   return (
-    <div className="fixed inset-0 w-screen h-[100dvh] pointer-events-none overflow-hidden">
+    <div className="fixed inset-0 w-[100dvw] h-[100dvh] pointer-events-none overflow-hidden">
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative">
+        <div className="flex">
           {scenes.map((scene, index) => {
             const distance = Math.abs(index - currentIndex);
             if (isExpanded && distance !== 0) return null;

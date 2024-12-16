@@ -28,7 +28,6 @@ interface SceneProps {
 
 function RotatingGroup({ config, ...props }: GroupProps & { config: SceneConfig }) {
   const ModelComponent = ModelComponents[config.model.component];
-
   return (
     <group 
       scale={config.model.scale} 
@@ -50,7 +49,8 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(config.camera.fov);
-  const aspect = width / height;
+  const isDragging = useRef(false);
+  const startPos = useRef({ x: 0, y: 0 });
   
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
@@ -59,27 +59,45 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
     const handleResize = () => {
       const baseZoom = config.camera.fov;
       const scaleFactor = Math.min(width, height) / 1000;
-      setZoom(baseZoom * scaleFactor);
+      setZoom(baseZoom * scaleFactor * (isExpanded ? 1.2 : 1));
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [config.camera.fov, width, height]);
-
-  const handleSceneClick = () => {
-    if (!isActive || isExpanded) return;
-    toggleExpanded();
+  }, [config.camera.fov, width, height, isExpanded]);
+  
+  const handlePointerDown = (e: React.PointerEvent) => {
+    isDragging.current = false;
+    startPos.current = { x: e.clientX, y: e.clientY };
   };
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!startPos.current) return;
+    
+    const deltaX = Math.abs(e.clientX - startPos.current.x);
+    const deltaY = Math.abs(e.clientY - startPos.current.y);
+    
+    if (deltaX > 5 || deltaY > 5) {
+      isDragging.current = true;
+    }
+  };
 
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging.current && isActive) {
+      toggleExpanded();
+    }
+    startPos.current = { x: 0, y: 0 };
+  };
 
   return (
     <div 
       ref={containerRef} 
       className={`w-full h-full transition-all duration-500 ease-out cursor-pointer
         ${isExpanded ? 'scale-110' : 'scale-100'}`}
-      onClick={handleSceneClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
     >
       <DynamicCanvas
         ref={canvasRef}
@@ -93,11 +111,7 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.2,
         }}
-        style={{ 
-          width: '100%', 
-          height: '100%',
-           pointerEvents: 'auto'
-        }}
+        style={{ width: '100%', height: '100%' }}
       >
         <Suspense fallback={null}>
           <DynamicOrthographicCamera
@@ -113,16 +127,16 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
           </group>
           
           <DynamicOrbitControls 
-          enableZoom={false}
-          enablePan={false}
-          enableRotate={true}
-          autoRotate={true}
-          autoRotateSpeed={0.3}
-          minPolarAngle={isExpanded ? 0 : Math.PI / 3}
-          maxPolarAngle={isExpanded ? Math.PI : Math.PI / 3}
-          minAzimuthAngle={-Infinity}
-          maxAzimuthAngle={Infinity}
-        />
+            enableZoom={false}
+            enablePan={false}
+            enableRotate={true}
+            autoRotate={true}
+            autoRotateSpeed={0.3}
+            minPolarAngle={isExpanded ? 0 : Math.PI / 3}
+            maxPolarAngle={isExpanded ? Math.PI : Math.PI / 3}
+            minAzimuthAngle={-Infinity}
+            maxAzimuthAngle={Infinity}
+          />
           
           <ambientLight intensity={0.5} />
           {config.environment.preset !== 'none' && (
