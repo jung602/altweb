@@ -20,7 +20,7 @@ const Info = ({ isOpen, onClose }: InfoProps) => {
     if (!isOpen && mounted) {
       setIsAnimating(false);
       document.body.style.overflow = 'unset';
-      const timer = setTimeout(() => setMounted(false), 100);
+      const timer = setTimeout(() => setMounted(false), 300);
       return () => clearTimeout(timer);
     }
   }, [isOpen, mounted]);
@@ -30,16 +30,16 @@ const Info = ({ isOpen, onClose }: InfoProps) => {
   return (
     <>
      <div 
-        className="fixed inset-0 z-40 bg-transparent"
+        className="fixed inset-0 z-[1001] bg-transparent"
         onClick={onClose}
       />
-      <div 
+       <div 
         onClick={onClose}
-        className={`fixed inset-x-0 top-0 z-50 w-[100dvw] transition-opacity duration-100 ease-in-out
-          ${isAnimating ? 'opacity-100' : 'opacity-0'}`}
+        className={`z-[1001] fixed inset-x-0 top-0 z-50 w-[100dvw] transition-transform duration-500 ease-in-out
+          ${isAnimating ? 'translate-y-0' : '-translate-y-full'}`}
       >
       <div 
-        className="bg-slate-50/50 backdrop-blur p-1 rounded-md m-2"
+        className="bg-slate-50/80 backdrop-blur p-1 rounded-md m-2"
         onClick={e => e.stopPropagation()}
       >
         <button
@@ -48,16 +48,16 @@ const Info = ({ isOpen, onClose }: InfoProps) => {
         >
           <X className="w-4 h-4 text-slate-800 hover:text-slate-800/70" />
         </button>
-        <div className='grid grid-cols-1 leading-4 md:grid-cols-2 items-end bg-slate-50/50 p-2 rounded text-sm font-geist-sans text-slate-800'>
+        <div className='pt-14 md:pt-16 grid grid-cols-1 leading-4 md:grid-cols-2 items-end bg-slate-100 shadow-[0px_4px_10px_rgba(0,0,0,0.1)] p-2 rounded text-sm font-geist-sans text-slate-800'>
           <div>
             <p>
-            <b>Altroom</b> brings real spaces into the digital realm through digital twins, faithfully recreating their essence.
-  It’s not just about replication. We capture the unique characteristics of each space and reimagine its possibilities from a fresh perspective.
-  Using digital technology, we transfer the physical form of a space into the virtual world, paying close attention to even the smallest details.
-  But it’s more than just a copy. It’s a reinterpretation, a reconfiguration, a proposal for something new.
-  What we create is not simply a ‘replica of a space’—it’s a ‘space with a new meaning.’
-  Through 3D modeling and rendering, we evolve existing spaces in ways that push them toward new potential.
-  We experiment with reality in the digital realm, seeking out untapped possibilities within the familiar.
+            Altroom brings real spaces into the digital realm through digital twins, faithfully recreating their essence.
+            It’s not just about replication. We capture the unique characteristics of each space and reimagine its possibilities from a fresh perspective.
+            Using digital technology, we transfer the physical form of a space into the virtual world, paying close attention to even the smallest details.
+            But it’s more than just a copy. It’s a reinterpretation, a reconfiguration, a proposal for something new.
+            What we create is not simply a ‘replica of a space’—it’s a ‘space with a new meaning.’
+            Through 3D modeling and rendering, we evolve existing spaces in ways that push them toward new potential.
+            We experiment with reality in the digital realm, seeking out untapped possibilities within the familiar.
             </p>
           </div>
           <div className='grid cursor-pointer mt-4 ml-0 md:mt-0 md:ml-2'>

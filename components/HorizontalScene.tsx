@@ -66,7 +66,7 @@ export default function HorizontalSceneScroll() {
                     height: `${baseSize}px`,
                     transform: `translate(-50%, -50%) translateX(${offset}vw)`,
                     transformOrigin: 'center center',
-                    transition: isInitialized ? 'all 800ms ease' : 'none',
+                    transition: isInitialized ? 'all 800ms cubic-bezier(0.4, 0.0, 0.2, 1)' : 'none',
                     willChange: 'transform',
                     zIndex,
                     opacity: isExpanded && !isCenter ? 0 : 1,
@@ -74,12 +74,12 @@ export default function HorizontalSceneScroll() {
                   }}
                 >
                   <div 
-                    className="absolute inset-0 z-[15] bg-black/70 backdrop-blur-md"
+                    className="absolute inset-0 z-[15] bg-black/80 backdrop-blur-md"
                     style={{
                       opacity: isCenter ? 0 : Math.abs(distance) * 0.8,
                       width: isCenter ? 0 : '100%',
                       transition: isInitialized 
-                        ? 'opacity 800ms ease, width 0ms linear'
+                        ? 'opacity 800ms cubic-bezier(0.4, 0.0, 0.2, 1), width 0ms linear 0ms'
                         : 'none',
                       pointerEvents: isCenter ? 'none' : 'auto'
                     }}

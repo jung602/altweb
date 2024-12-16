@@ -13,7 +13,7 @@ const TitleItem = ({ scene, opacity, transform, isExpanded }: {
 }) => (
   <div
     className={`absolute text-center transition-all duration-500 ease-out
-      ${isExpanded ? 'top-4' : 'top-[50dvh]'}`}
+      ${isExpanded ? 'top-4' : 'bottom-16'}`}
     style={{
       transform: isExpanded ? 'translate-x-1/2' : transform,
       opacity,
@@ -59,7 +59,7 @@ export function HorizontalTitles() {
   const windowWidth = useWindowSize(true);
 
   const titleSpacing = useMemo(() => {
-    return windowWidth < 768 ? 200 : 300;
+    return windowWidth < 768 ? 130 : 150;
   }, [windowWidth]);
 
   return (
@@ -93,7 +93,7 @@ export function VerticalTitles() {
   const windowHeight = useWindowSize(false);
 
   const titleSpacing = useMemo(() => {
-    return windowHeight < 768 ? 100 : 150;
+    return windowHeight < 768 ? 50 : 70;
   }, [windowHeight]);
 
   return (

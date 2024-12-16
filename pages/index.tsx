@@ -4,6 +4,7 @@
 import dynamic from 'next/dynamic';
 import localFont from "next/font/local";
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Navigation } from '../components/Nav';
 
 const HorizontalSceneScroll = dynamic(
@@ -56,7 +57,16 @@ export default function Home() {
         relative
       `}
     >
-      <div className='fixed top-[18px] left-[20px] text-slate-50 text-sm font-geist-sans z-[30]'><b>Altroom</b></div>
+      <div className='fixed top-3 left-3 mix-blend-difference text-slate-50 text-sm font-geist-sans z-[1002]'>
+      <Image
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/logowhite.png`}
+          alt="Logo"
+          width={54}
+          height={54}
+          priority
+          className="w-auto h-[48px]"
+        />
+      </div>
       <Navigation onLayoutChange={setIsVerticalLayout} />
       
       <div className="w-full h-screen absolute inset-0">

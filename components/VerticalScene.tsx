@@ -72,12 +72,12 @@ export default function VerticalSceneScroll() {
                   }}
                 >
                   <div 
-                    className="absolute inset-0 z-[15] bg-black/70 backdrop-blur-md"
+                    className="absolute inset-0 z-[15] bg-black/80 backdrop-blur-md"
                     style={{
                       opacity: isCenter ? 0 : Math.abs(distance) * 0.8,
                       height: isCenter ? 0 : '100%',
                       transition: isInitialized 
-                        ? `opacity 800ms cubic-bezier(0.4, 0.0, 0.2, 1)${isCenter ? ', height 0ms linear 800ms' : ''}`
+                        ? `opacity 800ms cubic-bezier(0.4, 0.0, 0.2, 1)${isCenter ? ', height ms linear 0ms' : ''}`
                         : 'none',
                       pointerEvents: isCenter ? 'none' : 'auto'
                     }}
