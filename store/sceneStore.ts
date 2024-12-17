@@ -13,6 +13,10 @@ interface SceneState {
   setTransitioning: (isTransitioning: boolean) => void
   toggleExpanded: () => void
   setScrollCompleted: (completed: boolean) => void
+  isLabelsVisible: boolean
+  areLabelsOpen: boolean
+  setLabelsVisible: (visible: boolean) => void
+  setLabelsOpen: (open: boolean) => void
 }
 
 export const useSceneStore = create<SceneState>((set) => ({
@@ -30,5 +34,9 @@ export const useSceneStore = create<SceneState>((set) => ({
     isExpanded: !state.isExpanded,
     scrollCompleted: false
   })),
-  setScrollCompleted: (completed) => set({ scrollCompleted: completed })
+  setScrollCompleted: (completed) => set({ scrollCompleted: completed }),
+  isLabelsVisible: true,
+  areLabelsOpen: false,
+  setLabelsVisible: (visible) => set({ isLabelsVisible: visible }),
+  setLabelsOpen: (open) => set({ areLabelsOpen: open })
 }))

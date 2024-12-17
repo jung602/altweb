@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { useSceneStore } from '../store/sceneStore';
 import type { SceneConfig } from '../types/scene';
 import { ModelComponents } from '../types/scene';
+import Label from './Label';
+import { LabelNavigation } from './LabelNav';
 
 const DynamicCanvas = dynamic(() => import('@react-three/fiber').then(mod => mod.Canvas), {
   ssr: false
@@ -44,9 +46,13 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
             shadow-mapSize={[2048, 2048]}
           />
           <ModelComponent />
+          {isExpanded && config.labels?.map((label, index) => (
+            <Label key={index} {...label} />
+          ))}
         </group>
+        
       </group>
-      
+
       <OrbitControls 
         enableZoom={false}
         enablePan={false}
@@ -112,6 +118,12 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    // Check if click was on a label
+    if (e.target instanceof HTMLElement) {
+      const labelElement = e.target.closest('[data-label]');
+      if (labelElement) return;
+    }
+  
     if (!isDragging.current && isActive) {
       toggleExpanded();
     }
@@ -145,7 +157,6 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
           <SceneContent config={config} zoom={zoom} />
         </Suspense>
       </DynamicCanvas>
-
     </div>
   );
 }

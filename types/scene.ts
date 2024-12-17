@@ -7,13 +7,17 @@ export const ModelComponents = {
   Alt2,
 } as const
 
-export interface SceneConfig {
+// types/scene.ts
+export interface Label {
+  title: string
+  content: string
+  position: [number, number, number]
+ }
+ 
+ export interface SceneConfig {
   id: number
   title: string
   location: string
-  explanation: [
-    {img: string 
-    content: string}]
   model: {
     component: keyof typeof ModelComponents
     scale: number
@@ -36,4 +40,5 @@ export interface SceneConfig {
   environment: {
     preset: 'none' | 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby'
   }
-}
+  labels?: Label[]
+ }
