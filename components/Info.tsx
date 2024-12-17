@@ -39,16 +39,16 @@ const Info = ({ isOpen, onClose }: InfoProps) => {
           ${isAnimating ? 'translate-y-0' : '-translate-y-full'}`}
       >
       <div 
-        className="bg-slate-50/80 backdrop-blur p-1 rounded-md m-2"
+        className="bg-slate-50/80 backdrop-blur p-1 rounded-md m-3"
         onClick={e => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="md:block hidden absolute top-2 right-2 p-1 transition-colors"
+          className="md:block hidden absolute top-2 right-2 transition-colors"
         >
           <X className="w-4 h-4 text-slate-800 hover:text-slate-800/70" />
         </button>
-        <div className='pt-14 md:pt-16 grid grid-cols-1 leading-5 md:grid-cols-2 items-end bg-slate-100 shadow-[0px_4px_10px_rgba(0,0,0,0.1)] p-2 rounded text-base font-geist-sans text-slate-800'>
+        <div className='pt-14 md:pt-16 grid grid-cols-1 leading-5 md:grid-cols-2 items-end bg-slate-100/80 shadow-[0px_4px_10px_rgba(0,0,0,0.1)] p-2 rounded text-base font-geist-sans text-slate-800'>
           <div>
             <p>
             Altroom brings real spaces into the digital realm through digital twins, faithfully recreating their essence.
