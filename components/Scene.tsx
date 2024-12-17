@@ -6,7 +6,10 @@ import { useSceneStore } from '../store/sceneStore';
 import type { SceneConfig } from '../types/scene';
 import { ModelComponents } from '../types/scene';
 import Label from './Label';
+<<<<<<< HEAD
 import { LabelNavigation } from './LabelNav';
+=======
+>>>>>>> df60bbdc90872660c28f94acaf6997ce25ba8e47
 
 const DynamicCanvas = dynamic(() => import('@react-three/fiber').then(mod => mod.Canvas), {
   ssr: false

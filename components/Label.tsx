@@ -1,6 +1,10 @@
 import { Html } from '@react-three/drei'
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react'
 import { useSceneStore } from '../store/sceneStore'
+=======
+import React, { useState } from 'react'
+>>>>>>> df60bbdc90872660c28f94acaf6997ce25ba8e47
 
 interface LabelProps {
   title: string
@@ -9,6 +13,7 @@ interface LabelProps {
 }
 
 const Label = ({ title, content, position }: LabelProps) => {
+<<<<<<< HEAD
   const isLabelsVisible = useSceneStore((state) => state.isLabelsVisible)
   const areLabelsOpen = useSceneStore((state) => state.areLabelsOpen)
   const [isOpen, setIsOpen] = useState(false)
@@ -17,14 +22,21 @@ const Label = ({ title, content, position }: LabelProps) => {
     setIsOpen(areLabelsOpen)
   }, [areLabelsOpen])
 
+=======
+  const [isOpen, setIsOpen] = useState(false)
+
+>>>>>>> df60bbdc90872660c28f94acaf6997ce25ba8e47
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setIsOpen(!isOpen)
   }
 
+<<<<<<< HEAD
   if (!isLabelsVisible) return null
 
+=======
+>>>>>>> df60bbdc90872660c28f94acaf6997ce25ba8e47
   return (
     <Html
       position={position}

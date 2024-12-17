@@ -70,12 +70,20 @@ export const scenesData: SceneConfig[] = [
       {
         title: "작업 공간",
         content: "주문제작 책상",
+<<<<<<< HEAD
         position: [0, 1, 0]
+=======
+        position: [-2, 2, -2]
+>>>>>>> df60bbdc90872660c28f94acaf6997ce25ba8e47
       },
       {
         title: "침대",
         content: "퀸 사이즈",
+<<<<<<< HEAD
         position: [0, 0, ]
+=======
+        position: [-2, 0, -2]
+>>>>>>> df60bbdc90872660c28f94acaf6997ce25ba8e47
       }
     ]
   },
