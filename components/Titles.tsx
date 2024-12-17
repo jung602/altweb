@@ -26,7 +26,7 @@ const TitleItem = ({
   return (
     <div
       className={`absolute text-center transition-all duration-500 ease-out cursor-pointer pointer-events-auto
-        ${isExpanded ? 'top-4' : 'top-[50vh]'}`}
+        ${isExpanded ? 'top-4' : 'top-[50dvh]'}`}
       style={{
         transform: isExpanded ? 'translate-x-1/2' : transform,
         opacity: hovered ? opacity * 0.5 : opacity,
