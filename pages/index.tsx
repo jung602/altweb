@@ -1,10 +1,9 @@
-// pages/index.tsx
 'use client';
 
 import dynamic from 'next/dynamic';
 import localFont from "next/font/local";
-import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { Navigation } from '../components/Nav';
 
 const HorizontalSceneScroll = dynamic(
@@ -31,9 +30,11 @@ const geistMono = localFont({
 
 export default function Home() {
   const [isVerticalLayout, setIsVerticalLayout] = useState(true);
-
+  
   useEffect(() => {
+    setIsVerticalLayout(window.innerWidth < 768);
     document.body.style.overflow = 'hidden';
+    
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -67,6 +68,7 @@ export default function Home() {
           className="w-auto h-[48px]"
         />
       </div>
+
       <Navigation onLayoutChange={setIsVerticalLayout} />
       
       <div className="w-full h-screen absolute inset-0">

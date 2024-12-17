@@ -10,7 +10,10 @@ export const ModelComponents = {
 export interface SceneConfig {
   id: number
   title: string
-  subtitle: string
+  location: string
+  explanation: [
+    {img: string 
+    content: string}]
   model: {
     component: keyof typeof ModelComponents
     scale: number
@@ -29,10 +32,6 @@ export interface SceneConfig {
   }
   background: {
     color: string
-  }
-  shadowPlane: {
-    position: [number, number, number]
-    opacity: number
   }
   environment: {
     preset: 'none' | 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby'

@@ -63,16 +63,6 @@ export function SceneContainer() {
             </div>
           )
         })}
-
-        {isExpanded && (
-          <div className="fixed bottom-0 left-0 w-full bg-black/80 backdrop-blur-md
-            transform transition-transform duration-500 translate-y-0">
-            <div className="max-w-4xl mx-auto py-8 px-4">
-              <h2 className="text-2xl text-white mb-4">{scenes[currentIndex].title}</h2>
-              <p className="text-gray-300">설명 텍스트가 여기에 들어갑니다.</p>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );

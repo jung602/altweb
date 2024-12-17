@@ -9,15 +9,6 @@ import { ModelComponents } from '../types/scene';
 const DynamicCanvas = dynamic(() => import('@react-three/fiber').then(mod => mod.Canvas), {
   ssr: false
 });
-const DynamicOrbitControls = dynamic(() => import('@react-three/drei').then(mod => mod.OrbitControls), {
-  ssr: false
-});
-const DynamicOrthographicCamera = dynamic(() => import('@react-three/drei').then(mod => mod.OrthographicCamera), {
-  ssr: false
-});
-const DynamicEnvironment = dynamic(() => import('@react-three/drei').then(mod => mod.Environment), {
-  ssr: false
-});
 
 interface SceneProps {
   config: SceneConfig;
@@ -26,24 +17,61 @@ interface SceneProps {
   height?: number;
 }
 
-function RotatingGroup({ config, ...props }: GroupProps & { config: SceneConfig }) {
+function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
+  const { OrbitControls, OrthographicCamera, Environment } = require('@react-three/drei');
   const ModelComponent = ModelComponents[config.model.component];
+  const isExpanded = useSceneStore((state) => state.isExpanded);
+
   return (
-    <group 
-      scale={config.model.scale} 
-      position={config.model.position as [number, number, number]}
-      {...props}
-    >
-      <directionalLight
-        position={config.lights.directional.position}
-        intensity={config.lights.directional.intensity}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
+    <>
+      <OrthographicCamera
+        makeDefault
+        position={config.camera.position}
+        zoom={zoom}
+        near={0.1}
+        far={1000}
       />
-      <ModelComponent />
-    </group>
+      
+      <group>
+        <group 
+          scale={config.model.scale} 
+          position={config.model.position as [number, number, number]}
+        >
+          <directionalLight
+            position={config.lights.directional.position}
+            intensity={config.lights.directional.intensity}
+            castShadow
+            shadow-mapSize={[2048, 2048]}
+          />
+          <ModelComponent />
+        </group>
+      </group>
+      
+      <OrbitControls 
+        enableZoom={false}
+        enablePan={false}
+        enableRotate={true}
+        autoRotate={true}
+        autoRotateSpeed={0.07}
+        minPolarAngle={isExpanded ? 0 : Math.PI / 3}
+        maxPolarAngle={isExpanded ? Math.PI : Math.PI / 3}
+        minAzimuthAngle={-Infinity}
+        maxAzimuthAngle={Infinity}
+      />
+      
+      <ambientLight intensity={0.5} />
+      {config.environment.preset !== 'none' && (
+        <Environment 
+          preset={config.environment.preset} 
+          background 
+          blur={0.5}
+          resolution={1024}
+        />
+      )}
+    </>
   );
 }
+
 
 export function Scene({ config, isActive, width = 2000, height = 2000 }: SceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -114,41 +142,10 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
         style={{ width: '100%', height: '100%' }}
       >
         <Suspense fallback={null}>
-          <DynamicOrthographicCamera
-            makeDefault
-            position={config.camera.position}
-            zoom={zoom}
-            near={0.1}
-            far={1000}
-          />
-          
-          <group position={[0, 0, 0]}>
-            <RotatingGroup config={config} />
-          </group>
-          
-          <DynamicOrbitControls 
-            enableZoom={false}
-            enablePan={false}
-            enableRotate={true}
-            autoRotate={true}
-            autoRotateSpeed={0.3}
-            minPolarAngle={isExpanded ? 0 : Math.PI / 3}
-            maxPolarAngle={isExpanded ? Math.PI : Math.PI / 3}
-            minAzimuthAngle={-Infinity}
-            maxAzimuthAngle={Infinity}
-          />
-          
-          <ambientLight intensity={0.5} />
-          {config.environment.preset !== 'none' && (
-            <DynamicEnvironment 
-              preset={config.environment.preset} 
-              background 
-              blur={0.5}
-              resolution={1024}
-            />
-          )}
+          <SceneContent config={config} zoom={zoom} />
         </Suspense>
       </DynamicCanvas>
+
     </div>
   );
 }

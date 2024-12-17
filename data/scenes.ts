@@ -4,7 +4,11 @@ export const scenesData: SceneConfig[] = [
   {
     id: 1,
     title: "Klar's Room",
-    subtitle: "Tokyo, Japan",
+    location: "Tokyo, Japan",
+    explanation: [{
+      img: "",
+      content: "Klar's Room represents a modern minimalist approach to living spaces in Tokyo. The design emphasizes functionality while maintaining aesthetic appeal through clean lines and a muted color palette. The space features custom-built furniture that maximizes the available square footage, a common necessity in Tokyo's urban environment. The lighting design creates depth through layered illumination, combining natural light with carefully placed artificial sources. The material selection focuses on sustainable and durable options, including locally sourced wood and recycled metals. Each element has been carefully considered to create a harmonious living environment that reflects both Japanese and contemporary international design principles."
+    }],
     model: {
       component: "Alt1",
       scale: 1,
@@ -24,10 +28,6 @@ export const scenesData: SceneConfig[] = [
     background: {
       color: '#000000'
     },
-    shadowPlane: {
-      position: [0, -1.01, 0],
-      opacity: 0.7
-    },
     environment: {
       preset: 'none'
     }
@@ -35,7 +35,11 @@ export const scenesData: SceneConfig[] = [
   {
     id: 2,
     title: "Lee's Room",
-    subtitle: "Seoul, South Korea",
+    location: "Seoul, South Korea",
+    explanation: [{
+      img: "",
+      content: ""
+    },],
     model: {
       component: "Alt2",
       scale: .9,
@@ -54,10 +58,6 @@ export const scenesData: SceneConfig[] = [
     },
     background: {
       color: '#000000'
-    },
-    shadowPlane: {
-      position: [0, -1.01, 0],
-      opacity: 0.7
     },
     environment: {
       preset: 'none'

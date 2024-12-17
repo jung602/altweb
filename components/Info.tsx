@@ -48,23 +48,19 @@ const Info = ({ isOpen, onClose }: InfoProps) => {
         >
           <X className="w-4 h-4 text-slate-800 hover:text-slate-800/70" />
         </button>
-        <div className='pt-14 md:pt-16 grid grid-cols-1 leading-4 md:grid-cols-2 items-end bg-slate-100 shadow-[0px_4px_10px_rgba(0,0,0,0.1)] p-2 rounded text-sm font-geist-sans text-slate-800'>
+        <div className='pt-14 md:pt-16 grid grid-cols-1 leading-5 md:grid-cols-2 items-end bg-slate-100 shadow-[0px_4px_10px_rgba(0,0,0,0.1)] p-2 rounded text-base font-geist-sans text-slate-800'>
           <div>
             <p>
             Altroom brings real spaces into the digital realm through digital twins, faithfully recreating their essence.
-            It’s not just about replication. We capture the unique characteristics of each space and reimagine its possibilities from a fresh perspective.
-            Using digital technology, we transfer the physical form of a space into the virtual world, paying close attention to even the smallest details.
-            But it’s more than just a copy. It’s a reinterpretation, a reconfiguration, a proposal for something new.
-            What we create is not simply a ‘replica of a space’—it’s a ‘space with a new meaning.’
-            Through 3D modeling and rendering, we evolve existing spaces in ways that push them toward new potential.
-            We experiment with reality in the digital realm, seeking out untapped possibilities within the familiar.
+            It’s not just about replication. Altroom captures the unique characteristics of each space and reimagine its possibilities from a fresh perspective.
+            Experiments with reality in the digital realm, seeking out untapped possibilities within the familiar.
             </p>
           </div>
-          <div className='grid cursor-pointer mt-4 ml-0 md:mt-0 md:ml-2'>
-           <a className='flex items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Email </a>
-           <a className='flex items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Instagram </a>
-           <a className='flex items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Tiktok </a>
-           <a className='flex items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Guestbook </a>
+            <div className='flex md:flex-col cursor-pointer mt-4 ml-0 md:mt-0 md:ml-3'>
+            <a className='flex mr-3 items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Email </a>
+            <a className='flex mr-3 items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Instagram </a>
+            <a className='flex mr-3 items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Tiktok </a>
+            <a className='flex items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Guestbook </a>
           </div>
         </div>
       </div>

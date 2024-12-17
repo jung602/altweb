@@ -8,9 +8,11 @@ interface SceneState {
   currentIndex: number
   isTransitioning: boolean
   isExpanded: boolean
+  scrollCompleted: boolean
   setCurrentScene: (index: number) => void
   setTransitioning: (isTransitioning: boolean) => void
   toggleExpanded: () => void
+  setScrollCompleted: (completed: boolean) => void
 }
 
 export const useSceneStore = create<SceneState>((set) => ({
@@ -18,7 +20,15 @@ export const useSceneStore = create<SceneState>((set) => ({
   currentIndex: 0,
   isTransitioning: false,
   isExpanded: false,
-  setCurrentScene: (index) => set({ currentIndex: index }),
+  scrollCompleted: false,
+  setCurrentScene: (index) => set({ 
+    currentIndex: index,
+    scrollCompleted: false 
+  }),
   setTransitioning: (isTransitioning) => set({ isTransitioning }),
-  toggleExpanded: () => set((state) => ({ isExpanded: !state.isExpanded }))
+  toggleExpanded: () => set((state) => ({ 
+    isExpanded: !state.isExpanded,
+    scrollCompleted: false
+  })),
+  setScrollCompleted: (completed) => set({ scrollCompleted: completed })
 }))
