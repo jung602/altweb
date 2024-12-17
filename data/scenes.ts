@@ -75,7 +75,7 @@ export const scenesData: SceneConfig[] = [
       {
         title: "침대",
         content: "퀸 사이즈",
-        position: [0, 0, 0]
+        position: [0, 0, ]
       }
     ]
   },
