@@ -14,7 +14,6 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
     containerRef,
     scenes,
     currentIndex,
-    baseSize,
     dimensions,
     isInitialized,
     handleTouch
@@ -23,8 +22,14 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
 
+  const baseSize = React.useMemo(() => {
+    return dimensions.width < 768 
+      ? Math.min(dimensions.width, dimensions.height) * 0.95
+      : Math.min(dimensions.width, dimensions.height) * 0.8;
+  }, [dimensions]);
+
   const gap = React.useMemo(() => {
-    if (isVertical)  return dimensions.width < 768 ? 35 : 60;
+    if (isVertical) return dimensions.width < 768 ? 35 : 60;
     return dimensions.width < 768 ? 110 : 40;
   }, [dimensions?.width, isVertical]);
 
