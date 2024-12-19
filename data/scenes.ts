@@ -47,7 +47,7 @@ export const scenesData: SceneConfig[] = [
     model: {
       component: "Alt2",
       scale: .9,
-      position: [0, -1.2, 0],
+      position: [-.25, -1.2, 0],
       rotation: [0, 0, 0],
     },
     camera: {
@@ -68,14 +68,14 @@ export const scenesData: SceneConfig[] = [
     },
     labels: [
       {
-        title: "작업 공간",
-        content: "주문제작 책상",
-        position: [0, 1, 0]
+        title: "Desk",
+        content: "Cohen",
+        position: [1, 1, 0]
       },
       {
-        title: "침대",
-        content: "퀸 사이즈",
-        position: [0, 0, 0]
+        title: "BTrolli",
+        content: "Johnna Expensive",
+        position: [0, .5, 0]
       }
     ]
   },
