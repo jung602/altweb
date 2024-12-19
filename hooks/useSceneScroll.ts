@@ -12,6 +12,12 @@ export const useSceneScroll = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const touchStartY = useRef(0);
   const touchStartX = useRef(0);
+  const isMobileDevice = useRef(false);
+
+  useEffect(() => {
+    // Check if device is mobile
+    isMobileDevice.current = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }, []);
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -32,6 +38,8 @@ export const useSceneScroll = () => {
   }, []);
 
   const handleScroll = useCallback((e: WheelEvent) => {
+    if (isMobileDevice.current) return; // Ignore wheel events on mobile
+    
     if (isModelHovered) {
       return;
     }
@@ -51,20 +59,23 @@ export const useSceneScroll = () => {
 
   const handleTouch = {
     start: (e: React.TouchEvent) => {
-      touchStartY.current = e.touches[0].clientY;
-      touchStartX.current = e.touches[0].clientX;
+      // Only handle multi-touch for scene navigation
+      if (e.touches.length === 2) {
+        touchStartY.current = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        touchStartX.current = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      }
     },
     move: (e: React.TouchEvent) => {
-      if (isModelHovered) {
-        return;
-      }
+      // Only proceed if this is a two-finger touch
+      if (e.touches.length !== 2) return;
       
-      const touchY = e.touches[0].clientY;
-      const touchX = e.touches[0].clientX;
-      const deltaY = touchStartY.current - touchY;
-      const deltaX = touchStartX.current - touchX;
+      const currentY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const currentX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const deltaY = touchStartY.current - currentY;
+      const deltaX = touchStartX.current - currentX;
       
-      if (Math.abs(deltaY) > 50 || Math.abs(deltaX) > 50) {
+      // Use a larger threshold for touch events
+      if (Math.abs(deltaY) > 80 || Math.abs(deltaX) > 80) {
         const direction = deltaY > 0 ? 1 : -1;
         const newIndex = currentIndex + direction;
         
@@ -72,8 +83,8 @@ export const useSceneScroll = () => {
           setCurrentScene(newIndex);
         }
         
-        touchStartY.current = touchY;
-        touchStartX.current = touchX;
+        touchStartY.current = currentY;
+        touchStartX.current = currentX;
       }
     },
     end: () => {

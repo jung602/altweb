@@ -18,6 +18,7 @@ interface SceneProps {
   height?: number;
 }
 
+
 function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
   const { OrbitControls, OrthographicCamera, Environment } = require('@react-three/drei');
   const ModelComponent = ModelComponents[config.model.component];
@@ -25,11 +26,7 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
   const setModelHovered = useSceneStore((state) => state.setModelHovered);
   const [isInteracting, setIsInteracting] = useState(false);
   const [isHoveringModel, setIsHoveringModel] = useState(false);
-
-  const handleModelHover = (hovering: boolean) => {
-    setIsHoveringModel(hovering);
-    setModelHovered(hovering && isExpanded);
-  };
+  const isMobileDevice = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
 
   const { scale } = useSpring({
     scale: config.model.scale * (isExpanded ? 1.1 : 1),
@@ -39,6 +36,12 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
       friction: 120
     }
   });
+  const handleModelHover = (hovering: boolean) => {
+    if (!isMobileDevice.current) {
+      setIsHoveringModel(hovering);
+      setModelHovered(hovering && isExpanded);
+    }
+  };
 
   return (
     <>
@@ -69,10 +72,10 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
       </group>
 
       <OrbitControls 
-        enabled={isExpanded && isHoveringModel}
-        enableZoom={isExpanded && isHoveringModel}
+        enabled={isMobileDevice.current ? isExpanded : (isExpanded && isHoveringModel)}
+        enableZoom={isMobileDevice.current ? isExpanded : (isExpanded && isHoveringModel)}
+        enableRotate={isMobileDevice.current ? isExpanded : (isExpanded && isHoveringModel)}
         enablePan={false}
-        enableRotate={isExpanded && isHoveringModel}
         autoRotate={!isInteracting}
         autoRotateSpeed={0.07}
         minPolarAngle={isExpanded ? 0 : Math.PI / 3}
@@ -83,6 +86,10 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
         maxZoom={zoom * 1.2}
         onStart={() => setIsInteracting(true)}
         onEnd={() => setIsInteracting(false)}
+        touches={{
+          ONE: isMobileDevice.current ? THREE.TOUCH.ROTATE : THREE.TOUCH.DOLLY_ROTATE,
+          TWO: THREE.TOUCH.DOLLY_ROTATE
+        }}
       />
       
       <ambientLight intensity={0.5} />
@@ -97,6 +104,7 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
     </>
   );
 }
+
 
 export function Scene({ config, isActive, width = 2000, height = 2000 }: SceneProps) {
   const [zoom, setZoom] = useState(config.camera.fov);
