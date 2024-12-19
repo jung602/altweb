@@ -1,107 +1,99 @@
-// hooks/useSceneScroll.ts
-'use client';
-
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSceneStore } from '../store/sceneStore';
-
-type Direction = 'up' | 'down';
-
-const INTERACTION_COOLDOWN = 800;
-const MIN_SWIPE_DISTANCE = 50;
 
 export const useSceneScroll = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const lastInteractionTimeRef = useRef(0);
-  const touchStartRef = useRef(0);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [isInitialized, setIsInitialized] = useState(false);
-  
   const scenes = useSceneStore((state) => state.scenes);
   const currentIndex = useSceneStore((state) => state.currentIndex);
   const setCurrentScene = useSceneStore((state) => state.setCurrentScene);
-  const setTransitioning = useSceneStore((state) => state.setTransitioning);
+  const isModelHovered = useSceneStore((state) => state.isModelHovered);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [baseSize, setBaseSize] = useState(2000);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const touchStartY = useRef(0);
+  const touchStartX = useRef(0);
 
   useEffect(() => {
-    const handleResize = () => {
-      if (!containerRef.current) return;
-      
-      setIsInitialized(false);
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
-      
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsInitialized(true);
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: window.innerWidth,
+          height: window.innerHeight,
         });
-      });
+        setBaseSize(Math.min(window.innerWidth, window.innerHeight) * 0.8);
+      }
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    setIsInitialized(true);
+
+    return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  const handleSceneChange = (direction: Direction) => {
-    const currentTime = performance.now();
-    if (currentTime - lastInteractionTimeRef.current < INTERACTION_COOLDOWN) return;
-    
-    lastInteractionTimeRef.current = currentTime;
-    
-    if (direction === 'down' && currentIndex < scenes.length - 1) {
-      setCurrentScene(currentIndex + 1);
-    } else if (direction === 'up' && currentIndex > 0) {
-      setCurrentScene(currentIndex - 1);
+  const handleScroll = useCallback((e: WheelEvent) => {
+    if (isModelHovered) {
+      return;
     }
+    
+    e.preventDefault();
+    const delta = e.deltaY;
+    
+    if (Math.abs(delta) > 0) {
+      const direction = delta > 0 ? 1 : -1;
+      const newIndex = currentIndex + direction;
+      
+      if (newIndex >= 0 && newIndex < scenes.length) {
+        setCurrentScene(newIndex);
+      }
+    }
+  }, [currentIndex, scenes.length, setCurrentScene, isModelHovered]);
 
-    setTransitioning(true);
-    setTimeout(() => {
-      setTransitioning(false);
-    }, INTERACTION_COOLDOWN);
+  const handleTouch = {
+    start: (e: React.TouchEvent) => {
+      touchStartY.current = e.touches[0].clientY;
+      touchStartX.current = e.touches[0].clientX;
+    },
+    move: (e: React.TouchEvent) => {
+      if (isModelHovered) {
+        return;
+      }
+      
+      const touchY = e.touches[0].clientY;
+      const touchX = e.touches[0].clientX;
+      const deltaY = touchStartY.current - touchY;
+      const deltaX = touchStartX.current - touchX;
+      
+      if (Math.abs(deltaY) > 50 || Math.abs(deltaX) > 50) {
+        const direction = deltaY > 0 ? 1 : -1;
+        const newIndex = currentIndex + direction;
+        
+        if (newIndex >= 0 && newIndex < scenes.length) {
+          setCurrentScene(newIndex);
+        }
+        
+        touchStartY.current = touchY;
+        touchStartX.current = touchX;
+      }
+    },
+    end: () => {
+      touchStartY.current = 0;
+      touchStartX.current = 0;
+    }
   };
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const direction = e.deltaY > 30 ? 'down' : e.deltaY < -30 ? 'up' : null;
-      if (direction) handleSceneChange(direction);
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, [currentIndex, scenes.length]);
-
-  const baseSize = useMemo(() => {
-    const minSize = 460;
-    const maxSize = 1440;
-    const size = Math.min(dimensions.width * 0.8, dimensions.height * 0.8);
-    return Math.max(minSize, Math.min(size, maxSize));
-  }, [dimensions]);
-
-  const handleTouch = {
-    start: (e: React.TouchEvent) => {
-      touchStartRef.current = e.touches[0].clientY;
-    },
-    move: (e: React.TouchEvent) => {
-      if (!touchStartRef.current) return;
-
-      const touchEnd = e.touches[0].clientY;
-      const delta = touchStartRef.current - touchEnd;
-
-      if (Math.abs(delta) > MIN_SWIPE_DISTANCE) {
-        const direction = delta > 0 ? 'down' : 'up';
-        handleSceneChange(direction);
-        touchStartRef.current = 0;
-      }
-    },
-    end: () => {
-      touchStartRef.current = 0;
+    if (container) {
+      container.addEventListener('wheel', handleScroll, { passive: false });
     }
-  };
+    
+    return () => {
+      if (container) {
+        container.removeEventListener('wheel', handleScroll);
+      }
+    };
+  }, [handleScroll]);
 
   return {
     containerRef,
@@ -110,6 +102,6 @@ export const useSceneScroll = () => {
     baseSize,
     dimensions,
     isInitialized,
-    handleTouch
+    handleTouch,
   };
 };

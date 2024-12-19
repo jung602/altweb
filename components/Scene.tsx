@@ -1,12 +1,11 @@
 import dynamic from 'next/dynamic';
 import { Suspense, useRef, useEffect, useState } from 'react';
-import type { GroupProps } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useSceneStore } from '../store/sceneStore';
 import type { SceneConfig } from '../types/scene';
 import { ModelComponents } from '../types/scene';
 import Label from './Label';
-import { LabelNavigation } from './LabelNav';
+import { useSpring, animated } from '@react-spring/three';
 
 const DynamicCanvas = dynamic(() => import('@react-three/fiber').then(mod => mod.Canvas), {
   ssr: false
@@ -23,6 +22,23 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
   const { OrbitControls, OrthographicCamera, Environment } = require('@react-three/drei');
   const ModelComponent = ModelComponents[config.model.component];
   const isExpanded = useSceneStore((state) => state.isExpanded);
+  const setModelHovered = useSceneStore((state) => state.setModelHovered);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const [isHoveringModel, setIsHoveringModel] = useState(false);
+
+  const handleModelHover = (hovering: boolean) => {
+    setIsHoveringModel(hovering);
+    setModelHovered(hovering && isExpanded);
+  };
+
+  const { scale } = useSpring({
+    scale: config.model.scale * (isExpanded ? 1.1 : 1),
+    config: {
+      mass: 1,
+      tension: 280,
+      friction: 120
+    }
+  });
 
   return (
     <>
@@ -35,33 +51,38 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
       />
       
       <group>
-        <group 
-          scale={config.model.scale} 
+        <animated.group 
+          scale={scale}
           position={config.model.position}
+          onPointerEnter={() => handleModelHover(true)}
+          onPointerLeave={() => handleModelHover(false)}
         >
           <directionalLight
             position={config.lights.directional.position}
             intensity={config.lights.directional.intensity}
-            castShadow
-            shadow-mapSize={[2048, 2048]}
           />
           <ModelComponent />
           {isExpanded && config.labels?.map((label, index) => (
             <Label key={index} {...label} />
           ))}
-        </group>
+        </animated.group>
       </group>
 
       <OrbitControls 
-        enableZoom={isExpanded}
+        enabled={isExpanded && isHoveringModel}
+        enableZoom={isExpanded && isHoveringModel}
         enablePan={false}
-        enableRotate={true}
-        autoRotate={true}
+        enableRotate={isExpanded && isHoveringModel}
+        autoRotate={!isInteracting}
         autoRotateSpeed={0.07}
         minPolarAngle={isExpanded ? 0 : Math.PI / 3}
         maxPolarAngle={isExpanded ? Math.PI : Math.PI / 3}
         minAzimuthAngle={-Infinity}
         maxAzimuthAngle={Infinity}
+        minZoom={zoom * 0.7}
+        maxZoom={zoom * 1.2}
+        onStart={() => setIsInteracting(true)}
+        onEnd={() => setIsInteracting(false)}
       />
       
       <ambientLight intensity={0.5} />
@@ -83,6 +104,7 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const isDragging = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
+  const [isHoveringCanvas, setIsHoveringCanvas] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -95,6 +117,20 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [config.camera.fov, width, height, isExpanded]);
+
+  const handleScroll = (e: WheelEvent) => {
+    if (isExpanded && isHoveringCanvas) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  useEffect(() => {
+    if (isExpanded) {
+      window.addEventListener('wheel', handleScroll, { passive: false });
+      return () => window.removeEventListener('wheel', handleScroll);
+    }
+  }, [isExpanded, isHoveringCanvas]);
 
   const handleInteraction = {
     pointerDown: (e: React.PointerEvent) => {
@@ -116,13 +152,16 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
 
   return (
     <div 
-      className={`w-full h-full transition-all duration-500 ease-out cursor-pointer overflow-visible
-        ${isExpanded ? 'scale-110' : 'scale-100'}`}
+      className="scene-container w-full h-full transition-all duration-500 ease-out cursor-pointer overflow-visible"
       onPointerDown={handleInteraction.pointerDown}
       onPointerMove={handleInteraction.pointerMove}
       onPointerUp={handleInteraction.pointerUp}
     >
-      <div className="absolute w-dvw h-dvh left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div 
+        className="absolute w-dvw h-dvh left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        onMouseEnter={() => setIsHoveringCanvas(true)}
+        onMouseLeave={() => setIsHoveringCanvas(false)}
+      >
         <DynamicCanvas
           flat
           shadows

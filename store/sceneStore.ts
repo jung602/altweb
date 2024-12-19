@@ -1,4 +1,3 @@
-// store/sceneStore.ts
 import { create } from 'zustand'
 import { SceneConfig } from '../types/scene'
 import { scenesData } from '../data/scenes'
@@ -9,6 +8,8 @@ interface SceneState {
   isTransitioning: boolean
   isExpanded: boolean
   scrollCompleted: boolean
+  isModelHovered: boolean
+  setModelHovered: (hovered: boolean) => void
   setCurrentScene: (index: number) => void
   setTransitioning: (isTransitioning: boolean) => void
   toggleExpanded: () => void
@@ -25,6 +26,8 @@ export const useSceneStore = create<SceneState>((set) => ({
   isTransitioning: false,
   isExpanded: false,
   scrollCompleted: false,
+  isModelHovered: false,
+  setModelHovered: (hovered) => set({ isModelHovered: hovered }),
   setCurrentScene: (index) => set({ 
     currentIndex: index,
     scrollCompleted: false 
