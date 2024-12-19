@@ -25,8 +25,8 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
 
   const baseSize = React.useMemo(() => {
     return dimensions.width < 768 
-      ? Math.min(dimensions.width, dimensions.height) * 0.95
-      : Math.min(dimensions.width, dimensions.height) * 0.8;
+      ? Math.min(dimensions.width, dimensions.height) * 1.1
+      : Math.min(dimensions.width, dimensions.height) * .8;
   }, [dimensions]);
 
   const gap = React.useMemo(() => {
