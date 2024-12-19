@@ -72,10 +72,10 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
       </group>
 
       <OrbitControls 
-        enabled={isMobileDevice.current ? isExpanded : (isExpanded && isHoveringModel)}
-        enableZoom={isMobileDevice.current ? isExpanded : (isExpanded && isHoveringModel)}
-        enableRotate={isMobileDevice.current ? isExpanded : (isExpanded && isHoveringModel)}
+        enabled={true}
+        enableZoom={isExpanded}
         enablePan={false}
+        enableRotate={true}
         autoRotate={!isInteracting}
         autoRotateSpeed={0.07}
         minPolarAngle={isExpanded ? 0 : Math.PI / 3}
@@ -87,7 +87,7 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
         onStart={() => setIsInteracting(true)}
         onEnd={() => setIsInteracting(false)}
         touches={{
-          ONE: isMobileDevice.current ? THREE.TOUCH.ROTATE : THREE.TOUCH.DOLLY_ROTATE,
+          ONE: THREE.TOUCH.ROTATE,
           TWO: THREE.TOUCH.DOLLY_ROTATE
         }}
       />

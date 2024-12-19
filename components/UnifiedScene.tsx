@@ -24,8 +24,8 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
 
   const gap = React.useMemo(() => {
-    if (isVertical) return 50;
-    return dimensions.width < 768 ? 150 : 50;
+    if (isVertical)  return dimensions.width < 768 ? 35 : 60;
+    return dimensions.width < 768 ? 110 : 40;
   }, [dimensions?.width, isVertical]);
 
   return (
