@@ -15,7 +15,7 @@ export const useSceneScroll = () => {
 
   const touchStartY = useRef(0);
   const touchStartX = useRef(0);
-  const isMobileDevice = useRef(false);
+  const isMobileDevice = useRef(true);
 
   const handleScroll = useCallback((e: WheelEvent) => {
     if (isMobileDevice.current || isExpanded || isModelHovered) return;
