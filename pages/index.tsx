@@ -6,13 +6,8 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Navigation } from '../components/Nav';
 
-const HorizontalSceneScroll = dynamic(
-  () => import('../components/HorizontalScene'),
-  { ssr: false }
-);
-
-const VerticalSceneScroll = dynamic(
-  () => import('../components/VerticalScene'),
+const UnifiedScene = dynamic(
+  () => import('../components/UnifiedScene'),
   { ssr: false }
 );
 
@@ -29,15 +24,12 @@ const geistMono = localFont({
 });
 
 export default function Home() {
-  const [isVerticalLayout, setIsVerticalLayout] = useState(true);
+  const [isVertical, setIsVertical] = useState(true);
   
   useEffect(() => {
-    setIsVerticalLayout(window.innerWidth < 768);
+    setIsVertical(window.innerWidth < 768);
     document.body.style.overflow = 'hidden';
-    
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    return () => { document.body.style.overflow = 'unset'; };
   }, []);
 
   return (
@@ -59,7 +51,7 @@ export default function Home() {
       `}
     >
       <div className='fixed top-3 left-3 mix-blend-difference text-slate-50 text-sm font-geist-sans z-[1002]'>
-      <Image
+        <Image
           src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/logowhite.png`}
           alt="Logo"
           width={54}
@@ -69,14 +61,10 @@ export default function Home() {
         />
       </div>
 
-      <Navigation onLayoutChange={setIsVerticalLayout} />
+      <Navigation onLayoutChange={setIsVertical} />
       
       <div className="w-full h-screen absolute inset-0">
-        {isVerticalLayout ? (
-          <VerticalSceneScroll />
-        ) : (
-          <HorizontalSceneScroll />
-        )}
+        <UnifiedScene isVertical={isVertical} />
       </div>
     </main>
   );

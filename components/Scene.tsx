@@ -37,7 +37,7 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
       <group>
         <group 
           scale={config.model.scale} 
-          position={config.model.position as [number, number, number]}
+          position={config.model.position}
         >
           <directionalLight
             position={config.lights.directional.position}
@@ -50,11 +50,10 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
             <Label key={index} {...label} />
           ))}
         </group>
-        
       </group>
 
       <OrbitControls 
-        enableZoom={false}
+        enableZoom={isExpanded}
         enablePan={false}
         enableRotate={true}
         autoRotate={true}
@@ -78,16 +77,12 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
   );
 }
 
-
 export function Scene({ config, isActive, width = 2000, height = 2000 }: SceneProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(config.camera.fov);
-  const isDragging = useRef(false);
-  const startPos = useRef({ x: 0, y: 0 });
-  
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
+  const isDragging = useRef(false);
+  const startPos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const handleResize = () => {
@@ -100,63 +95,51 @@ export function Scene({ config, isActive, width = 2000, height = 2000 }: ScenePr
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [config.camera.fov, width, height, isExpanded]);
-  
-  const handlePointerDown = (e: React.PointerEvent) => {
-    isDragging.current = false;
-    startPos.current = { x: e.clientX, y: e.clientY };
-  };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!startPos.current) return;
-    
-    const deltaX = Math.abs(e.clientX - startPos.current.x);
-    const deltaY = Math.abs(e.clientY - startPos.current.y);
-    
-    if (deltaX > 5 || deltaY > 5) {
-      isDragging.current = true;
+  const handleInteraction = {
+    pointerDown: (e: React.PointerEvent) => {
+      isDragging.current = false;
+      startPos.current = { x: e.clientX, y: e.clientY };
+    },
+    pointerMove: (e: React.PointerEvent) => {
+      if (!startPos.current) return;
+      const deltaX = Math.abs(e.clientX - startPos.current.x);
+      const deltaY = Math.abs(e.clientY - startPos.current.y);
+      if (deltaX > 5 || deltaY > 5) isDragging.current = true;
+    },
+    pointerUp: (e: React.PointerEvent) => {
+      if (e.target instanceof HTMLElement && e.target.closest('[data-label]')) return;
+      if (!isDragging.current && isActive) toggleExpanded();
+      startPos.current = { x: 0, y: 0 };
     }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    // Check if click was on a label
-    if (e.target instanceof HTMLElement) {
-      const labelElement = e.target.closest('[data-label]');
-      if (labelElement) return;
-    }
-  
-    if (!isDragging.current && isActive) {
-      toggleExpanded();
-    }
-    startPos.current = { x: 0, y: 0 };
   };
 
   return (
     <div 
-      ref={containerRef} 
-      className={`w-full h-full transition-all duration-500 ease-out cursor-pointer
+      className={`w-full h-full transition-all duration-500 ease-out cursor-pointer overflow-visible
         ${isExpanded ? 'scale-110' : 'scale-100'}`}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+      onPointerDown={handleInteraction.pointerDown}
+      onPointerMove={handleInteraction.pointerMove}
+      onPointerUp={handleInteraction.pointerUp}
     >
-      <DynamicCanvas
-        ref={canvasRef}
-        flat
-        shadows
-        gl={{
-          antialias: true,
-          preserveDrawingBuffer: true,
-          alpha: true,
-          powerPreference: "high-performance",
-          toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.2,
-        }}
-        style={{ width: '100%', height: '100%' }}
-      >
-        <Suspense fallback={null}>
-          <SceneContent config={config} zoom={zoom} />
-        </Suspense>
-      </DynamicCanvas>
+      <div className="absolute w-dvw h-dvh left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <DynamicCanvas
+          flat
+          shadows
+          gl={{
+            antialias: true,
+            preserveDrawingBuffer: true,
+            alpha: true,
+            powerPreference: "high-performance",
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.2,
+          }}
+        >
+          <Suspense fallback={null}>
+            <SceneContent config={config} zoom={zoom} />
+          </Suspense>
+        </DynamicCanvas>
+      </div>
     </div>
   );
 }

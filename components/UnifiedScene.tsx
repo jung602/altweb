@@ -1,11 +1,15 @@
 import React from 'react';
 import { Scene } from './Scene';
-import { VerticalTitles } from './Titles';
+import { HorizontalTitles, VerticalTitles } from './Titles';
 import { useSceneScroll } from '../hooks/useSceneScroll';
 import { useSceneStore } from '../store/sceneStore';
 import { X } from 'lucide-react';
 
-export default function HorizontalSceneScroll() {
+interface UnifiedSceneProps {
+  isVertical?: boolean;
+}
+
+export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
   const {
     containerRef,
     scenes,
@@ -19,9 +23,10 @@ export default function HorizontalSceneScroll() {
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
 
-  const horizontalGap = React.useMemo(() => {
+  const gap = React.useMemo(() => {
+    if (isVertical) return 50;
     return dimensions.width < 768 ? 150 : 50;
-  }, [dimensions.width]);
+  }, [dimensions?.width, isVertical]);
 
   return (
     <>
@@ -35,8 +40,7 @@ export default function HorizontalSceneScroll() {
         {isExpanded && (
           <button
             onClick={toggleExpanded}
-            className="fixed top-4 right-4 z-50 rounded-full
-               transition-colors"
+            className="fixed top-4 right-4 z-50 rounded-full transition-colors"
           >
             <X className="w-5 h-5 text-white hover:text-white/70" />
           </button>
@@ -44,8 +48,11 @@ export default function HorizontalSceneScroll() {
 
         <div className="absolute inset-0 flex items-center justify-center">
           <div 
-            className="relative h-full w-full flex items-center justify-center"
-            style={{ height: `${baseSize}px` }}
+            className="relative flex items-center justify-center"
+            style={{
+              [isVertical ? 'width' : 'height']: `${baseSize}px`,
+              [isVertical ? 'height' : 'width']: '100%'
+            }}
           >
             {scenes.map((scene, index) => {
               const distance = index - currentIndex;
@@ -53,7 +60,7 @@ export default function HorizontalSceneScroll() {
               
               if (!shouldRender) return null;
 
-              const offset = distance * horizontalGap;
+              const offset = distance * gap;
               const isCenter = distance === 0;
               const zIndex = isCenter ? 12 : 11;
 
@@ -64,7 +71,7 @@ export default function HorizontalSceneScroll() {
                   style={{
                     width: `${baseSize}px`,
                     height: `${baseSize}px`,
-                    transform: `translate(-50%, -50%) translateX(${offset}vw)`,
+                    transform: `translate(-50%, -50%) ${isVertical ? `translateY(${offset}vh)` : `translateX(${offset}vw)`}`,
                     transformOrigin: 'center center',
                     transition: isInitialized ? 'all 800ms cubic-bezier(0.4, 0.0, 0.2, 1)' : 'none',
                     willChange: 'transform',
@@ -77,7 +84,7 @@ export default function HorizontalSceneScroll() {
                     className="absolute inset-0 z-[15] bg-black/80 backdrop-blur-md"
                     style={{
                       opacity: isCenter ? 0 : Math.abs(distance) * 0.8,
-                      width: isCenter ? 0 : '100%',
+                      [isVertical ? 'height' : 'width']: isCenter ? 0 : '100%',
                       transition: isInitialized 
                         ? 'opacity 800ms cubic-bezier(0.4, 0.0, 0.2, 1), width 0ms linear 0ms'
                         : 'none',
@@ -100,7 +107,7 @@ export default function HorizontalSceneScroll() {
         </div>
       </div>
 
-      <VerticalTitles />
+      {isVertical ? <HorizontalTitles /> : <VerticalTitles />}
     </>
   );
 }
