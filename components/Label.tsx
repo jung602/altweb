@@ -1,5 +1,5 @@
 import { Html } from '@react-three/drei'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, memo } from 'react'
 import { useSceneStore } from '../store/sceneStore'
 
 interface LabelProps {
@@ -8,7 +8,7 @@ interface LabelProps {
   position: [number, number, number]
 }
 
-const Label = ({ title, content, position }: LabelProps) => {
+const Label = memo(({ title, content, position }: LabelProps) => {
   const isLabelsVisible = useSceneStore((state) => state.isLabelsVisible)
   const areLabelsOpen = useSceneStore((state) => state.areLabelsOpen)
   const [isOpen, setIsOpen] = useState(false)
@@ -17,11 +17,11 @@ const Label = ({ title, content, position }: LabelProps) => {
     setIsOpen(areLabelsOpen)
   }, [areLabelsOpen])
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsOpen(!isOpen)
-  }
+    setIsOpen(prev => !prev)
+  }, [])
 
   if (!isLabelsVisible) return null
 
@@ -35,6 +35,8 @@ const Label = ({ title, content, position }: LabelProps) => {
       prepend
       zIndexRange={[100000, 0]}
       sprite
+      transform
+      distanceFactor={3}
     >
       <div 
         data-label="true"
@@ -57,6 +59,8 @@ const Label = ({ title, content, position }: LabelProps) => {
       </div>
     </Html>
   )
-}
+})
+
+Label.displayName = 'Label'
 
 export default Label

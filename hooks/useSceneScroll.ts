@@ -16,19 +16,26 @@ export const useSceneScroll = () => {
   const touchStartY = useRef(0);
   const touchStartX = useRef(0);
   const isMobileDevice = useRef(false);
+  const lastScrollTime = useRef(0);
+  const scrollThreshold = 500; // ms between scroll events
 
   const handleScroll = useCallback((e: WheelEvent) => {
-    if (isMobileDevice.current || isExpanded || isModelHovered) return;
+    if (isExpanded || isModelHovered) return;
     
     e.preventDefault();
-    const delta = e.deltaY;
+    const now = Date.now();
     
+    // Throttle scroll events
+    if (now - lastScrollTime.current < scrollThreshold) return;
+    
+    const delta = e.deltaY;
     if (Math.abs(delta) > 0) {
       const direction = delta > 0 ? 1 : -1;
       const newIndex = currentIndex + direction;
       
       if (newIndex >= 0 && newIndex < scenes.length) {
         setCurrentScene(newIndex);
+        lastScrollTime.current = now;
       }
     }
   }, [currentIndex, scenes.length, setCurrentScene, isModelHovered, isExpanded]);
@@ -36,29 +43,32 @@ export const useSceneScroll = () => {
   const handleTouch = {
     start: (e: React.TouchEvent) => {
       if (isExpanded) return;
-      if (e.touches.length === 2) {
-        touchStartY.current = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        touchStartX.current = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      }
+      touchStartY.current = e.touches[0].clientY;
+      touchStartX.current = e.touches[0].clientX;
     },
     move: (e: React.TouchEvent) => {
-      if (isExpanded || e.touches.length !== 2) return;
+      if (isExpanded) return;
       
-      const currentY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      const currentX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const now = Date.now();
+      if (now - lastScrollTime.current < scrollThreshold) return;
+      
+      const currentY = e.touches[0].clientY;
+      const currentX = e.touches[0].clientX;
       const deltaY = touchStartY.current - currentY;
       const deltaX = touchStartX.current - currentX;
       
-      if (Math.abs(deltaY) > 80 || Math.abs(deltaX) > 80) {
+      const threshold = isMobileDevice.current ? 50 : 80;
+      
+      if (Math.abs(deltaY) > threshold || Math.abs(deltaX) > threshold) {
         const direction = deltaY > 0 ? 1 : -1;
         const newIndex = currentIndex + direction;
         
         if (newIndex >= 0 && newIndex < scenes.length) {
           setCurrentScene(newIndex);
+          lastScrollTime.current = now;
+          touchStartY.current = currentY;
+          touchStartX.current = currentX;
         }
-        
-        touchStartY.current = currentY;
-        touchStartX.current = currentX;
       }
     },
     end: () => {

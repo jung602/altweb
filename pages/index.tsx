@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Navigation } from '../components/Nav';
+import { useSceneStore } from '@/store/sceneStore';
 
 const UnifiedScene = dynamic(
   () => import('../components/UnifiedScene'),
@@ -24,13 +25,14 @@ const geistMono = localFont({
 });
 
 export default function Home() {
-  const [isVertical, setIsVertical] = useState(true);
+  const isVertical = useSceneStore((state) => state.isVertical);
+  const setIsVertical = useSceneStore((state) => state.setIsVertical);
   
   useEffect(() => {
     setIsVertical(window.innerWidth < 768);
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'unset'; };
-  }, []);
+  }, [setIsVertical]);
 
   return (
     <main 

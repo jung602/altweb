@@ -9,6 +9,8 @@ interface SceneState {
   isExpanded: boolean
   scrollCompleted: boolean
   isModelHovered: boolean
+  isVertical: boolean
+  setIsVertical: (isVertical: boolean) => void
   setModelHovered: (hovered: boolean) => void
   setCurrentScene: (index: number) => void
   setTransitioning: (isTransitioning: boolean) => void
@@ -27,6 +29,8 @@ export const useSceneStore = create<SceneState>((set) => ({
   isExpanded: false,
   scrollCompleted: false,
   isModelHovered: false,
+  isVertical: true,
+  setIsVertical: (isVertical) => set({ isVertical }),
   setModelHovered: (hovered) => set({ isModelHovered: hovered }),
   setCurrentScene: (index) => set({ 
     currentIndex: index,
