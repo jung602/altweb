@@ -60,7 +60,6 @@ const Info = ({ isOpen, onClose }: InfoProps) => {
             <a className='flex mr-3 items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Email </a>
             <a className='flex mr-3 items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Instagram </a>
             <a className='flex mr-3 items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Tiktok </a>
-            <a className='flex items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Guestbook </a>
           </div>
         </div>
       </div>

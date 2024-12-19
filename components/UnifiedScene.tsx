@@ -4,6 +4,7 @@ import { HorizontalTitles, VerticalTitles } from './Titles';
 import { useSceneScroll } from '../hooks/useSceneScroll';
 import { useSceneStore } from '../store/sceneStore';
 import { X } from 'lucide-react';
+import { LabelNavigation } from './LabelNav';
 
 interface UnifiedSceneProps {
   isVertical?: boolean;
@@ -43,12 +44,15 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
         onTouchEnd={handleTouch.end}
       >
         {isExpanded && (
+          <>
           <button
             onClick={toggleExpanded}
             className="fixed top-4 right-4 z-50 rounded-full transition-colors"
           >
             <X className="w-5 h-5 text-white hover:text-white/70" />
           </button>
+          <LabelNavigation />
+          </>
         )}
 
         <div className="absolute inset-0 flex items-center justify-center">
