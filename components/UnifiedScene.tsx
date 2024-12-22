@@ -5,6 +5,7 @@ import { useSceneScroll } from '../hooks/useSceneScroll';
 import { useSceneStore } from '../store/sceneStore';
 import { X } from 'lucide-react';
 import { LabelNavigation } from './LabelNav';
+import { IndexView } from './IndexView';
 
 interface UnifiedSceneProps {
   isVertical?: boolean;
@@ -22,6 +23,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
 
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
+  const isIndexView = useSceneStore((state) => state.isIndexView);
 
   const baseSize = React.useMemo(() => {
     return dimensions.width < 768 
@@ -34,6 +36,10 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
     return dimensions.width < 768 ? 110 : 50;
   }, [dimensions?.width, isVertical]);
 
+  if (isIndexView) {
+    return <IndexView />;
+  }
+
   return (
     <>
       <div 
@@ -45,13 +51,13 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
       >
         {isExpanded && (
           <>
-          <button
-            onClick={toggleExpanded}
-            className="fixed top-4 right-4 z-50 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5 text-white hover:text-white/70" />
-          </button>
-          <LabelNavigation />
+            <button
+              onClick={toggleExpanded}
+              className="fixed top-4 right-4 z-50 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-white hover:text-white/70" />
+            </button>
+            <LabelNavigation />
           </>
         )}
 

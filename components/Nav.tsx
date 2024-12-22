@@ -11,6 +11,8 @@ export const Navigation = ({ onLayoutChange }: NavigationProps) => {
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const isVertical = useSceneStore((state) => state.isVertical);
   const setIsVertical = useSceneStore((state) => state.setIsVertical);
+  const setIndexView = useSceneStore((state) => state.setIndexView);
+  const isIndexView = useSceneStore((state) => state.isIndexView);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
   if (isExpanded) return null;
@@ -19,6 +21,9 @@ export const Navigation = ({ onLayoutChange }: NavigationProps) => {
     const newIsVertical = !isVertical;
     setIsVertical(newIsVertical);
     onLayoutChange(newIsVertical);
+    if (isIndexView) {
+      setIndexView(false);
+    }
   };
 
   return (
@@ -32,12 +37,15 @@ export const Navigation = ({ onLayoutChange }: NavigationProps) => {
         >
           INFO
         </button>
-        <button className="bg-slate-100 hover:bg-slate-100/50  rounded-[50px] text-slate-800 no-underline shadow-[0px_4px_10px_rgba(0,0,0,0.1)] text-center leading-[15px] px-2 py-[7px] font-geist-sans text-xs hover:bg-gray-50 transition-colors">
-          INDEX
+        <button 
+          onClick={() => setIndexView(!isIndexView)}
+          className="bg-slate-100 hover:bg-slate-100/50 rounded-[50px] text-slate-800 no-underline shadow-[0px_4px_10px_rgba(0,0,0,0.1)] text-center leading-[15px] px-2 py-[7px] font-geist-sans text-xs hover:bg-gray-50 transition-colors"
+        >
+          {isIndexView ? 'BACK' : 'INDEX'}
         </button>
         <button 
           onClick={handleLayoutChange}
-          className="bg-slate-100 hover:bg-slate-100/50  rounded-[50px] text-slate-800 no-underline shadow-[0px_4px_10px_rgba(0,0,0,0.1)] text-center leading-[15px] px-2 py-[7px] font-geist-sans text-sm hover:bg-gray-50 transition-colors"
+          className="bg-slate-100 hover:bg-slate-100/50 rounded-[50px] text-slate-800 no-underline shadow-[0px_4px_10px_rgba(0,0,0,0.1)] text-center leading-[15px] px-2 py-[7px] font-geist-sans text-sm hover:bg-gray-50 transition-colors"
         >
           {isVertical ? (
             <ArrowRight className="w-4 h-4" />

@@ -10,6 +10,7 @@ interface SceneState {
   scrollCompleted: boolean
   isModelHovered: boolean
   isVertical: boolean
+  isIndexView: boolean
   setIsVertical: (isVertical: boolean) => void
   setModelHovered: (hovered: boolean) => void
   setCurrentScene: (index: number) => void
@@ -20,6 +21,8 @@ interface SceneState {
   areLabelsOpen: boolean
   setLabelsVisible: (visible: boolean) => void
   setLabelsOpen: (open: boolean) => void
+  setIndexView: (isIndexView: boolean) => void
+  setExpanded: (isExpanded: boolean) => void
 }
 
 export const useSceneStore = create<SceneState>((set) => ({
@@ -30,12 +33,14 @@ export const useSceneStore = create<SceneState>((set) => ({
   scrollCompleted: false,
   isModelHovered: false,
   isVertical: true,
+  isIndexView: false,
   setIsVertical: (isVertical) => set({ isVertical }),
   setModelHovered: (hovered) => set({ isModelHovered: hovered }),
-  setCurrentScene: (index) => set({ 
+  setCurrentScene: (index) => set((state) => ({ 
     currentIndex: index,
-    scrollCompleted: false 
-  }),
+    scrollCompleted: false,
+    isIndexView: false
+  })),
   setTransitioning: (isTransitioning) => set({ isTransitioning }),
   toggleExpanded: () => set((state) => ({ 
     isExpanded: !state.isExpanded,
@@ -45,5 +50,7 @@ export const useSceneStore = create<SceneState>((set) => ({
   isLabelsVisible: true,
   areLabelsOpen: false,
   setLabelsVisible: (visible) => set({ isLabelsVisible: visible }),
-  setLabelsOpen: (open) => set({ areLabelsOpen: open })
+  setLabelsOpen: (open) => set({ areLabelsOpen: open }),
+  setIndexView: (isIndexView) => set({ isIndexView }),
+  setExpanded: (isExpanded) => set({ isExpanded })
 }))

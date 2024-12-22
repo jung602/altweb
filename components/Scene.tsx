@@ -77,7 +77,7 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
         enablePan={false}
         enableRotate={true}
         autoRotate={!isInteracting}
-        autoRotateSpeed={0.07}
+        autoRotateSpeed={0.1}
         minPolarAngle={isExpanded ? 0 : Math.PI / 3}
         maxPolarAngle={isExpanded ? Math.PI : Math.PI / 3}
         minAzimuthAngle={-Infinity}
