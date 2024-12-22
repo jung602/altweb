@@ -1,56 +1,247 @@
 import { create } from 'zustand'
+import { devtools, persist } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
 import { SceneConfig } from '../types/scene'
 import { scenesData } from '../data/scenes'
+
+// 상태를 논리적 그룹으로 분리
+interface ViewState {
+  isVertical: boolean
+  isIndexView: boolean
+  previousIsIndexView: boolean
+  isExpanded: boolean
+}
 
 interface SceneState {
   scenes: SceneConfig[]
   currentIndex: number
   isTransitioning: boolean
-  isExpanded: boolean
   scrollCompleted: boolean
+}
+
+interface InteractionState {
   isModelHovered: boolean
-  isVertical: boolean
-  isIndexView: boolean
+  isLabelsVisible: boolean
+  areLabelsOpen: boolean
+  isLoading: boolean
+  error: string | null
+}
+
+interface StoreState extends ViewState, SceneState, InteractionState {
+  // 기본 액션
   setIsVertical: (isVertical: boolean) => void
   setModelHovered: (hovered: boolean) => void
   setCurrentScene: (index: number) => void
   setTransitioning: (isTransitioning: boolean) => void
   toggleExpanded: () => void
   setScrollCompleted: (completed: boolean) => void
-  isLabelsVisible: boolean
-  areLabelsOpen: boolean
   setLabelsVisible: (visible: boolean) => void
   setLabelsOpen: (open: boolean) => void
   setIndexView: (isIndexView: boolean) => void
   setExpanded: (isExpanded: boolean) => void
+  
+  // 추가된 액션
+  resetState: () => void
+  setError: (error: string | null) => void
+  setLoading: (isLoading: boolean) => void
+  
+  // 비동기 액션
+  loadScene: (index: number) => Promise<void>
 }
 
-export const useSceneStore = create<SceneState>((set) => ({
+// 초기 상태를 상수로 분리
+const initialState = {
+  // 뷰 상태
+  isVertical: true,
+  isIndexView: false,
+  previousIsIndexView: false,
+  isExpanded: false,
+  
+  // 씬 상태
   scenes: scenesData,
   currentIndex: 0,
   isTransitioning: false,
-  isExpanded: false,
   scrollCompleted: false,
+  
+  // 인터랙션 상태
   isModelHovered: false,
-  isVertical: true,
-  isIndexView: false,
-  setIsVertical: (isVertical) => set({ isVertical }),
-  setModelHovered: (hovered) => set({ isModelHovered: hovered }),
-  setCurrentScene: (index) => set((state) => ({ 
-    currentIndex: index,
-    scrollCompleted: false,
-    isIndexView: false
-  })),
-  setTransitioning: (isTransitioning) => set({ isTransitioning }),
-  toggleExpanded: () => set((state) => ({ 
-    isExpanded: !state.isExpanded,
-    scrollCompleted: false
-  })),
-  setScrollCompleted: (completed) => set({ scrollCompleted: completed }),
-  isLabelsVisible: true,
+  isLabelsVisible: false,
   areLabelsOpen: false,
-  setLabelsVisible: (visible) => set({ isLabelsVisible: visible }),
-  setLabelsOpen: (open) => set({ areLabelsOpen: open }),
-  setIndexView: (isIndexView) => set({ isIndexView }),
-  setExpanded: (isExpanded) => set({ isExpanded })
+  isLoading: false,
+  error: null,
+}
+
+// 타입 가드
+const isValidSceneIndex = (index: number, scenes: SceneConfig[]): boolean => {
+  return index >= 0 && index < scenes.length
+}
+
+export const useSceneStore = create<StoreState>()(
+  devtools(
+    persist(
+      immer((set, get) => ({
+        ...initialState,
+
+        // 기본 액션들
+        setCurrentScene: (index: number) => 
+          set(
+            (state) => {
+              if (!isValidSceneIndex(index, state.scenes)) {
+                state.error = '유효하지 않은 씬 인덱스입니다.'
+                return
+              }
+              if (state.currentIndex === index) return
+              state.currentIndex = index
+              state.isTransitioning = true
+              state.isExpanded = false
+              state.error = null
+            },
+            false,
+            'setCurrentScene'
+          ),
+
+        setTransitioning: (isTransitioning: boolean) =>
+          set((state) => { state.isTransitioning = isTransitioning }, false, 'setTransitioning'),
+
+        setIsVertical: (isVertical: boolean) =>
+          set((state) => { state.isVertical = isVertical }, false, 'setIsVertical'),
+
+        setModelHovered: (hovered: boolean) =>
+          set((state) => { state.isModelHovered = hovered }, false, 'setModelHovered'),
+
+        toggleExpanded: () =>
+          set(
+            (state) => {
+              if (state.isExpanded) {
+                state.isExpanded = false
+                state.isIndexView = state.previousIsIndexView
+              } else {
+                state.isExpanded = true
+                state.isIndexView = false
+                state.previousIsIndexView = state.isIndexView
+              }
+            },
+            false,
+            'toggleExpanded'
+          ),
+
+        setScrollCompleted: (completed: boolean) =>
+          set((state) => { state.scrollCompleted = completed }, false, 'setScrollCompleted'),
+
+        setLabelsVisible: (visible: boolean) =>
+          set((state) => { state.isLabelsVisible = visible }, false, 'setLabelsVisible'),
+
+        setLabelsOpen: (open: boolean) =>
+          set((state) => { state.areLabelsOpen = open }, false, 'setLabelsOpen'),
+
+        setIndexView: (isIndexView: boolean) =>
+          set(
+            (state) => {
+              state.isIndexView = isIndexView
+              state.previousIsIndexView = isIndexView
+              state.isExpanded = false
+              state.scrollCompleted = false
+            },
+            false,
+            'setIndexView'
+          ),
+
+        setExpanded: (isExpanded: boolean) =>
+          set(
+            (state) => {
+              state.isExpanded = isExpanded
+              state.isIndexView = isExpanded ? false : state.previousIsIndexView
+              state.scrollCompleted = false
+            },
+            false,
+            'setExpanded'
+          ),
+
+        // 추가된 액션들
+        resetState: () => set(
+          () => ({ ...initialState }),
+          false,
+          'resetState'
+        ),
+
+        setError: (error: string | null) =>
+          set((state) => { state.error = error }, false, 'setError'),
+
+        setLoading: (isLoading: boolean) =>
+          set((state) => { state.isLoading = isLoading }, false, 'setLoading'),
+
+        // 비동기 액션
+        loadScene: async (index: number) => {
+          const state = get()
+          if (!isValidSceneIndex(index, state.scenes)) {
+            set((state) => { state.error = '유효하지 않은 씬 인덱스입니다.' }, false, 'loadScene/error')
+            return
+          }
+
+          set((state) => { state.isLoading = true }, false, 'loadScene/start')
+
+          try {
+            // 씬 로딩 시뮬레이션 (실제 구현에서는 여기에 로딩 로직 추가)
+            await new Promise(resolve => setTimeout(resolve, 500))
+            
+            set(
+              (state) => {
+                state.currentIndex = index
+                state.isTransitioning = true
+                state.isLoading = false
+                state.error = null
+              },
+              false,
+              'loadScene/success'
+            )
+          } catch (error) {
+            set(
+              (state) => {
+                state.isLoading = false
+                state.error = error instanceof Error ? error.message : '씬 로딩 중 오류가 발생했습니다.'
+              },
+              false,
+              'loadScene/error'
+            )
+          }
+        },
+      })),
+      {
+        name: 'scene-store',
+        version: 1,
+        partialize: (state) => ({
+          isVertical: state.isVertical,
+          currentIndex: state.currentIndex,
+        }),
+      }
+    ),
+    {
+      name: 'scene-store',
+      enabled: process.env.NODE_ENV === 'development'
+    }
+  )
+)
+
+// 기본 selector 함수들
+export const useSceneIndex = () => useSceneStore((state) => state.currentIndex)
+export const useIsExpanded = () => useSceneStore((state) => state.isExpanded)
+export const useIsIndexView = () => useSceneStore((state) => state.isIndexView)
+export const useIsVertical = () => useSceneStore((state) => state.isVertical)
+
+// 추가 selector 함수들
+export const useCurrentScene = () => useSceneStore((state) => state.scenes[state.currentIndex])
+export const useSceneError = () => useSceneStore((state) => state.error)
+export const useIsLoading = () => useSceneStore((state) => state.isLoading)
+export const useLabelsState = () => useSceneStore((state) => ({
+  isVisible: state.isLabelsVisible,
+  isOpen: state.areLabelsOpen,
+}))
+
+// 복합 selector
+export const useSceneNavigation = () => useSceneStore((state) => ({
+  currentIndex: state.currentIndex,
+  isTransitioning: state.isTransitioning,
+  canGoNext: state.currentIndex < state.scenes.length - 1,
+  canGoPrev: state.currentIndex > 0,
+  totalScenes: state.scenes.length,
 }))

@@ -36,6 +36,25 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
     return dimensions.width < 768 ? 110 : 50;
   }, [dimensions?.width, isVertical]);
 
+  const handleTouchEvents = React.useMemo(() => ({
+    onTouchStart: handleTouch.start,
+    onTouchMove: handleTouch.move,
+    onTouchEnd: handleTouch.end
+  }), [handleTouch]);
+
+  React.useEffect(() => {
+    return () => {
+      scenes.forEach(scene => {
+        if (scene.geometry) {
+          scene.geometry.dispose();
+        }
+        if (scene.material) {
+          scene.material.dispose();
+        }
+      });
+    };
+  }, [scenes]);
+
   if (isIndexView) {
     return <IndexView />;
   }
@@ -45,9 +64,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
       <div 
         ref={containerRef} 
         className="fixed inset-0 overflow-hidden"
-        onTouchStart={handleTouch.start}
-        onTouchMove={handleTouch.move}
-        onTouchEnd={handleTouch.end}
+        {...handleTouchEvents}
       >
         {isExpanded && (
           <>

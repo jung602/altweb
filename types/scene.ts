@@ -1,6 +1,7 @@
 // types/scene.ts
 import { Alt1 } from '../models/alt1'
 import { Alt2 } from '../models/alt2'
+import { BufferGeometry, Material } from 'three';
 
 export const ModelComponents = {
   Alt1,
@@ -15,8 +16,11 @@ export interface Label {
  }
  
  export interface SceneConfig {
-  id: number
-  title: string
+  id: string;
+  title: string;
+  description: string;
+  geometry?: BufferGeometry;
+  material?: Material;
   location: string
   model: {
     component: keyof typeof ModelComponents
