@@ -33,7 +33,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
 
   const gap = React.useMemo(() => {
     if (isVertical) return dimensions.width < 768 ? 35 : 60;
-    return dimensions.width < 768 ? 110 : 50;
+    return dimensions.width < 768 ? 110 : 55;
   }, [dimensions?.width, isVertical]);
 
   const handleTouchEvents = React.useMemo(() => ({

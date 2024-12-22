@@ -93,7 +93,6 @@ export const useSceneStore = create<StoreState>()(
               if (state.currentIndex === index) return
               state.currentIndex = index
               state.isTransitioning = true
-              state.isExpanded = false
               state.error = null
             },
             false,
@@ -112,13 +111,18 @@ export const useSceneStore = create<StoreState>()(
         toggleExpanded: () =>
           set(
             (state) => {
-              if (state.isExpanded) {
-                state.isExpanded = false
-                state.isIndexView = state.previousIsIndexView
+              const wasExpanded = state.isExpanded;
+              const wasIndexView = state.isIndexView;
+              
+              if (wasExpanded) {
+                // expanded 상태가 해제될 때
+                state.isExpanded = false;
+                state.isIndexView = state.previousIsIndexView;
               } else {
-                state.isExpanded = true
-                state.isIndexView = false
-                state.previousIsIndexView = state.isIndexView
+                // expanded 상태가 활성화될 때
+                state.isExpanded = true;
+                state.previousIsIndexView = wasIndexView;
+                state.isIndexView = false;
               }
             },
             false,
@@ -137,10 +141,10 @@ export const useSceneStore = create<StoreState>()(
         setIndexView: (isIndexView: boolean) =>
           set(
             (state) => {
-              state.isIndexView = isIndexView
-              state.previousIsIndexView = isIndexView
-              state.isExpanded = false
-              state.scrollCompleted = false
+              state.isIndexView = isIndexView;
+              state.previousIsIndexView = isIndexView;
+              state.isExpanded = false;
+              state.scrollCompleted = false;
             },
             false,
             'setIndexView'
@@ -149,9 +153,20 @@ export const useSceneStore = create<StoreState>()(
         setExpanded: (isExpanded: boolean) =>
           set(
             (state) => {
-              state.isExpanded = isExpanded
-              state.isIndexView = isExpanded ? false : state.previousIsIndexView
-              state.scrollCompleted = false
+              const wasExpanded = state.isExpanded;
+              
+              state.isExpanded = isExpanded;
+              
+              if (!isExpanded && wasExpanded) {
+                // expanded 상태가 해제될 때만 이전 상태로 복원
+                state.isIndexView = state.previousIsIndexView;
+              } else if (isExpanded) {
+                // expanded 상태가 활성화될 때
+                state.previousIsIndexView = state.isIndexView;
+                state.isIndexView = false;
+              }
+              
+              state.scrollCompleted = false;
             },
             false,
             'setExpanded'
@@ -212,6 +227,8 @@ export const useSceneStore = create<StoreState>()(
         partialize: (state) => ({
           isVertical: state.isVertical,
           currentIndex: state.currentIndex,
+          isIndexView: state.isIndexView,
+          previousIsIndexView: state.previousIsIndexView,
         }),
       }
     ),
