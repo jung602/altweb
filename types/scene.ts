@@ -38,11 +38,5 @@ export interface Label {
       intensity: number
     }
   }
-  background: {
-    color: string
-  }
-  environment: {
-    preset: 'none' | 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby'
-  }
   labels?: Label[]
  }

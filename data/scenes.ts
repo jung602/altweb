@@ -18,14 +18,8 @@ export const scenesData: SceneConfig[] = [
     lights: {
       directional: {
         position: [5, 10, 5],
-        intensity: 10
+        intensity: 3
       }
-    },
-    background: {
-      color: '#000000'
-    },
-    environment: {
-      preset: 'none'
     },
     labels: [
       {
@@ -57,14 +51,8 @@ export const scenesData: SceneConfig[] = [
     lights: {
       directional: {
         position: [5, 10, 5],
-        intensity: 10
+        intensity: 3
       }
-    },
-    background: {
-      color: '#000000'
-    },
-    environment: {
-      preset: 'none'
     },
     labels: [
       {
