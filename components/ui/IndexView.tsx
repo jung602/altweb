@@ -50,7 +50,7 @@ export const IndexView = () => {
 
   return (
     <div className="fixed inset-0 w-[100dvw] h-[100dvh] pointer-events-none overflow-auto pt-20">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-1 p-1 max-w-[1400px] mx-auto pointer-events-auto">        
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-1 p-1 max-w-[1400px] mx-auto pointer-events-auto">        
         {scenes.map((scene, index) => (
           <div
             key={scene.id}

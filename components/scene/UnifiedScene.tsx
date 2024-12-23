@@ -31,6 +31,15 @@ const SceneWrapper = React.memo(({
   isInitialized: boolean;
   isExpanded: boolean;
 }) => {
+  const [isLoaded, setIsLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const distance = index - currentIndex;
   const shouldRender = Math.abs(distance) <= 1;
   
@@ -68,7 +77,13 @@ const SceneWrapper = React.memo(({
         }}
       />
       
-      <div className="w-full h-full flex items-center justify-center">
+      <div 
+        className="w-full h-full flex items-center justify-center"
+        style={{
+          opacity: isLoaded ? 1 : 0,
+          transition: 'opacity 1000ms ease-in-out'
+        }}
+      >
         <Scene 
           config={scene} 
           isActive={true}
@@ -121,6 +136,26 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
     toggleExpanded();
   }, [toggleExpanded]);
 
+  const handleScroll = useCallback((event: Event) => {
+    const container = event.target as HTMLElement;
+    if (container.scrollTop === 0) {
+      container.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.addEventListener('scroll', handleScroll);
+      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    return () => {
+      if (containerRef.current) {
+        containerRef.current.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [currentIndex, handleScroll]);
+
   React.useEffect(() => {
     return () => {
       scenes.forEach(scene => {
@@ -142,7 +177,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
     <>
       <div 
         ref={containerRef} 
-        className="fixed inset-0 overflow-hidden"
+        className={`fixed inset-0 ${isExpanded ? 'overflow-y-scroll overflow-x-hidden' : 'overflow-hidden'}`}
         {...handleTouchEvents}
       >
         {isExpanded && (
