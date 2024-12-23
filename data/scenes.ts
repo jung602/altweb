@@ -18,7 +18,7 @@ export const scenesData: SceneConfig[] = [
     },
     lights: {
       directional: {
-        position: [5, 10, 5],
+        position: [4, 1.2, 5],
         intensity: 3
       }
     },
@@ -53,7 +53,7 @@ export const scenesData: SceneConfig[] = [
     lights: {
       directional: {
         position: [5, 10, 5],
-        intensity: 3
+        intensity: 10
       }
     },
     labels: [

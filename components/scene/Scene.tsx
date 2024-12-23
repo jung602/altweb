@@ -178,8 +178,6 @@ const SceneContent = memo(({ config, zoom }: { config: SceneConfig; zoom: number
         onStart={handleInteractionStart}
         onEnd={handleInteractionEnd}
       />
-      
-      <ambientLight intensity={0.5} />
     </>
   );
 });

@@ -32,19 +32,16 @@ const Alt1Component = (props: GroupProps) => {
   const { useGLTF } = require('@react-three/drei')
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
   const { nodes, materials } = useGLTF(`${basePath}/gltf/klar.glb`) as GLTFResult
-  
   return (
     <group {...props} dispose={null}>
-      <group>
-        <mesh geometry={nodes.Plane020.geometry} material={materials.walls} />
-        <mesh geometry={nodes.Plane020_1.geometry} material={materials.desk} />
-        <mesh geometry={nodes.Plane020_2.geometry} material={materials.bed} />
-        <mesh geometry={nodes.Plane020_3.geometry} material={materials.tv} />
-        <mesh geometry={nodes.Plane020_4.geometry} material={materials.mirror} />
-        <mesh geometry={nodes.Plane020_5.geometry} material={materials.metal} />
-        <mesh geometry={nodes.Plane020_6.geometry} material={materials.black} />
-        <mesh geometry={nodes.Plane020_7.geometry} material={materials.glassforgltf} />
-      </group>
+      <mesh geometry={nodes.Plane020.geometry} material={materials.walls} />
+      <mesh geometry={nodes.Plane020_1.geometry} material={materials.desk} />
+      <mesh geometry={nodes.Plane020_2.geometry} material={materials.bed} />
+      <mesh geometry={nodes.Plane020_3.geometry} material={materials.tv} />
+      <mesh geometry={nodes.Plane020_4.geometry} material={materials.mirror} />
+      <mesh geometry={nodes.Plane020_5.geometry} material={materials.metal} />
+      <mesh geometry={nodes.Plane020_6.geometry} material={materials.black} />
+      <mesh geometry={nodes.Plane020_7.geometry} material={materials.glassforgltf} />
     </group>
   )
 }
