@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, ArrowDown } from 'lucide-react';
-import { useSceneStore } from '../store/sceneStore';
-import Info from './Info';
+import { useSceneStore } from '../../store/sceneStore';
+import Info from '../ui/Info';
 
 interface NavigationProps {
   onLayoutChange: (isVertical: boolean) => void;

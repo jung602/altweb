@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSceneStore } from '../store/sceneStore';
-import { SceneConfig } from '../types/scene';
+import { useSceneStore } from '../../store/sceneStore';
+import { SceneConfig } from '../../types/scene';
 import { MapPin } from 'lucide-react';
 
 const TitleItem = ({ 

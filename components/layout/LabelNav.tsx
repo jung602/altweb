@@ -1,6 +1,6 @@
 // components//LavelNav.tsx
 import { useState } from 'react';
-import { useSceneStore } from '../store/sceneStore';
+import { useSceneStore } from '../../store/sceneStore';
 import { ArrowRight, ArrowDown, ArrowLeft } from 'lucide-react';
 
 export const LabelNavigation = () => {

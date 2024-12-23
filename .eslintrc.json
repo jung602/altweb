@@ -1,0 +1,12 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "prettier"
+  ],
+  "rules": {
+    "react/no-unused-prop-types": "warn",
+    "react/require-default-props": "off",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "import/prefer-default-export": "off"
+  }
+} 

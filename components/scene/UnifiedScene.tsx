@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo } from 'react';
 import { Scene } from './Scene';
-import { HorizontalTitles, VerticalTitles } from './Titles';
-import { useSceneScroll } from '../hooks/useSceneScroll';
-import { useSceneStore } from '../store/sceneStore';
+import { HorizontalTitles, VerticalTitles } from '../ui/Titles';
+import { useSceneScroll } from '../../hooks/useSceneScroll';
+import { useSceneStore } from '../../store/sceneStore';
 import { X } from 'lucide-react';
-import { LabelNavigation } from './LabelNav';
-import { IndexView } from './IndexView';
-import type { SceneConfig } from '../types/scene';
+import { LabelNavigation } from '../layout/LabelNav';
+import { IndexView } from '../ui/IndexView';
+import type { SceneConfig } from '../../types/scene';
 
 interface UnifiedSceneProps {
   isVertical?: boolean;

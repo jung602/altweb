@@ -1,4 +1,4 @@
-import { useSceneStore } from '../store/sceneStore';
+import { useSceneStore } from '../../store/sceneStore';
 import { MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
 

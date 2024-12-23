@@ -1,6 +1,6 @@
 import { useGLTF } from '@react-three/drei'
 import { useEffect } from 'react'
-import { getSharedMaterial } from '../materials/sharedMaterials'
+import { getSharedMaterial } from '../../materials/sharedMaterials'
 import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
 import { GroupProps } from '@react-three/fiber'

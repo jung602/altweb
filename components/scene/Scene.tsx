@@ -1,10 +1,10 @@
 import dynamic from 'next/dynamic';
 import { Suspense, useRef, useEffect, useState, useCallback, memo, useMemo } from 'react';
 import * as THREE from 'three';
-import { useSceneStore } from '../store/sceneStore';
-import type { SceneConfig } from '../types/scene';
-import { ModelComponents } from '../types/scene';
-import Label from './Label';
+import { useSceneStore } from '../../store/sceneStore';
+import type { SceneConfig } from '../../types/scene';
+import { ModelComponents } from '../../types/scene';
+import Label from '../ui/Label';
 import { useSpring, animated } from '@react-spring/three';
 import { Stats, useGLTF } from '@react-three/drei';
 import { ModelLoader } from './ModelLoader';
@@ -14,23 +14,45 @@ const DynamicCanvas = dynamic(() => import('@react-three/fiber').then(mod => mod
   ssr: false
 });
 
+/**
+ * Scene 컴포넌트의 props 인터페이스
+ * @interface SceneProps
+ */
 interface SceneProps {
+  /** 씬 설정 객체 */
   config: SceneConfig;
+  /** 씬의 활성화 상태 */
   isActive: boolean;
+  /** 씬의 너비 (선택적) */
   width?: number;
+  /** 씬의 높이 (선택적) */
   height?: number;
 }
 
+/**
+ * 3D 모델 props 인터페이스
+ * @interface ModelProps
+ */
 interface ModelProps {
+  /** 모델의 URL */
   url: string;
   [key: string]: any;
 }
 
+/**
+ * 컨트롤 props 인터페이스
+ * @interface ControlsProps
+ */
 interface ControlsProps {
+  /** 확장 상태 여부 */
   isExpanded: boolean;
+  /** 상호작용 중인지 여부 */
   isInteracting: boolean;
+  /** 줌 레벨 */
   zoom: number;
+  /** 상호작용 시작 핸들러 */
   onStart: () => void;
+  /** 상호작용 종료 핸들러 */
   onEnd: () => void;
 }
 
@@ -38,37 +60,41 @@ interface ControlsProps {
 const Model = memo(({ url, ...props }: ModelProps) => {
   useGLTF.preload(url);
   return <ModelLoader url={url} {...props} />;
-});
+}, (prevProps, nextProps) => prevProps.url === nextProps.url);
 
 // OrbitControls를 별도 컴포넌트로 분리
 const Controls = memo(({ isExpanded, isInteracting, zoom, onStart, onEnd }: ControlsProps) => {
   const { OrbitControls } = require('@react-three/drei');
   
-  return (
-    <OrbitControls 
-      enabled={true}
-      enableZoom={isExpanded}
-      enablePan={false}
-      enableRotate={true}
-      autoRotate={!isInteracting && !isExpanded}
-      autoRotateSpeed={0.1}
-      minPolarAngle={isExpanded ? 0 : Math.PI / 3}
-      maxPolarAngle={isExpanded ? Math.PI : Math.PI / 3}
-      minAzimuthAngle={-Infinity}
-      maxAzimuthAngle={Infinity}
-      minZoom={zoom * 0.7}
-      maxZoom={zoom * 1.2}
-      onStart={onStart}
-      onEnd={onEnd}
-      touches={{
-        ONE: THREE.TOUCH.ROTATE,
-        TWO: THREE.TOUCH.DOLLY_ROTATE
-      }}
-    />
-  );
+  // OrbitControls 설정을 useMemo로 최적화
+  const controlsConfig = useMemo(() => ({
+    enabled: true,
+    enableZoom: isExpanded,
+    enablePan: false,
+    enableRotate: true,
+    autoRotate: !isInteracting && !isExpanded,
+    autoRotateSpeed: 0.1,
+    minPolarAngle: isExpanded ? 0 : Math.PI / 3,
+    maxPolarAngle: isExpanded ? Math.PI : Math.PI / 3,
+    minAzimuthAngle: -Infinity,
+    maxAzimuthAngle: Infinity,
+    minZoom: zoom * 0.7,
+    maxZoom: zoom * 1.2,
+    touches: {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.DOLLY_ROTATE
+    }
+  }), [isExpanded, isInteracting, zoom]);
+  
+  return <OrbitControls {...controlsConfig} onStart={onStart} onEnd={onEnd} />;
+}, (prevProps, nextProps) => {
+  return prevProps.isExpanded === nextProps.isExpanded &&
+    prevProps.isInteracting === nextProps.isInteracting &&
+    prevProps.zoom === nextProps.zoom;
 });
 
-function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
+// SceneContent를 메모이제이션
+const SceneContent = memo(({ config, zoom }: { config: SceneConfig; zoom: number }) => {
   const { OrthographicCamera } = require('@react-three/drei');
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const setModelHovered = useSceneStore((state) => state.setModelHovered);
@@ -91,9 +117,9 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
     }
   });
 
-  // 디바운스된 호버 핸들러
-  const debouncedHoverHandler = useCallback(
-    debounce((hovering: boolean) => {
+  // 디바운스된 호버 핸들러를 useCallback과 함께 메모이제이션
+  const debouncedHoverHandler = useMemo(
+    () => debounce((hovering: boolean) => {
       if (!isMobileDevice.current) {
         setModelHovered(hovering && isExpanded);
       }
@@ -101,18 +127,34 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
     [isExpanded, setModelHovered]
   );
 
+  // 클린업 함수 추가
+  useEffect(() => {
+    return () => {
+      debouncedHoverHandler.cancel();
+    };
+  }, [debouncedHoverHandler]);
+
   const handleInteractionStart = useCallback(() => setIsInteracting(true), []);
   const handleInteractionEnd = useCallback(() => setIsInteracting(false), []);
 
+  // 카메라 설정을 메모이제이션
+  const cameraProps = useMemo(() => ({
+    makeDefault: true,
+    position: config.camera.position,
+    zoom,
+    near: 0.1,
+    far: 1000
+  }), [config.camera.position, zoom]);
+
+  // 라이트 설정을 메모이제이션
+  const lightProps = useMemo(() => ({
+    position: config.lights.directional.position,
+    intensity: config.lights.directional.intensity
+  }), [config.lights.directional]);
+
   return (
     <>
-      <OrthographicCamera
-        makeDefault
-        position={config.camera.position}
-        zoom={zoom}
-        near={0.1}
-        far={1000}
-      />
+      <OrthographicCamera {...cameraProps} />
       
       <group>
         <animated.group 
@@ -121,10 +163,7 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
           onPointerEnter={() => debouncedHoverHandler(true)}
           onPointerLeave={() => debouncedHoverHandler(false)}
         >
-          <directionalLight
-            position={config.lights.directional.position}
-            intensity={config.lights.directional.intensity}
-          />
+          <directionalLight {...lightProps} />
           <Model url={modelPath} />
           {isExpanded && config.labels?.map((label, index) => (
             <Label key={index} {...label} />
@@ -143,7 +182,7 @@ function SceneContent({ config, zoom }: { config: SceneConfig; zoom: number }) {
       <ambientLight intensity={0.5} />
     </>
   );
-}
+});
 
 // Scene 컴포넌트도 메모이제이션
 export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: SceneProps) => {
@@ -154,9 +193,9 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
   const startPos = useRef({ x: 0, y: 0 });
   const [isHoveringCanvas, setIsHoveringCanvas] = useState(false);
 
-  // 디바운스된 리사이즈 핸들러
-  const handleResize = useCallback(
-    debounce(() => {
+  // 디바운스된 리사이즈 핸들러를 useMemo로 최적화
+  const handleResize = useMemo(
+    () => debounce(() => {
       const baseZoom = config.camera.fov;
       const scaleFactor = Math.min(width, height) / 1000;
       setZoom(baseZoom * scaleFactor * (isExpanded ? 1.15 : 1));
@@ -171,12 +210,13 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
     }
   }, [isExpanded, isHoveringCanvas]);
 
+  // 클린업 함수에 handleResize.cancel 추가
   useEffect(() => {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
-      handleResize.cancel(); // 디바운스 핸들러 취소
+      handleResize.cancel();
     };
   }, [handleResize]);
 
@@ -187,23 +227,38 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
     }
   }, [isExpanded, handleScroll]);
 
-  const handleInteraction = {
-    pointerDown: useCallback((e: React.PointerEvent) => {
+  // 상호작용 핸들러를 useMemo로 최적화
+  const handleInteraction = useMemo(() => ({
+    pointerDown: (e: React.PointerEvent) => {
       isDragging.current = false;
       startPos.current = { x: e.clientX, y: e.clientY };
-    }, []),
-    pointerMove: useCallback((e: React.PointerEvent) => {
+    },
+    pointerMove: (e: React.PointerEvent) => {
       if (!startPos.current) return;
       const deltaX = Math.abs(e.clientX - startPos.current.x);
       const deltaY = Math.abs(e.clientY - startPos.current.y);
       if (deltaX > 5 || deltaY > 5) isDragging.current = true;
-    }, []),
-    pointerUp: useCallback((e: React.PointerEvent) => {
+    },
+    pointerUp: (e: React.PointerEvent) => {
       if (e.target instanceof HTMLElement && e.target.closest('[data-label]')) return;
       if (!isDragging.current && isActive) toggleExpanded();
       startPos.current = { x: 0, y: 0 };
-    }, [isActive, toggleExpanded])
-  };
+    }
+  }), [isActive, toggleExpanded]);
+
+  // Canvas 설정을 메모이제이션
+  const canvasConfig = useMemo(() => ({
+    flat: true,
+    gl: {
+      antialias: true,
+      preserveDrawingBuffer: true,
+      alpha: true,
+      powerPreference: "high-performance",
+      toneMapping: THREE.ACESFilmicToneMapping,
+      toneMappingExposure: 1.2,
+    },
+    dpr: [1, 2] as [number, number]
+  }), []);
 
   return (
     <div 
@@ -217,18 +272,7 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
         onMouseEnter={() => setIsHoveringCanvas(true)}
         onMouseLeave={() => setIsHoveringCanvas(false)}
       >
-        <DynamicCanvas
-          flat
-          gl={{
-            antialias: true,
-            preserveDrawingBuffer: true,
-            alpha: true,
-            powerPreference: "high-performance",
-            toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 1.2,
-          }}
-          dpr={[1, 2]} // 디바이스 픽셀 비율 최적화
-        >
+        <DynamicCanvas {...canvasConfig}>
           {process.env.NODE_ENV === 'development' && <Stats />}
           <Suspense fallback={null}>
             <SceneContent config={config} zoom={zoom} />
@@ -237,4 +281,9 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
       </div>
     </div>
   );
+}, (prevProps, nextProps) => {
+  return prevProps.isActive === nextProps.isActive &&
+    prevProps.width === nextProps.width &&
+    prevProps.height === nextProps.height &&
+    prevProps.config === nextProps.config;
 });
