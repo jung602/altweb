@@ -2,8 +2,9 @@ import { SceneConfig } from '../types/scene';
 
 export const scenesData: SceneConfig[] = [
   {
-    id: 1,
+    id: "1",
     title: "Klar's Room",
+    description: "A cozy room in Tokyo",
     location: "Tokyo, Japan",
     model: {
       component: "Alt1",
@@ -17,8 +18,8 @@ export const scenesData: SceneConfig[] = [
     },
     lights: {
       directional: {
-        position: [5, 10, 5],
-        intensity: 3
+        position: [5, 6.5, 10],
+        intensity: 10
       }
     },
     labels: [
@@ -35,8 +36,9 @@ export const scenesData: SceneConfig[] = [
     ]
   },
   {
-    id: 2,
+    id: "2",
     title: "Lee's Room",
+    description: "A modern space in Seoul",
     location: "Seoul, South Korea",
     model: {
       component: "Alt2",
@@ -51,7 +53,7 @@ export const scenesData: SceneConfig[] = [
     lights: {
       directional: {
         position: [5, 10, 5],
-        intensity: 3
+        intensity: 5
       }
     },
     labels: [
