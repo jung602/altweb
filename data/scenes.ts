@@ -4,8 +4,8 @@ export const scenesData: SceneConfig[] = [
   {
     id: "1",
     title: "Klar's Room",
-    description: "A cozy room in Tokyo",
     location: "Tokyo, Japan",
+    description: "Klar's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment.    Klar's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment. Klar's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment. Klar's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment.",
     model: {
       component: "Alt1",
       scale: 1,
@@ -18,8 +18,8 @@ export const scenesData: SceneConfig[] = [
     },
     lights: {
       directional: {
-        position: [5, 6.5, 10],
-        intensity: 10
+        position: [4, 1.2, 5],
+        intensity: 3
       }
     },
     labels: [
@@ -38,8 +38,8 @@ export const scenesData: SceneConfig[] = [
   {
     id: "2",
     title: "Lee's Room",
-    description: "A modern space in Seoul",
     location: "Seoul, South Korea",
+    description: "Lee's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment.",
     model: {
       component: "Alt2",
       scale: .9,
@@ -53,7 +53,7 @@ export const scenesData: SceneConfig[] = [
     lights: {
       directional: {
         position: [5, 10, 5],
-        intensity: 5
+        intensity: 10
       }
     },
     labels: [
@@ -69,5 +69,4 @@ export const scenesData: SceneConfig[] = [
       }
     ]
   },
-  
 ];

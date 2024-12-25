@@ -1,10 +1,14 @@
 import * as THREE from 'three';
 
 // 메탈 메터리얼
-export const metalMaterial = new THREE.MeshStandardMaterial({
-  metalness: 1.0,
-  roughness: 0.2,
-  color: 0x8c8c8c,
+export const metalMaterial = new THREE.MeshPhysicalMaterial({
+  metalness: 0.4,
+  roughness: 0.1,
+  color: 0xeeeeee,
+  envMapIntensity: 1.5,
+  clearcoat: 0.1,
+  clearcoatRoughness: 0.1,
+  reflectivity: 1,
 });
 
 // 유리 메터리얼
