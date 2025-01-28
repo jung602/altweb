@@ -1,8 +1,5 @@
 {
-  "extends": [
-    "next/core-web-vitals",
-    "prettier"
-  ],
+  "extends": ["next"],
   "rules": {
     "react/no-unused-prop-types": "warn",
     "react/require-default-props": "off",

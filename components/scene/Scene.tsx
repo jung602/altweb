@@ -3,7 +3,7 @@ import { Suspense, useRef, useEffect, useState, useCallback, memo, useMemo } fro
 import * as THREE from 'three';
 import { useSceneStore } from '../../store/sceneStore';
 import type { SceneConfig } from '../../types/scene';
-import { ModelComponents } from '../../types/scene';
+import type { ModelComponentType } from '../../types/scene';
 import Label from '../ui/Label';
 import { useSpring, animated } from '@react-spring/three';
 import { Stats, useGLTF } from '@react-three/drei';
@@ -57,10 +57,10 @@ interface ControlsProps {
 }
 
 // 모델 컴포넌트를 별도로 분리하여 메모이제이션
-const Model = memo(({ url, ...props }: ModelProps) => {
+const Model = memo(({ url, component, ...props }: ModelProps & { component: ModelComponentType }) => {
   useGLTF.preload(url);
-  return <ModelLoader url={url} {...props} />;
-}, (prevProps, nextProps) => prevProps.url === nextProps.url);
+  return <ModelLoader url={url} component={component} {...props} />;
+}, (prevProps, nextProps) => prevProps.url === nextProps.url && prevProps.component === nextProps.component);
 
 // OrbitControls를 별도 컴포넌트로 분리
 const Controls = memo(({ isExpanded, isInteracting, zoom, onStart, onEnd }: ControlsProps) => {

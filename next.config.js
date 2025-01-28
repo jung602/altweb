@@ -10,7 +10,6 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    appDir: false
   },
   assetPrefix: isGithubActions ? `/${repo}/` : '',
   basePath: isGithubActions ? `/${repo}` : '',
