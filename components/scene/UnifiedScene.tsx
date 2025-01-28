@@ -61,22 +61,10 @@ const SceneWrapper = React.memo(({
         transition: isInitialized ? 'all 800ms cubic-bezier(0.4, 0.0, 0.2, 1)' : 'none',
         willChange: 'transform',
         zIndex,
-        opacity: isExpanded && !isCenter ? 0 : 1,
+        opacity: isExpanded && !isCenter ? 0 : isCenter ? 1 : 0.2,
         visibility: isExpanded && !isCenter ? 'hidden' : 'visible'
       }}
     >
-      <div 
-        className="absolute inset-0 z-[15] bg-black/80 backdrop-blur-md"
-        style={{
-          opacity: isCenter ? 0 : Math.abs(distance) * 0.8,
-          [isVertical ? 'height' : 'width']: isCenter ? 0 : '100%',
-          transition: isInitialized 
-            ? 'opacity 800ms cubic-bezier(0.4, 0.0, 0.2, 1), width 0ms linear 0ms'
-            : 'none',
-          pointerEvents: isCenter ? 'none' : 'auto'
-        }}
-      />
-      
       <div 
         className="w-full h-full flex items-center justify-center"
         style={{
@@ -177,7 +165,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
     <>
       <div 
         ref={containerRef} 
-        className={`fixed inset-0 ${isExpanded ? 'overflow-y-scroll overflow-x-hidden' : 'overflow-hidden'}`}
+        className={`fixed inset-0 overflow-hidden`}
         {...handleTouchEvents}
       >
         {isExpanded && (
