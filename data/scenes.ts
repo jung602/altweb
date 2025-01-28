@@ -71,13 +71,13 @@ export const scenesData: SceneConfig[] = [
   },
   {
     id: "3",
-    title: "Park's Room",
-    location: "Busan, South Korea",
-    description: "Park's Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
+    title: "Vitra Room",
+    location: "Birsfelden, Switzerland",
+    description: "Vitra Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt3",
       scale: .9,
-      position: [-.25, -1.2, 0],
+      position: [0, -1.2, 0],
       rotation: [0, 0, 0],
     },
     camera: {
@@ -87,7 +87,7 @@ export const scenesData: SceneConfig[] = [
     lights: {
       directional: {
         position: [5, 10, 5],
-        intensity: 10
+        intensity: 0
       }
     },
     labels: [
