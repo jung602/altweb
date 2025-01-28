@@ -42,7 +42,7 @@ export const scenesData: SceneConfig[] = [
     description: "Lee's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment.",
     model: {
       component: "Alt2",
-      scale: .9,
+      scale: .95,
       position: [-.25, -1.2, 0],
       rotation: [0, 0, 0],
     },

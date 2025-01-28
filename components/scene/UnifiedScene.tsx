@@ -34,14 +34,15 @@ const SceneWrapper = React.memo(({
   const [isLoaded, setIsLoaded] = React.useState(false);
 
   React.useEffect(() => {
+    const loadDelay = Math.abs(index - currentIndex) * 100;
     const timer = setTimeout(() => {
       setIsLoaded(true);
-    }, 100);
+    }, loadDelay);
     return () => clearTimeout(timer);
-  }, []);
+  }, [index, currentIndex]);
 
   const distance = index - currentIndex;
-  const shouldRender = Math.abs(distance) <= 1;
+  const shouldRender = Math.abs(distance) <= 2;
   
   if (!shouldRender) return null;
 
