@@ -104,7 +104,7 @@ const SceneContent = memo(({ config, zoom }: { config: SceneConfig; zoom: number
 
   // GLB 파일 경로 생성
   const modelPath = useMemo(() => {
-    const modelName = config.model.component === 'Alt1' ? 'klar' : 'lees';
+    const modelName = config.model.component.toLowerCase();
     return `${basePath}/gltf/${modelName}.glb`;
   }, [basePath, config.model.component]);
 
@@ -164,7 +164,7 @@ const SceneContent = memo(({ config, zoom }: { config: SceneConfig; zoom: number
           onPointerLeave={() => debouncedHoverHandler(false)}
         >
           <directionalLight {...lightProps} />
-          <Model url={modelPath} />
+          <ModelLoader component={config.model.component} />
           {isExpanded && config.labels?.map((label, index) => (
             <Label key={index} {...label} />
           ))}

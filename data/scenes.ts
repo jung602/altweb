@@ -69,4 +69,38 @@ export const scenesData: SceneConfig[] = [
       }
     ]
   },
+  {
+    id: "3",
+    title: "Park's Room",
+    location: "Busan, South Korea",
+    description: "Park's Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
+    model: {
+      component: "Alt3",
+      scale: .9,
+      position: [-.25, -1.2, 0],
+      rotation: [0, 0, 0],
+    },
+    camera: {
+      position: [5, 6.5, -10],
+      fov: 160
+    },
+    lights: {
+      directional: {
+        position: [5, 10, 5],
+        intensity: 10
+      }
+    },
+    labels: [
+      {
+        title: "Shelf",
+        content: "Custom Made",
+        position: [1, 1, 0]
+      },
+      {
+        title: "Chair",
+        content: "Herman Miller",
+        position: [0, .5, 0]
+      }
+    ]
+  },
 ];

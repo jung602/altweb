@@ -66,8 +66,7 @@ const useWindowSize = (isHorizontal: boolean) => {
 
 const calculateOpacity = (distance: number) => {
   if (distance === 0) return 1;
-  if (Math.abs(distance) === 1) return 0.6;
-  return 0;
+  return 0.6;
 };
 
 export function HorizontalTitles() {

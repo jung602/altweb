@@ -17,7 +17,9 @@ export const useSceneScroll = () => {
   const touchStartX = useRef(0);
   const isMobileDevice = useRef(false);
   const lastScrollTime = useRef(0);
-  const scrollThreshold = 500; // ms between scroll events
+  const accumulatedDelta = useRef(0);
+  const scrollThreshold = 800; // 스크롤 간격 시간을 800ms로 증가
+  const deltaThreshold = 100; // 스크롤 델타값 임계점 추가
 
   const handleScroll = useCallback((e: WheelEvent) => {
     if (isExpanded || isModelHovered) return;
@@ -25,8 +27,11 @@ export const useSceneScroll = () => {
     e.preventDefault();
     const now = Date.now();
     
-    // Throttle scroll events
-    if (now - lastScrollTime.current < scrollThreshold) return;
+    // 누적 델타값 계산
+    accumulatedDelta.current += Math.abs(e.deltaY);
+    
+    // 스크롤 이벤트 쓰로틀링 및 누적 델타값 체크
+    if (now - lastScrollTime.current < scrollThreshold || accumulatedDelta.current < deltaThreshold) return;
     
     const delta = e.deltaY;
     if (Math.abs(delta) > 0) {
@@ -36,6 +41,7 @@ export const useSceneScroll = () => {
       if (newIndex >= 0 && newIndex < scenes.length) {
         setCurrentScene(newIndex);
         lastScrollTime.current = now;
+        accumulatedDelta.current = 0; // 누적값 리셋
       }
     }
   }, [currentIndex, scenes.length, setCurrentScene, isModelHovered, isExpanded]);
@@ -45,6 +51,7 @@ export const useSceneScroll = () => {
       if (isExpanded) return;
       touchStartY.current = e.touches[0].clientY;
       touchStartX.current = e.touches[0].clientX;
+      accumulatedDelta.current = 0; // 터치 시작시 누적값 리셋
     },
     move: (e: React.TouchEvent) => {
       if (isExpanded) return;
@@ -57,7 +64,8 @@ export const useSceneScroll = () => {
       const deltaY = touchStartY.current - currentY;
       const deltaX = touchStartX.current - currentX;
       
-      const threshold = isMobileDevice.current ? 50 : 80;
+      // 터치 민감도 조절
+      const threshold = isMobileDevice.current ? 80 : 120;
       
       if (Math.abs(deltaY) > threshold || Math.abs(deltaX) > threshold) {
         const direction = deltaY > 0 ? 1 : -1;
@@ -74,6 +82,7 @@ export const useSceneScroll = () => {
     end: () => {
       touchStartY.current = 0;
       touchStartX.current = 0;
+      accumulatedDelta.current = 0; // 터치 종료시 누적값 리셋
     }
   };
 

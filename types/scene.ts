@@ -1,21 +1,16 @@
 // types/scene.ts
-import { Alt1 } from '../models/alt1'
-import { Alt2 } from '../models/alt2'
 import { BufferGeometry, Material } from 'three';
 
-export const ModelComponents = {
-  Alt1,
-  Alt2,
-} as const
+export const MODEL_COMPONENTS = ['Alt1', 'Alt2', 'Alt3'] as const;
+export type ModelComponentType = typeof MODEL_COMPONENTS[number];
 
-// types/scene.ts
 export interface Label {
   title: string
   content: string
   position: [number, number, number]
- }
+}
  
- export interface SceneConfig {
+export interface SceneConfig {
   id: string;
   title: string;
   description: string;
@@ -23,7 +18,7 @@ export interface Label {
   material?: Material;
   location: string
   model: {
-    component: keyof typeof ModelComponents
+    component: ModelComponentType
     scale: number
     position: [number, number, number]
     rotation: [number, number, number]
@@ -39,4 +34,4 @@ export interface Label {
     }
   }
   labels?: Label[]
- }
+}
