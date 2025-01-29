@@ -76,8 +76,8 @@ export const scenesData: SceneConfig[] = [
     description: "Vitra Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt3",
-      scale: .9,
-      position: [0, -1.2, 0],
+      scale: .85,
+      position: [0, -1, 0],
       rotation: [0, 0, 0],
     },
     camera: {

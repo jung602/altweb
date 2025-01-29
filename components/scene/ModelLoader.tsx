@@ -4,6 +4,8 @@ import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
 import { GroupProps } from '@react-three/fiber'
 import { ModelComponentType, MODEL_COMPONENTS } from "../../types/scene"
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 // 모델 프리로드 상태를 추적
 const MODEL_PRELOAD_MAP: Record<ModelComponentType, boolean> = {
@@ -19,8 +21,10 @@ interface ModelLoaderProps {
 
 export function ModelLoader({ component, ...props }: ModelLoaderProps) {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-  const modelPath = `${basePath}/gltf/${component.toLowerCase()}.glb`
-  const { scene } = useGLTF(modelPath)
+  const modelPath = `${basePath}/gltf/compressed_${component.toLowerCase()}.glb`
+  
+  const { scene } = useGLTF(modelPath, true)
+  
   const hasPreloaded = useRef(false)
 
   // 첫 로드 시 다음 모델 미리 로드
