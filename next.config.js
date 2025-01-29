@@ -14,7 +14,7 @@ const nextConfig = {
   assetPrefix: isGithubActions ? `/${repo}/` : '',
   basePath: isGithubActions ? `/${repo}` : '',
   env: {
-    NEXT_PUBLIC_BASE_PATH: process.env.NEXT_PUBLIC_BASE_PATH
+    NEXT_PUBLIC_BASE_PATH: isGithubActions ? `/${repo}` : ''
   },
   
   // GLB 파일 처리를 위한 webpack 설정
@@ -23,8 +23,8 @@ const nextConfig = {
       test: /\.(glb|gltf)$/,
       type: 'asset/resource',
       generator: {
-        filename: 'static/chunks/[path][name].[hash][ext]',
-        publicPath: isGithubActions ? `/${repo}/_next/` : '/_next/',
+        filename: 'static/gltf/[name][ext]',
+        publicPath: isGithubActions ? `/${repo}/` : '/',
       }
     });
 

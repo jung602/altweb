@@ -18,7 +18,8 @@ interface ModelLoaderProps {
 }
 
 export function ModelLoader({ component, ...props }: ModelLoaderProps) {
-  const modelPath = `/gltf/${component.toLowerCase()}.glb`
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+  const modelPath = `${basePath}/gltf/${component.toLowerCase()}.glb`
   const { scene } = useGLTF(modelPath)
   const hasPreloaded = useRef(false)
 
@@ -30,13 +31,13 @@ export function ModelLoader({ component, ...props }: ModelLoaderProps) {
       
       if (nextIndex < MODEL_COMPONENTS.length) {
         const nextComponent = MODEL_COMPONENTS[nextIndex];
-        const nextModelPath = `/gltf/${nextComponent.toLowerCase()}.glb`;
+        const nextModelPath = `${basePath}/gltf/${nextComponent.toLowerCase()}.glb`;
         useGLTF.preload(nextModelPath);
         MODEL_PRELOAD_MAP[component] = true;
         hasPreloaded.current = true;
       }
     }
-  }, [component]);
+  }, [component, basePath]);
 
   // 메시 최적화
   useEffect(() => {
