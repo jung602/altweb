@@ -77,7 +77,7 @@ export function HorizontalTitles() {
   const windowWidth = useWindowSize(true);
 
   const titleSpacing = useMemo(() => {
-    return windowWidth < 768 ? 130 : 150;
+    return windowWidth < 768 ? 180 : 220;
   }, [windowWidth]);
 
   return (

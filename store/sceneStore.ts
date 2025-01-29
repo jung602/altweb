@@ -226,7 +226,6 @@ export const useSceneStore = create<StoreState>()(
         version: 1,
         partialize: (state) => ({
           isVertical: state.isVertical,
-          currentIndex: state.currentIndex,
           isIndexView: state.isIndexView,
           previousIsIndexView: state.previousIsIndexView,
         }),
