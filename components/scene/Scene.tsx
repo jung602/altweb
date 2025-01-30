@@ -253,7 +253,8 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
       alpha: true,
       powerPreference: "high-performance",
       toneMapping: THREE.ACESFilmicToneMapping,
-      toneMappingExposure: 1.2,
+      toneMappingExposure:1,
+      outputColorSpace: THREE.LinearSRGBColorSpace,
     },
     dpr: [1, 2] as [number, number]
   }), []);
