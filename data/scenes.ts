@@ -23,7 +23,24 @@ export const scenesData: SceneConfig[] = [
         content: "Ikea",
         position: [-.5, .4, 1.3]
       }
-    ]
+    ],
+    reflector: {
+      enabled: true,
+      scale: [.0048, .0175, 0.1],
+      position: [-1.15, 0.699, 1.643],
+      rotation: [0.08, -3.105, 0],
+      blur: [0,0],
+      mixBlur: 0,
+      mixStrength: 1,
+      resolution: 1024,
+      args: [50, 50],
+      mirror: .5,
+      minDepthThreshold: 0.25,
+      maxDepthThreshold: 1,
+      depthScale: 50,
+      metalness: 0,
+      roughness: 1
+    }
   },
   {
     id: "2",

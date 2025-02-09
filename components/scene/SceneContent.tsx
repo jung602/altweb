@@ -20,6 +20,7 @@ export const SceneContent = memo(({ config, width, height }: SceneContentProps) 
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const setModelHovered = useSceneStore((state) => state.setModelHovered);
   const [isInteracting, setIsInteracting] = useState(false);
+  const controlsRef = useRef<any>(null);
   const isMobileDevice = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
 
   const debouncedHoverHandler = useMemo(
@@ -37,6 +38,12 @@ export const SceneContent = memo(({ config, width, height }: SceneContentProps) 
     };
   }, [debouncedHoverHandler]);
 
+  useEffect(() => {
+    if (!isExpanded && controlsRef.current) {
+      controlsRef.current.reset();
+    }
+  }, [isExpanded]);
+
   const handleControlStart = useCallback(() => setIsInteracting(true), []);
   const handleControlEnd = useCallback(() => setIsInteracting(false), []);
 
@@ -47,9 +54,7 @@ export const SceneContent = memo(({ config, width, height }: SceneContentProps) 
 
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 5, 5]} intensity={1} />
-      <pointLight position={[10, 10, 10]} intensity={0.5} />
+      <ambientLight intensity={1} />
       
       <group>
         <animated.group
@@ -102,6 +107,7 @@ export const SceneContent = memo(({ config, width, height }: SceneContentProps) 
 
 
       <Controls 
+        ref={controlsRef}
         isExpanded={isExpanded}
         isInteracting={isInteracting}
         onStart={handleControlStart}

@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, forwardRef, useImperativeHandle } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from '@react-three/drei';
 import { ORBIT_CONTROLS_CONFIG } from '../../config/sceneConfig';
@@ -10,8 +10,20 @@ export interface ControlsProps {
   onEnd: () => void;
 }
 
-export const Controls = memo(({ isExpanded, isInteracting, onStart, onEnd }: ControlsProps) => {
+export const Controls = memo(forwardRef(({ isExpanded, isInteracting, onStart, onEnd }: ControlsProps, ref) => {
+  const controlsRef = React.useRef<any>(null);
+
+  useImperativeHandle(ref, () => ({
+    reset: () => {
+      if (controlsRef.current) {
+        controlsRef.current.reset();
+        controlsRef.current.update();
+      }
+    }
+  }));
+
   const controlsConfig = useMemo(() => ({
+    ref: controlsRef,
     enabled: true,
     enableZoom: isExpanded,
     enablePan: false,
@@ -31,4 +43,4 @@ export const Controls = memo(({ isExpanded, isInteracting, onStart, onEnd }: Con
   }), [isExpanded, isInteracting]);
   
   return <OrbitControls {...controlsConfig} onStart={onStart} onEnd={onEnd} />;
-}) as React.NamedExoticComponent<ControlsProps>; 
+})) as React.ForwardRefExoticComponent<ControlsProps & React.RefAttributes<unknown>>; 
