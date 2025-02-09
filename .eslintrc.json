@@ -1,9 +1,13 @@
 {
   "extends": ["next"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
   "rules": {
     "react/no-unused-prop-types": "warn",
     "react/require-default-props": "off",
     "@typescript-eslint/no-unused-vars": "warn",
-    "import/prefer-default-export": "off"
+    "import/prefer-default-export": "off",
+    "react/display-name": "off",
+    "react-hooks/exhaustive-deps": "warn"
   }
 } 

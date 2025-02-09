@@ -133,17 +133,18 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
   }, []);
 
   React.useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.addEventListener('scroll', handleScroll);
-      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    const current = containerRef.current;
+    if (current) {
+      current.addEventListener('scroll', handleScroll);
+      current.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     return () => {
-      if (containerRef.current) {
-        containerRef.current.removeEventListener('scroll', handleScroll);
+      if (current) {
+        current.removeEventListener('scroll', handleScroll);
       }
     };
-  }, [currentIndex, handleScroll]);
+  }, [currentIndex, handleScroll, containerRef]);
 
   React.useEffect(() => {
     return () => {
