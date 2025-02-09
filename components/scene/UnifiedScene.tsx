@@ -147,14 +147,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
 
   React.useEffect(() => {
     return () => {
-      scenes.forEach(scene => {
-        if (scene.geometry) {
-          scene.geometry.dispose();
-        }
-        if (scene.material) {
-          scene.material.dispose();
-        }
-      });
+      // Cleanup logic if needed
     };
   }, [scenes]);
 
