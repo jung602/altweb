@@ -7,6 +7,7 @@ import { X } from 'lucide-react';
 import { LabelNavigation } from '../layout/LabelNav';
 import { IndexView } from '../ui/IndexView';
 import type { SceneConfig } from '../../types/scene';
+import { SCENE_RENDER_CONFIG, ANIMATION_CONFIG } from '../../config/sceneConfig';
 
 interface UnifiedSceneProps {
   isVertical?: boolean;
@@ -32,23 +33,22 @@ const SceneWrapper = React.memo(({
   isExpanded: boolean;
 }) => {
   const [isLoaded, setIsLoaded] = React.useState(false);
-
-  React.useEffect(() => {
-    const loadDelay = Math.abs(index - currentIndex) * 100;
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, loadDelay);
-    return () => clearTimeout(timer);
-  }, [index, currentIndex]);
-
   const distance = index - currentIndex;
-  const shouldRender = Math.abs(distance) <= 2;
+  const shouldRender = Math.abs(distance) <= SCENE_RENDER_CONFIG.RENDER_DISTANCE;
+  
+  React.useEffect(() => {
+    if (shouldRender) {
+      const loadDelay = Math.abs(distance) * SCENE_RENDER_CONFIG.LOAD_DELAY_MULTIPLIER;
+      const timer = setTimeout(() => setIsLoaded(true), loadDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [distance, shouldRender]);
   
   if (!shouldRender) return null;
 
   const offset = distance * gap;
   const isCenter = distance === 0;
-  const zIndex = isCenter ? 12 : 11;
+  const zIndex = isCenter ? SCENE_RENDER_CONFIG.Z_INDEX.CENTER : SCENE_RENDER_CONFIG.Z_INDEX.SIDE;
 
   return (
     <div
@@ -59,7 +59,7 @@ const SceneWrapper = React.memo(({
         height: `${baseSize}px`,
         transform: `translate(-50%, -50%) ${isVertical ? `translateY(${offset}vh)` : `translateX(${offset}vw)`}`,
         transformOrigin: 'center center',
-        transition: isInitialized ? 'all 800ms cubic-bezier(0.4, 0.0, 0.2, 1)' : 'none',
+        transition: isInitialized ? `all ${ANIMATION_CONFIG.TRANSITION_DURATION}ms cubic-bezier(0.4, 0.0, 0.2, 1)` : 'none',
         willChange: 'transform',
         zIndex,
         opacity: isExpanded && !isCenter ? 0 : isCenter ? 1 : 0.2,
@@ -70,12 +70,12 @@ const SceneWrapper = React.memo(({
         className="w-full h-full flex items-center justify-center"
         style={{
           opacity: isLoaded ? 1 : 0,
-          transition: 'opacity 1000ms ease-in-out'
+          transition: `opacity ${ANIMATION_CONFIG.OPACITY_DURATION}ms ease-in-out`
         }}
       >
         <Scene 
           config={scene} 
-          isActive={true}
+          isActive={isCenter}
           width={baseSize}
           height={baseSize}
         />

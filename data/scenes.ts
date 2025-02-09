@@ -12,16 +12,6 @@ export const scenesData: SceneConfig[] = [
       position: [0, -1.2, 0],
       rotation: [0, 0, 0],
     },
-    camera: {
-      position: [5, 6.5, -10],
-      fov: 160
-    },
-    lights: {
-      directional: {
-        position: [4, 1.2, 5],
-        intensity: 3
-      }
-    },
     labels: [
       {
         title: "Bed",
@@ -45,16 +35,6 @@ export const scenesData: SceneConfig[] = [
       scale: .95,
       position: [-.25, -1.2, 0],
       rotation: [0, 0, 0],
-    },
-    camera: {
-      position: [5, 6.5, -10],
-      fov: 160
-    },
-    lights: {
-      directional: {
-        position: [5, 10, 5],
-        intensity: 10
-      }
     },
     labels: [
       {
@@ -80,16 +60,6 @@ export const scenesData: SceneConfig[] = [
       position: [0, -1, 0],
       rotation: [0, 0, 0],
     },
-    camera: {
-      position: [5, 6.5, -10],
-      fov: 160
-    },
-    lights: {
-      directional: {
-        position: [5, 10, 5],
-        intensity: 0
-      }
-    },
     labels: [
       {
         title: "Shelf",
@@ -101,6 +71,23 @@ export const scenesData: SceneConfig[] = [
         content: "Herman Miller",
         position: [0, .5, 0]
       }
-    ]
+    ],
+    reflector: {
+      enabled: true,
+      scale: [.057, .04, 0.1],
+      position: [-2.105, 1, 0],
+      rotation: [0, 1.57, 0],
+      blur: [0,0],
+      mixBlur: 0,
+      mixStrength: 1,
+      resolution: 1024,
+      args: [50, 50],
+      mirror: 1,
+      minDepthThreshold: 0.25,
+      maxDepthThreshold: 1,
+      depthScale: 50,
+      metalness: 0,
+      roughness: 1
+    }
   },
 ];
