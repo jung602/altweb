@@ -117,7 +117,9 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
       onChange: () => {
         if (controlsRef.current?.object) {
           const camera = controlsRef.current.object as THREE.PerspectiveCamera;
-          camera.zoom = isExpanded ? Math.min(Math.max(zoom.get(), 0.8), 1.3) : zoom.get();
+          camera.zoom = isExpanded 
+            ? Math.min(Math.max(zoom.get(), 0.8), 1.3) 
+            : zoom.get();
           camera.updateProjectionMatrix();
         }
       }

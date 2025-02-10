@@ -38,7 +38,7 @@ export const SceneContent = memo(({ config, width, height }: SceneContentProps) 
   }, [debouncedHoverHandler]);
 
   const { scale } = useSpring({
-    scale: isExpanded ? config.model.scale : config.model.scale * 0.9,
+    scale: isExpanded ? config.model.scale * 1.1 : config.model.scale * 0.9,
     config: ANIMATION_CONFIG.SPRING,
     immediate: false
   });

@@ -40,8 +40,8 @@ export const ORBIT_CONTROLS_CONFIG = {
   MIN_AZIMUTH_ANGLE: -Infinity,
   MAX_AZIMUTH_ANGLE: Infinity,
   ZOOM_SCALE: {
-    MIN: 0.7,
-    MAX: 1.2
+    MIN: 0.8,
+    MAX: 1.3
   }
 };
 
