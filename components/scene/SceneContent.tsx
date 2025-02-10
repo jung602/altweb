@@ -48,8 +48,9 @@ export const SceneContent = memo(({ config, width, height }: SceneContentProps) 
   const handleControlEnd = useCallback(() => setIsInteracting(false), []);
 
   const { scale } = useSpring({
-    scale: config.model.scale * (isExpanded ? 1.1 : 1),
-    config: ANIMATION_CONFIG.SPRING
+    scale: isExpanded ? config.model.scale : config.model.scale * 0.9,
+    config: ANIMATION_CONFIG.SPRING,
+    immediate: false
   });
 
   return (

@@ -103,57 +103,84 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
   const [isHoveringCanvas, setIsHoveringCanvas] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<ControlsRef>(null);
+  const initializedRef = useRef(false);
+
+  // 기본 거리 값 (고정)
+  const BASE_DISTANCE = 29;
   
   // 기본 zoom 계산 함수
   const calculateZoom = useCallback(() => {
     const viewportWidth = window.innerWidth;
     const baseWidth = 1920;
     const scale = viewportWidth / baseWidth;
-    const zoom = Math.max(0.8, scale * 1.5);
-    return zoom;
+
+    // 화면 크기에 따른 세밀한 zoom 조정
+    if (viewportWidth < 768) {  // 모바일
+      return Math.max(0.75, scale * 1.4);
+    } else if (viewportWidth < 1440) {  // 작은 데스크톱
+      return Math.max(1, scale * 1.3);
+    } else {  // 큰 데스크톱
+      return Math.max(1.2, scale * 1.2);
+    }
   }, []);
 
-  // 초기 상태 설정
-  const [cameraState, setCameraState] = useState(() => {
-    const zoom = calculateZoom();
-    const baseDistance = 29 / zoom;
-    return { zoom, baseDistance };
-  });
+  // spring 애니메이션 설정
+  const [{ zoom }, api] = useSpring(() => ({
+    zoom: calculateZoom(),
+    config: ANIMATION_CONFIG.SPRING,
+    immediate: true
+  }));
 
   // 카메라 상태 업데이트 함수
-  const updateCameraState = useCallback(() => {
-    const zoom = calculateZoom();
-    const baseDistance = 29 / zoom;
+  const updateCameraState = useCallback((immediate = false) => {
+    const newZoom = calculateZoom();
     
-    setCameraState({ zoom, baseDistance });
-
-    // OrbitControls의 카메라 업데이트
-    if (controlsRef.current?.object) {
-      const camera = controlsRef.current.object as THREE.PerspectiveCamera;
-      camera.zoom = zoom;
-      camera.updateProjectionMatrix();
+    // 현재 값과 새로운 값이 같으면 업데이트하지 않음
+    if (zoom.get() === newZoom) {
+      return;
     }
-  }, [calculateZoom]);
 
-  // 리사이즈 핸들러
-  const handleResize = useCallback(() => {
-    updateCameraState();
-  }, [updateCameraState]);
+    api.start({
+      zoom: newZoom,
+      immediate,
+      config: ANIMATION_CONFIG.SPRING,
+      onChange: () => {
+        if (controlsRef.current?.object) {
+          const camera = controlsRef.current.object as THREE.PerspectiveCamera;
+          camera.zoom = zoom.get();
+          camera.updateProjectionMatrix();
+        }
+      }
+    });
+  }, [calculateZoom, api, zoom]);
 
-  // 초기 설정
+  // 초기 설정 및 리사이즈 핸들러
   useEffect(() => {
-    updateCameraState();
-  }, [updateCameraState]);
+    const handleResize = () => {
+      updateCameraState(false);
+    };
 
-  // 리사이즈 이벤트 리스너
-  useEffect(() => {
-    const debouncedResize = debounce(handleResize, 100);
+    // 초기 설정
+    if (!initializedRef.current) {
+      updateCameraState(true);
+      initializedRef.current = true;
+    }
+
+    // 리사이즈 이벤트 리스너
+    const debouncedResize = debounce(handleResize, 200);
     window.addEventListener('resize', debouncedResize);
     return () => {
       window.removeEventListener('resize', debouncedResize);
       debouncedResize.cancel();
     };
-  }, [handleResize]);
+  }, [updateCameraState]);
+
+  // isExpanded 변경 시 크기 재조정
+  useEffect(() => {
+    if (!isExpanded && initializedRef.current) {
+      updateCameraState(true);
+    }
+  }, [isExpanded, updateCameraState]);
 
   const handleScroll = (e: WheelEvent) => {
     if (isExpanded && isHoveringCanvas) {
@@ -203,15 +230,11 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
         <Canvas
           style={{ height: '100%', width: '100%' }}
           camera={{
-            position: [
-              5 * cameraState.baseDistance,
-              6.5 * cameraState.baseDistance,
-              -10 * cameraState.baseDistance
-            ],
+            position: [5 * BASE_DISTANCE, 6.5 * BASE_DISTANCE, -10 * BASE_DISTANCE],
             fov: 1,
             near: 40,
             far: 1000,
-            zoom: cameraState.zoom
+            zoom: zoom.get()
           }}
           gl={{
             antialias: true,
@@ -226,18 +249,20 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
         >
           {process.env.NODE_ENV === 'development' && <Stats />}
           <Suspense fallback={null}>
-            <SceneControls
-              ref={controlsRef}
-              isExpanded={isExpanded}
-              isInteracting={isDragging.current}
-              onStart={() => isDragging.current = true}
-              onEnd={() => isDragging.current = false}
-            />
-            <SceneContent
-              config={config}
-              width={width}
-              height={height}
-            />
+            <animated.group>
+              <SceneControls
+                ref={controlsRef}
+                isExpanded={isExpanded}
+                isInteracting={isDragging.current}
+                onStart={() => isDragging.current = true}
+                onEnd={() => isDragging.current = false}
+              />
+              <SceneContent
+                config={config}
+                width={width}
+                height={height}
+              />
+            </animated.group>
           </Suspense>
         </Canvas>
       </div>
