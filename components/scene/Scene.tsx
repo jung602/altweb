@@ -86,11 +86,13 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
 
     // 화면 크기에 따른 세밀한 zoom 조정
     if (viewportWidth < 768) {  // 모바일
-      return Math.max(0.75, scale * 1.4);
+      return Math.max(0.7, scale * 1.3);
     } else if (viewportWidth < 1440) {  // 작은 데스크톱
-      return Math.max(1, scale * 1.3);
-    } else {  // 큰 데스크톱
-      return Math.max(1.2, scale * 1.2);
+      return Math.max(.9, scale * 1.2);
+    } else if (viewportWidth < 1920) {  // 큰 데스크톱
+      return Math.max(1.1, scale * 1);
+    }else {  // 큰 데스크톱
+      return Math.max(1.2, scale * .75);
     }
   }, []);
 
