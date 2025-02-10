@@ -10,7 +10,12 @@ export interface ControlsProps {
   onEnd: () => void;
 }
 
-export const Controls = memo(forwardRef(({ isExpanded, isInteracting, onStart, onEnd }: ControlsProps, ref) => {
+export interface ControlsRef {
+  reset: () => void;
+  object: THREE.Camera;
+}
+
+export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(({ isExpanded, isInteracting, onStart, onEnd }, ref) => {
   const controlsRef = React.useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
@@ -19,6 +24,9 @@ export const Controls = memo(forwardRef(({ isExpanded, isInteracting, onStart, o
         controlsRef.current.reset();
         controlsRef.current.update();
       }
+    },
+    get object() {
+      return controlsRef.current?.object;
     }
   }));
 
@@ -43,4 +51,4 @@ export const Controls = memo(forwardRef(({ isExpanded, isInteracting, onStart, o
   }), [isExpanded, isInteracting]);
   
   return <OrbitControls {...controlsConfig} onStart={onStart} onEnd={onEnd} />;
-})) as React.ForwardRefExoticComponent<ControlsProps & React.RefAttributes<unknown>>; 
+})); 

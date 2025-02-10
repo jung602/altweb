@@ -13,6 +13,7 @@ import { GroupProps } from '@react-three/fiber';
 import { CANVAS_CONFIG, ORBIT_CONTROLS_CONFIG, ANIMATION_CONFIG } from '../../config/sceneConfig';
 import { SceneContent } from './SceneContent';
 import { Canvas } from '@react-three/fiber';
+import { Controls as SceneControls, ControlsRef } from './Controls';
 
 const DynamicCanvas = dynamic(() => import('@react-three/fiber').then(mod => mod.Canvas), {
   ssr: false
@@ -100,11 +101,59 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
   const isDragging = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
   const [isHoveringCanvas, setIsHoveringCanvas] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<ControlsRef>(null);
   
-  const baseDistance = useMemo(() => {
-    const scaleFactor = Math.min(width, height) / 1000;
-    return 29 * (1 / scaleFactor);
-  }, [width, height]);
+  // 기본 zoom 계산 함수
+  const calculateZoom = useCallback(() => {
+    const viewportWidth = window.innerWidth;
+    const baseWidth = 1920;
+    const scale = viewportWidth / baseWidth;
+    const zoom = Math.max(0.8, scale * 1.5);
+    return zoom;
+  }, []);
+
+  // 초기 상태 설정
+  const [cameraState, setCameraState] = useState(() => {
+    const zoom = calculateZoom();
+    const baseDistance = 29 / zoom;
+    return { zoom, baseDistance };
+  });
+
+  // 카메라 상태 업데이트 함수
+  const updateCameraState = useCallback(() => {
+    const zoom = calculateZoom();
+    const baseDistance = 29 / zoom;
+    
+    setCameraState({ zoom, baseDistance });
+
+    // OrbitControls의 카메라 업데이트
+    if (controlsRef.current?.object) {
+      const camera = controlsRef.current.object as THREE.PerspectiveCamera;
+      camera.zoom = zoom;
+      camera.updateProjectionMatrix();
+    }
+  }, [calculateZoom]);
+
+  // 리사이즈 핸들러
+  const handleResize = useCallback(() => {
+    updateCameraState();
+  }, [updateCameraState]);
+
+  // 초기 설정
+  useEffect(() => {
+    updateCameraState();
+  }, [updateCameraState]);
+
+  // 리사이즈 이벤트 리스너
+  useEffect(() => {
+    const debouncedResize = debounce(handleResize, 100);
+    window.addEventListener('resize', debouncedResize);
+    return () => {
+      window.removeEventListener('resize', debouncedResize);
+      debouncedResize.cancel();
+    };
+  }, [handleResize]);
 
   const handleScroll = (e: WheelEvent) => {
     if (isExpanded && isHoveringCanvas) {
@@ -140,6 +189,7 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
 
   return (
     <div 
+      ref={containerRef}
       className="scene-container w-full h-full transition-all duration-500 ease-out cursor-pointer overflow-visible"
       onPointerDown={handleInteraction.pointerDown}
       onPointerMove={handleInteraction.pointerMove}
@@ -154,13 +204,14 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
           style={{ height: '100%', width: '100%' }}
           camera={{
             position: [
-              5 * baseDistance,
-              6.5 * baseDistance,
-              -10 * baseDistance
+              5 * cameraState.baseDistance,
+              6.5 * cameraState.baseDistance,
+              -10 * cameraState.baseDistance
             ],
             fov: 1,
             near: 40,
-            far: 1000
+            far: 1000,
+            zoom: cameraState.zoom
           }}
           gl={{
             antialias: true,
@@ -175,6 +226,13 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
         >
           {process.env.NODE_ENV === 'development' && <Stats />}
           <Suspense fallback={null}>
+            <SceneControls
+              ref={controlsRef}
+              isExpanded={isExpanded}
+              isInteracting={isDragging.current}
+              onStart={() => isDragging.current = true}
+              onEnd={() => isDragging.current = false}
+            />
             <SceneContent
               config={config}
               width={width}
