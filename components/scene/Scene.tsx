@@ -13,7 +13,7 @@ import { GroupProps } from '@react-three/fiber';
 import { CANVAS_CONFIG, ORBIT_CONTROLS_CONFIG, ANIMATION_CONFIG } from '../../config/sceneConfig';
 import { SceneContent } from './SceneContent';
 import { Canvas } from '@react-three/fiber';
-import { Controls as SceneControls, ControlsRef } from './Controls';
+import { Controls, ControlsRef } from './Controls';
 
 const DynamicCanvas = dynamic(() => import('@react-three/fiber').then(mod => mod.Canvas), {
   ssr: false
@@ -64,39 +64,9 @@ const Model = memo(({ component, ...props }: { component: ModelComponentType } &
   return <ModelLoader component={component} {...props} />;
 }, (prevProps, nextProps) => prevProps.component === nextProps.component);
 
-// OrbitControls를 별도 컴포넌트로 분리
-const Controls = memo(({ isExpanded, isInteracting, onStart, onEnd }: ControlsProps) => {
-  const { OrbitControls } = require('@react-three/drei');
-  
-  // OrbitControls 설정을 useMemo로 최적화
-  const controlsConfig = useMemo(() => ({
-    enabled: true,
-    enableZoom: isExpanded,
-    enablePan: false,
-    enableRotate: true,
-    autoRotate: !isInteracting && !isExpanded,
-    autoRotateSpeed: ORBIT_CONTROLS_CONFIG.AUTO_ROTATE_SPEED,
-    minPolarAngle: isExpanded ? 0 : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
-    maxPolarAngle: isExpanded ? ORBIT_CONTROLS_CONFIG.MAX_POLAR_ANGLE : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
-    minAzimuthAngle: ORBIT_CONTROLS_CONFIG.MIN_AZIMUTH_ANGLE,
-    maxAzimuthAngle: ORBIT_CONTROLS_CONFIG.MAX_AZIMUTH_ANGLE,
-    minZoom: ORBIT_CONTROLS_CONFIG.ZOOM_SCALE.MIN,
-    maxZoom: ORBIT_CONTROLS_CONFIG.ZOOM_SCALE.MAX,
-    touches: {
-      ONE: THREE.TOUCH.ROTATE,
-      TWO: THREE.TOUCH.DOLLY_ROTATE
-    }
-  }), [isExpanded, isInteracting]);
-  
-  return <OrbitControls {...controlsConfig} onStart={onStart} onEnd={onEnd} />;
-}, (prevProps, nextProps) => {
-  return prevProps.isExpanded === nextProps.isExpanded &&
-    prevProps.isInteracting === nextProps.isInteracting;
-});
-
 // Scene 컴포넌트도 메모이제이션
 export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: SceneProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const isDragging = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
@@ -147,12 +117,12 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
       onChange: () => {
         if (controlsRef.current?.object) {
           const camera = controlsRef.current.object as THREE.PerspectiveCamera;
-          camera.zoom = zoom.get();
+          camera.zoom = isExpanded ? Math.min(Math.max(zoom.get(), 0.8), 1.3) : zoom.get();
           camera.updateProjectionMatrix();
         }
       }
     });
-  }, [calculateZoom, api, zoom]);
+  }, [calculateZoom, api, zoom, isExpanded]);
 
   // 초기 설정 및 리사이즈 핸들러
   useEffect(() => {
@@ -175,10 +145,13 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
     };
   }, [updateCameraState]);
 
-  // isExpanded 변경 시 크기 재조정
+  // isExpanded 변경 시 크기 재조정 및 controls 초기화
   useEffect(() => {
     if (!isExpanded && initializedRef.current) {
       updateCameraState(true);
+      if (controlsRef.current) {
+        controlsRef.current.reset();
+      }
     }
   }, [isExpanded, updateCameraState]);
 
@@ -250,7 +223,7 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
           {process.env.NODE_ENV === 'development' && <Stats />}
           <Suspense fallback={null}>
             <animated.group>
-              <SceneControls
+              <Controls
                 ref={controlsRef}
                 isExpanded={isExpanded}
                 isInteracting={isDragging.current}

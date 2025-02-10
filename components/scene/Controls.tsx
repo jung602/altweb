@@ -51,4 +51,4 @@ export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(({ isExpande
   }), [isExpanded, isInteracting]);
   
   return <OrbitControls {...controlsConfig} onStart={onStart} onEnd={onEnd} />;
-})); 
+}));

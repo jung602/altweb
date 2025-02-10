@@ -7,7 +7,6 @@ import { useSceneStore } from '../../store/sceneStore';
 import type { SceneConfig } from '../../types/scene';
 import Label from '../ui/Label';
 import { ModelLoader } from './ModelLoader';
-import { Controls } from './Controls';
 import { ANIMATION_CONFIG } from '../../config/sceneConfig';
 
 interface SceneContentProps {
@@ -37,15 +36,6 @@ export const SceneContent = memo(({ config, width, height }: SceneContentProps) 
       debouncedHoverHandler.cancel();
     };
   }, [debouncedHoverHandler]);
-
-  useEffect(() => {
-    if (!isExpanded && controlsRef.current) {
-      controlsRef.current.reset();
-    }
-  }, [isExpanded]);
-
-  const handleControlStart = useCallback(() => setIsInteracting(true), []);
-  const handleControlEnd = useCallback(() => setIsInteracting(false), []);
 
   const { scale } = useSpring({
     scale: isExpanded ? config.model.scale : config.model.scale * 0.9,
@@ -102,18 +92,7 @@ export const SceneContent = memo(({ config, width, height }: SceneContentProps) 
         );
       })()}
         </animated.group>
-        
       </group>
-      
-
-
-      <Controls 
-        ref={controlsRef}
-        isExpanded={isExpanded}
-        isInteracting={isInteracting}
-        onStart={handleControlStart}
-        onEnd={handleControlEnd}
-      />
       {process.env.NODE_ENV === 'development' && <Stats />}
     </>
   );
