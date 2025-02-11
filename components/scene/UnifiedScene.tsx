@@ -34,15 +34,16 @@ const SceneWrapper = React.memo(({
   isInitialized: boolean;
   isExpanded: boolean;
 }) => {
-  // 렌더링할 씬 결정
-  const shouldRender = 
-    index === currentIndex || // 현재 씬
-    index === currentIndex + 1 || // 다음 씬
-    (currentIndex > 0 && index === currentIndex - 1); // 이전 씬
-
   const distance = index - currentIndex;
   const isCenter = distance === 0;
   
+  // 렌더링할 씬 결정
+  const shouldRender = 
+    (isExpanded ? isCenter : true) && // isExpanded 상태일 때는 현재 씬만 렌더링
+    (index === currentIndex || // 현재 씬
+    index === currentIndex + 1 || // 다음 씬
+    (currentIndex > 0 && index === currentIndex - 1)); // 이전 씬
+
   if (!shouldRender) return null;
 
   const offset = distance * gap;

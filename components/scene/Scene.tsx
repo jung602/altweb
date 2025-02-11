@@ -76,6 +76,7 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000, refl
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<ControlsRef>(null);
   const initializedRef = useRef(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   // 기본 거리 값 (고정)
   const BASE_DISTANCE = 29;
@@ -193,6 +194,30 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000, refl
     }
   };
 
+  // Intersection Observer 설정
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      {
+        root: null,
+        rootMargin: '50px',
+        threshold: 0.1
+      }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div 
       ref={containerRef}
@@ -201,52 +226,55 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000, refl
       onPointerMove={handleInteraction.pointerMove}
       onPointerUp={handleInteraction.pointerUp}
     >
-      <div 
-        className="absolute w-dvw h-dvh left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-        onMouseEnter={() => setIsHoveringCanvas(true)}
-        onMouseLeave={() => setIsHoveringCanvas(false)}
-      >
-        <Canvas
-          style={{ height: '100%', width: '100%' }}
-          frameloop={isActive ? 'always' : 'never'}
-          camera={{
-            position: [5 * BASE_DISTANCE, 6.5 * BASE_DISTANCE, -10 * BASE_DISTANCE],
-            fov: 1,
-            near: 40,
-            far: 1000,
-            zoom: zoom.get()
-          }}
-          gl={{
-            antialias: true,
-            preserveDrawingBuffer: true,
-            alpha: true,
-            powerPreference: "high-performance",
-            toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 1,
-            outputColorSpace: THREE.LinearSRGBColorSpace,
-          }}
-          shadows
+      {isVisible && (
+        <div 
+          className="absolute w-dvw h-dvh left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          onMouseEnter={() => setIsHoveringCanvas(true)}
+          onMouseLeave={() => setIsHoveringCanvas(false)}
         >
-          {process.env.NODE_ENV === 'development' && <Stats />}
-          <Suspense fallback={null}>
-            <animated.group>
-              <Controls
-                ref={controlsRef}
-                isExpanded={isExpanded}
-                isInteracting={isDragging.current}
-                onStart={() => isDragging.current = true}
-                onEnd={() => isDragging.current = false}
-              />
-              <SceneContent
-                config={config}
-                width={width}
-                height={height}
-                reflectorEnabled={reflectorEnabled}
-              />
-            </animated.group>
-          </Suspense>
-        </Canvas>
-      </div>
+          <Canvas
+            style={{ height: '100%', width: '100%' }}
+            frameloop={isActive && isVisible ? 'always' : 'never'}
+            camera={{
+              position: [5 * BASE_DISTANCE, 6.5 * BASE_DISTANCE, -10 * BASE_DISTANCE],
+              fov: 1,
+              near: 40,
+              far: 1000,
+              zoom: zoom.get()
+            }}
+            gl={{
+              antialias: true,
+              preserveDrawingBuffer: true,
+              alpha: true,
+              powerPreference: "high-performance",
+              toneMapping: THREE.ACESFilmicToneMapping,
+              toneMappingExposure: 1,
+              outputColorSpace: THREE.LinearSRGBColorSpace,
+            }}
+            shadows
+          >
+            {process.env.NODE_ENV === 'development' && <Stats />}
+            <Suspense fallback={null}>
+              <animated.group>
+                <Controls
+                  ref={controlsRef}
+                  isExpanded={isExpanded}
+                  isInteracting={isDragging.current}
+                  isActive={isActive}
+                  onStart={() => isDragging.current = true}
+                  onEnd={() => isDragging.current = false}
+                />
+                <SceneContent
+                  config={config}
+                  width={width}
+                  height={height}
+                  reflectorEnabled={reflectorEnabled}
+                />
+              </animated.group>
+            </Suspense>
+          </Canvas>
+        </div>
+      )}
     </div>
   );
 }, (prevProps, nextProps) => {

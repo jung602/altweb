@@ -7,6 +7,7 @@ import { ThreeEvent } from '@react-three/fiber';
 export interface ControlsProps {
   isExpanded: boolean;
   isInteracting: boolean;
+  isActive: boolean;
   onStart: () => void;
   onEnd: () => void;
 }
@@ -16,7 +17,7 @@ export interface ControlsRef {
   object: THREE.Camera;
 }
 
-export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(({ isExpanded, isInteracting, onStart, onEnd }, ref) => {
+export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(({ isExpanded, isInteracting, isActive, onStart, onEnd }, ref) => {
   const controlsRef = React.useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
@@ -38,7 +39,7 @@ export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(({ isExpande
     enableZoom: isExpanded,
     enablePan: false,
     enableRotate: true,
-    autoRotate: !isInteracting && !isExpanded,
+    autoRotate: isActive && !isInteracting && !isExpanded,
     autoRotateSpeed: ORBIT_CONTROLS_CONFIG.AUTO_ROTATE_SPEED,
     minPolarAngle: isExpanded ? 0 : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
     maxPolarAngle: isExpanded ? ORBIT_CONTROLS_CONFIG.MAX_POLAR_ANGLE : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
@@ -50,7 +51,7 @@ export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(({ isExpande
       ONE: THREE.TOUCH.ROTATE,
       TWO: THREE.TOUCH.DOLLY_ROTATE
     }
-  }), [isExpanded, isInteracting]);
+  }), [isExpanded, isInteracting, isActive]);
   
   // isExpanded 상태 변경 감지
   React.useEffect(() => {
