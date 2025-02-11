@@ -1,6 +1,6 @@
 // types/scene.ts
 
-export const MODEL_COMPONENTS = ['Alt1', 'Alt2', 'Alt3'] as const;
+export const MODEL_COMPONENTS = ['Alt1', 'Alt2', 'Alt3', 'Alt4'] as const;
 export type ModelComponentType = typeof MODEL_COMPONENTS[number];
 
 export interface Label {

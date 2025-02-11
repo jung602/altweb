@@ -6,6 +6,7 @@ export const MODEL_PRELOAD_MAP: Record<ModelComponentType, boolean> = {
   Alt1: false,
   Alt2: false,
   Alt3: false,
+  Alt4: false,
 };
 
 // 씬 렌더링 설정

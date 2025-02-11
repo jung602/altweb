@@ -30,7 +30,7 @@ export function ModelLoader({ component, ...props }: ModelLoaderProps) {
       
       if (nextIndex < MODEL_COMPONENTS.length) {
         const nextComponent = MODEL_COMPONENTS[nextIndex];
-        const nextModelPath = `${basePath}/gltf/${nextComponent.toLowerCase()}.glb`;
+        const nextModelPath = `${basePath}/gltf/compressed_${nextComponent.toLowerCase()}.glb`;
         useGLTF.preload(nextModelPath);
         MODEL_PRELOAD_MAP[component] = true;
         hasPreloaded.current = true;
