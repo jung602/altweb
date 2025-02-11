@@ -206,6 +206,7 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
       >
         <Canvas
           style={{ height: '100%', width: '100%' }}
+          frameloop={isActive ? 'always' : 'never'}
           camera={{
             position: [5 * BASE_DISTANCE, 6.5 * BASE_DISTANCE, -10 * BASE_DISTANCE],
             fov: 1,

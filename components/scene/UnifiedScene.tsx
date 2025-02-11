@@ -15,6 +15,7 @@ interface UnifiedSceneProps {
 
 const SceneWrapper = React.memo(({ 
   scene, 
+  scenes,
   index, 
   currentIndex, 
   baseSize, 
@@ -24,6 +25,7 @@ const SceneWrapper = React.memo(({
   isExpanded 
 }: {
   scene: SceneConfig;
+  scenes: SceneConfig[];
   index: number;
   currentIndex: number;
   baseSize: number;
@@ -32,22 +34,18 @@ const SceneWrapper = React.memo(({
   isInitialized: boolean;
   isExpanded: boolean;
 }) => {
-  const [isLoaded, setIsLoaded] = React.useState(false);
+  // 렌더링할 씬 결정
+  const shouldRender = 
+    index === currentIndex || // 현재 씬
+    index === currentIndex + 1 || // 다음 씬
+    (currentIndex > 0 && index === currentIndex - 1); // 이전 씬
+
   const distance = index - currentIndex;
-  const shouldRender = Math.abs(distance) <= SCENE_RENDER_CONFIG.RENDER_DISTANCE;
-  
-  React.useEffect(() => {
-    if (shouldRender) {
-      const loadDelay = Math.abs(distance) * SCENE_RENDER_CONFIG.LOAD_DELAY_MULTIPLIER;
-      const timer = setTimeout(() => setIsLoaded(true), loadDelay);
-      return () => clearTimeout(timer);
-    }
-  }, [distance, shouldRender]);
+  const isCenter = distance === 0;
   
   if (!shouldRender) return null;
 
   const offset = distance * gap;
-  const isCenter = distance === 0;
   const zIndex = isCenter ? SCENE_RENDER_CONFIG.Z_INDEX.CENTER : SCENE_RENDER_CONFIG.Z_INDEX.SIDE;
 
   return (
@@ -68,14 +66,10 @@ const SceneWrapper = React.memo(({
     >
       <div 
         className="w-full h-full flex items-center justify-center"
-        style={{
-          opacity: isLoaded ? 1 : 0,
-          transition: `opacity ${ANIMATION_CONFIG.OPACITY_DURATION}ms ease-in-out`
-        }}
       >
         <Scene 
           config={scene} 
-          isActive={isCenter}
+          isActive={shouldRender} // 렌더링되는 모든 씬을 활성화 상태로 변경
           width={baseSize}
           height={baseSize}
         />
@@ -187,6 +181,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
               <SceneWrapper
                 key={scene.id}
                 scene={scene}
+                scenes={scenes}
                 index={index}
                 currentIndex={currentIndex}
                 baseSize={baseSize}

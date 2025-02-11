@@ -115,7 +115,7 @@ export const scenesData: SceneConfig[] = [
     model: {
       component: "Alt4",
       scale: .85,
-      position: [.1, -1.2, 0],
+      position: [.1, -.9, 0],
       rotation: [0, 0, 0],
     },
     labels: [
@@ -132,8 +132,8 @@ export const scenesData: SceneConfig[] = [
     ],
     reflector: {
       enabled: true,
-      scale: [.06, .05, 0.1],
-      position: [-2.105, 1, 0],
+      scale: [.07, .05, 0.1],
+      position: [-2, 1, 0],
       rotation: [0, 1.57, 0],
       blur: [0,0],
       mixBlur: 0,
