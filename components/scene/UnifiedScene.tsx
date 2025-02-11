@@ -69,9 +69,10 @@ const SceneWrapper = React.memo(({
       >
         <Scene 
           config={scene} 
-          isActive={shouldRender} // 렌더링되는 모든 씬을 활성화 상태로 변경
+          isActive={shouldRender}
           width={baseSize}
           height={baseSize}
+          reflectorEnabled={isCenter}
         />
       </div>
     </div>

@@ -32,6 +32,8 @@ interface SceneProps {
   width?: number;
   /** 씬의 높이 (선택적) */
   height?: number;
+  /** reflector 활성화 여부 */
+  reflectorEnabled?: boolean;
 }
 
 /**
@@ -65,7 +67,7 @@ const Model = memo(({ component, ...props }: { component: ModelComponentType } &
 }, (prevProps, nextProps) => prevProps.component === nextProps.component);
 
 // Scene 컴포넌트도 메모이제이션
-export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: SceneProps) => {
+export const Scene = memo(({ config, isActive, width = 2000, height = 2000, reflectorEnabled = true }: SceneProps) => {
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const isDragging = useRef(false);
@@ -239,6 +241,7 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
                 config={config}
                 width={width}
                 height={height}
+                reflectorEnabled={reflectorEnabled}
               />
             </animated.group>
           </Suspense>
@@ -250,5 +253,6 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000 }: Sc
   return prevProps.isActive === nextProps.isActive &&
     prevProps.width === nextProps.width &&
     prevProps.height === nextProps.height &&
-    prevProps.config === nextProps.config;
+    prevProps.config === nextProps.config &&
+    prevProps.reflectorEnabled === nextProps.reflectorEnabled;
 });
