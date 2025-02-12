@@ -32,6 +32,7 @@ export const Scene = memo(({ config }: SceneProps) => {
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const setModelHovered = useSceneStore((state) => state.setModelHovered);
   const isTransitioning = useSceneStore((state) => state.isTransitioning);
+  const setTransitioning = useSceneStore((state) => state.setTransitioning);
   const controlsRef = useRef<ControlsRef>(null);
   const isMobileDevice = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
   const clickStartTime = useRef<number>(0);
@@ -90,6 +91,11 @@ export const Scene = memo(({ config }: SceneProps) => {
       mass: ANIMATION_CONFIG.SPRING.mass,
       tension: ANIMATION_CONFIG.SPRING.tension,
       friction: ANIMATION_CONFIG.SPRING.friction
+    },
+    onChange: () => {
+      if (isTransitioning) {
+        setTransitioning(false);
+      }
     }
   });
 
