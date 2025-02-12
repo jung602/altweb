@@ -8,6 +8,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { optimizeMaterial } from '../../utils/materialOptimizer'
 import { MODEL_PRELOAD_MAP } from '../../config/sceneConfig'
+import { ThreeEvent } from '@react-three/fiber'
 
 interface ModelLoaderProps {
   component: ModelComponentType
@@ -102,7 +103,20 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
     };
   }, [scene, modelPath]);
 
-  return <primitive object={scene} {...props} />
+  return <primitive 
+    object={scene} 
+    {...props}
+    onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      document.body.style.cursor = 'pointer';
+      if (props.onPointerEnter) props.onPointerEnter(e);
+    }}
+    onPointerOut={(e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      document.body.style.cursor = 'auto';
+      if (props.onPointerLeave) props.onPointerLeave(e);
+    }}
+  />
 })
 
 ModelLoader.displayName = 'ModelLoader' 

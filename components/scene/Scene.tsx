@@ -165,8 +165,14 @@ export const Scene = memo(({ config }: SceneProps) => {
         rotation-y={rotationY}
         rotation-z={0}
         position={responsivePosition}
-        onPointerEnter={() => debouncedHoverHandler(true)}
-        onPointerLeave={() => debouncedHoverHandler(false)}
+        onPointerEnter={(e) => {
+          e.stopPropagation();
+          debouncedHoverHandler(true);
+        }}
+        onPointerLeave={(e) => {
+          e.stopPropagation();
+          debouncedHoverHandler(false);
+        }}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       >

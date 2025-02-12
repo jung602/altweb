@@ -18,8 +18,9 @@ export const useSceneScroll = () => {
   const isMobileDevice = useRef(false);
   const lastScrollTime = useRef(0);
   const accumulatedDelta = useRef(0);
-  const scrollThreshold = 800; // 스크롤 간격 시간을 800ms로 증가
-  const deltaThreshold = 100; // 스크롤 델타값 임계점 추가
+  const isScrolling = useRef(false);
+  const scrollThreshold = 800;
+  const deltaThreshold = 50;
 
   const handleScroll = useCallback((e: WheelEvent) => {
     if (isExpanded || isModelHovered) return;
@@ -27,21 +28,33 @@ export const useSceneScroll = () => {
     e.preventDefault();
     const now = Date.now();
     
-    // 누적 델타값 계산
-    accumulatedDelta.current += Math.abs(e.deltaY);
+    // 이미 스크롤 중이면 무시
+    if (isScrolling.current) return;
     
-    // 스크롤 이벤트 쓰로틀링 및 누적 델타값 체크
-    if (now - lastScrollTime.current < scrollThreshold || accumulatedDelta.current < deltaThreshold) return;
+    // 시간 간격 체크
+    if (now - lastScrollTime.current < scrollThreshold) return;
+    
+    // 누적 델타값 계산 및 체크
+    accumulatedDelta.current += Math.abs(e.deltaY);
+    if (accumulatedDelta.current < deltaThreshold) return;
     
     const delta = e.deltaY;
     if (Math.abs(delta) > 0) {
+      isScrolling.current = true;
       const direction = delta > 0 ? 1 : -1;
       const newIndex = currentIndex + direction;
       
       if (newIndex >= 0 && newIndex < scenes.length) {
         setCurrentScene(newIndex);
         lastScrollTime.current = now;
-        accumulatedDelta.current = 0; // 누적값 리셋
+        accumulatedDelta.current = 0;
+        
+        // 스크롤 잠금 해제를 위한 타이머 설정
+        setTimeout(() => {
+          isScrolling.current = false;
+        }, scrollThreshold);
+      } else {
+        isScrolling.current = false;
       }
     }
   }, [currentIndex, scenes.length, setCurrentScene, isModelHovered, isExpanded]);
