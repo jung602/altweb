@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, memo } from 'react'
 import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
 import { GroupProps } from '@react-three/fiber'
@@ -14,7 +14,7 @@ interface ModelLoaderProps {
   [key: string]: any
 }
 
-export function ModelLoader({ component, ...props }: ModelLoaderProps) {
+export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
   const modelPath = `${basePath}/gltf/compressed_${component.toLowerCase()}.glb`
   
@@ -81,5 +81,17 @@ export function ModelLoader({ component, ...props }: ModelLoaderProps) {
     };
   }, [scene]);
 
+  useEffect(() => {
+    return () => {
+      // 모델이 언마운트될 때 메모리에서 제거
+      useGLTF.preload(modelPath);
+      setTimeout(() => {
+        useGLTF.clear(modelPath);
+      }, 0);
+    };
+  }, [modelPath]);
+
   return <primitive object={scene} {...props} />
-} 
+})
+
+ModelLoader.displayName = 'ModelLoader' 

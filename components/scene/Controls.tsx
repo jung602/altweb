@@ -1,16 +1,15 @@
-import React, { memo, useMemo, forwardRef, useImperativeHandle } from 'react';
+import React, { memo, useMemo, forwardRef, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from '@react-three/drei';
 import { ORBIT_CONTROLS_CONFIG } from '../../config/sceneConfig';
-import { ThreeEvent } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 
 export interface ControlsProps {
   isExpanded: boolean;
-  isInteracting: boolean;
   isActive: boolean;
   isCenter: boolean;
-  onStart: () => void;
-  onEnd: () => void;
+  onStart?: () => void;
+  onEnd?: () => void;
 }
 
 export interface ControlsRef {
@@ -18,52 +17,57 @@ export interface ControlsRef {
   object?: THREE.PerspectiveCamera;
 }
 
-export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(({ isExpanded, isInteracting, isActive, isCenter, onStart, onEnd }, ref) => {
-  const controlsRef = React.useRef<any>(null);
+export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(
+  ({ isExpanded, isActive, isCenter, onStart, onEnd }, ref) => {
+    const controlsRef = useRef<any>(null);
 
-  useImperativeHandle(ref, () => ({
-    reset: () => {
+    useImperativeHandle(ref, () => ({
+      reset: () => {
+        if (controlsRef.current) {
+          controlsRef.current.reset();
+          controlsRef.current.target.set(0, 0, 0);
+          controlsRef.current.update();
+        }
+      },
+      get object() {
+        return controlsRef.current?.object;
+      }
+    }));
+
+    const controlsConfig = useMemo(() => ({
+      ref: controlsRef,
+      enabled: true,
+      enableZoom: isExpanded,
+      enablePan: isExpanded,
+      enableRotate: true,
+      autoRotate: isActive && !isExpanded && isCenter,
+      autoRotateSpeed: ORBIT_CONTROLS_CONFIG.AUTO_ROTATE_SPEED,
+      minPolarAngle: isExpanded ? 0 : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
+      maxPolarAngle: isExpanded ? Math.PI : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
+      minAzimuthAngle: -Infinity,
+      maxAzimuthAngle: Infinity,
+      minDistance: isExpanded ? 380 * 0.8 : 380,
+      maxDistance: isExpanded ? 380 * 1.3 : 380,
+      touches: {
+        ONE: THREE.TOUCH.ROTATE,
+        TWO: THREE.TOUCH.DOLLY_ROTATE
+      }
+    }), [isExpanded, isActive, isCenter]);
+
+    useFrame(() => {
       if (controlsRef.current) {
-        controlsRef.current.reset();
-        controlsRef.current.target.set(0, 0, 0);
         controlsRef.current.update();
       }
-    },
-    get object() {
-      return controlsRef.current?.object;
-    }
-  }));
+    });
 
-  const controlsConfig = useMemo(() => ({
-    ref: controlsRef,
-    enabled: true,
-    enableZoom: isExpanded,
-    enablePan: false,
-    enableRotate: true,
-    autoRotate: isActive && !isExpanded && isCenter,
-    autoRotateSpeed: ORBIT_CONTROLS_CONFIG.AUTO_ROTATE_SPEED,
-    minPolarAngle: isExpanded ? 0 : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
-    maxPolarAngle: isExpanded ? ORBIT_CONTROLS_CONFIG.MAX_POLAR_ANGLE : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
-    minAzimuthAngle: ORBIT_CONTROLS_CONFIG.MIN_AZIMUTH_ANGLE,
-    maxAzimuthAngle: ORBIT_CONTROLS_CONFIG.MAX_AZIMUTH_ANGLE,
-    minDistance: isExpanded ? 380 * 0.8 : 380,
-    maxDistance: isExpanded ? 380 * 1.3 : 380,
-    touches: {
-      ONE: THREE.TOUCH.ROTATE,
-      TWO: THREE.TOUCH.DOLLY_ROTATE
-    }
-  }), [isExpanded, isInteracting, isActive, isCenter]);
-  
-  // isExpanded 상태 변경 감지
-  React.useEffect(() => {
-    if (controlsRef.current) {
-      if (!isExpanded) {
-        controlsRef.current.reset();
-        controlsRef.current.target.set(0, 0, 0);
-        controlsRef.current.update();
-      }
-    }
-  }, [isExpanded]);
-  
-  return <OrbitControls {...controlsConfig} onStart={onStart} onEnd={onEnd} />;
-}));
+    return (
+      <OrbitControls 
+        {...controlsConfig} 
+        onStart={onStart}
+        onEnd={onEnd}
+      />
+    );
+  }
+));
+
+Controls.displayName = 'Controls';

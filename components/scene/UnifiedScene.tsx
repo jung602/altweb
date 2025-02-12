@@ -6,150 +6,25 @@ import { useSceneStore } from '../../store/sceneStore';
 import { X } from 'lucide-react';
 import { LabelNavigation } from '../layout/LabelNav';
 import { IndexView } from '../ui/IndexView';
-import type { SceneConfig } from '../../types/scene';
-import { SCENE_RENDER_CONFIG, ANIMATION_CONFIG } from '../../config/sceneConfig';
+import { Canvas } from '@react-three/fiber';
+import Label from '../ui/Label';
+import { CANVAS_CONFIG } from '../../config/sceneConfig';
 
 interface UnifiedSceneProps {
   isVertical?: boolean;
 }
-
-const SceneWrapper = React.memo(({ 
-  scene, 
-  scenes,
-  index, 
-  currentIndex, 
-  baseSize, 
-  gap, 
-  isVertical, 
-  isInitialized, 
-  isExpanded 
-}: {
-  scene: SceneConfig;
-  scenes: SceneConfig[];
-  index: number;
-  currentIndex: number;
-  baseSize: number;
-  gap: number;
-  isVertical: boolean;
-  isInitialized: boolean;
-  isExpanded: boolean;
-}) => {
-  const [isTransitioning, setIsTransitioning] = React.useState(false);
-  const prevIndexRef = React.useRef(currentIndex);
-  const timeoutRef = React.useRef<NodeJS.Timeout>();
-  
-  const distance = index - currentIndex;
-  const isCenter = distance === 0;
-  const direction = currentIndex - prevIndexRef.current;
-  
-  // 현재 씬, 이전 씬, 다음 씬 중 하나라도 해당되면 렌더링
-  const shouldRender = 
-    index === currentIndex || // 현재 씬
-    index === prevIndexRef.current || // 이전 씬
-    (direction > 0 && index === currentIndex + 1) || // 다음 씬 (앞으로)
-    (direction < 0 && index === currentIndex - 1); // 다음 씬 (뒤로)
-
-  React.useEffect(() => {
-    if (prevIndexRef.current !== currentIndex) {
-      setIsTransitioning(true);
-      
-      // 이전 타이머 클리어
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      
-      // 트랜지션이 완료되면 상태 초기화
-      timeoutRef.current = setTimeout(() => {
-        prevIndexRef.current = currentIndex;
-        setIsTransitioning(false);
-      }, 1000);
-    }
-    
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [currentIndex]);
-
-  if (!shouldRender) return null;
-
-  const offset = distance * gap;
-  const zIndex = isCenter ? SCENE_RENDER_CONFIG.Z_INDEX.CENTER : SCENE_RENDER_CONFIG.Z_INDEX.SIDE;
-  
-  // 거리에 따른 opacity 계산
-  const calculateOpacity = () => {
-    if (!isTransitioning) return isCenter ? 1 : 0;
-    
-    // 거리에 따른 opacity 계산 (0~1)
-    const absDistance = Math.abs(distance);
-    if (absDistance >= 1) return 0;
-    return 1 - absDistance;  // 중앙에 가까울수록 1에 가까워짐
-  };
-
-  return (
-    <div
-      key={scene.id}
-      className="absolute top-1/2 left-1/2 transform-gpu"
-      style={{
-        width: `${baseSize}px`,
-        height: `${baseSize}px`,
-        transform: `translate(-50%, -50%) ${isVertical ? `translateY(${offset}vh)` : `translateX(${offset}vw)`}`,
-        transformOrigin: 'center center',
-        transition: isInitialized ? 
-          `transform 1000ms cubic-bezier(0.4, 0.0, 0.2, 1),
-           opacity 800ms cubic-bezier(0.4, 0.0, 0.2, 1)` : 'none',
-        willChange: 'transform, opacity',
-        zIndex,
-        opacity: calculateOpacity()
-      }}
-    >
-      <div 
-        className="w-full h-full flex items-center justify-center"
-      >
-        <Scene 
-          config={scene} 
-          isActive={shouldRender}
-          width={baseSize}
-          height={baseSize}
-          reflectorEnabled={isCenter}
-          isCenter={isCenter}
-        />
-      </div>
-    </div>
-  );
-});
-
-SceneWrapper.displayName = 'SceneWrapper';
 
 export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
   const {
     containerRef,
     scenes,
     currentIndex,
-    dimensions,
-    isInitialized,
     handleTouch
   } = useSceneScroll();
 
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const isIndexView = useSceneStore((state) => state.isIndexView);
-
-  const baseSize = useMemo(() => {
-    return dimensions.width < 768 
-      ? Math.min(dimensions.width, dimensions.height) * 1.1
-      : Math.min(dimensions.width, dimensions.height) * .95;
-  }, [dimensions]);
-
-  const gap = useMemo(() => {
-    if (isVertical && dimensions.width < 600) return 35;
-    if (isVertical && dimensions.width < 1080) return 55;
-    if (isVertical) return 70;
-    if (dimensions.width < 768) return 110;
-    if (dimensions.width < 1080) return 70;
-    return 55;
-  }, [dimensions?.width, isVertical]);
 
   const handleTouchEvents = useMemo(() => ({
     onTouchStart: handleTouch.start,
@@ -161,33 +36,6 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
     toggleExpanded();
   }, [toggleExpanded]);
 
-  const handleScroll = useCallback((event: Event) => {
-    const container = event.target as HTMLElement;
-    if (container.scrollTop === 0) {
-      container.removeEventListener('scroll', handleScroll);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    const current = containerRef.current;
-    if (current) {
-      current.addEventListener('scroll', handleScroll);
-      current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    return () => {
-      if (current) {
-        current.removeEventListener('scroll', handleScroll);
-      }
-    };
-  }, [currentIndex, handleScroll, containerRef]);
-
-  React.useEffect(() => {
-    return () => {
-      // Cleanup logic if needed
-    };
-  }, [scenes]);
-
   if (isIndexView) {
     return <IndexView />;
   }
@@ -196,7 +44,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
     <>
       <div 
         ref={containerRef} 
-        className={`fixed inset-0 overflow-hidden`}
+        className="fixed inset-0 overflow-hidden"
         {...handleTouchEvents}
       >
         {isExpanded && (
@@ -212,27 +60,35 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
         )}
 
         <div className="absolute inset-0 flex items-center justify-center">
-          <div 
-            className="relative flex items-center justify-center"
-            style={{
-              [isVertical ? 'width' : 'height']: `${baseSize}px`,
-              [isVertical ? 'height' : 'width']: '100%'
-            }}
-          >
-            {scenes.map((scene, index) => (
-              <SceneWrapper
-                key={scene.id}
-                scene={scene}
-                scenes={scenes}
-                index={index}
-                currentIndex={currentIndex}
-                baseSize={baseSize}
-                gap={gap}
-                isVertical={isVertical}
-                isInitialized={isInitialized}
-                isExpanded={isExpanded}
-              />
-            ))}
+          <div className="relative w-screen h-screen">
+            <div className="absolute inset-0">
+              <Canvas
+                style={{ width: '100%', height: '100%' }}
+                camera={{
+                  position: [5 * 29, 6.5 * 29, -10 * 29],
+                  fov: 1,
+                  near: 40,
+                  far: 1000,
+                  zoom: 1
+                }}
+                gl={CANVAS_CONFIG.gl}
+                shadows
+              >
+                <Scene
+                  config={scenes[currentIndex]}
+                />
+              </Canvas>
+            </div>
+            <div className="absolute inset-0 pointer-events-none">
+              {scenes[currentIndex].labels?.map((label, index) => (
+                <Label
+                  key={`${scenes[currentIndex].id}-label-${index}`}
+                  title={label.title}
+                  content={label.content}
+                  position={label.position}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
