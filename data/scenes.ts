@@ -26,20 +26,17 @@ export const scenesData: SceneConfig[] = [
     ],
     reflector: {
       enabled: true,
-      scale: [.0048, .0175, 0.1],
+      scale: [.024, .0875, 0.1],
       position: [-1.15, 0.699, 1.643],
       rotation: [0.08, -3.105, 0],
-      blur: [0,0],
-      mixBlur: 0,
-      mixStrength: 1,
-      resolution: 1024,
-      args: [50, 50],
-      mirror: .5,
-      minDepthThreshold: 0.25,
+      resolution: 512,
+      args: [10, 10],
+      mirror: 0.75,
+      minDepthThreshold: 0,
       maxDepthThreshold: 1,
-      depthScale: 50,
-      metalness: 0,
-      roughness: 1
+      depthScale: 1,
+      metalness: 0.5,
+      roughness: 0.2
     }
   },
   {
@@ -50,7 +47,7 @@ export const scenesData: SceneConfig[] = [
     model: {
       component: "Alt2",
       scale: .95,
-      position: [-.2, -1.3, 0],
+      position: [-.15, -1.3, 0],
       rotation: [0, 0, 0],
     },
     labels: [
@@ -91,20 +88,17 @@ export const scenesData: SceneConfig[] = [
     ],
     reflector: {
       enabled: true,
-      scale: [.057, .04, 0.1],
+      scale: [.285, .2, 0.1],
       position: [-2.105, 1, 0],
       rotation: [0, 1.57, 0],
-      blur: [0,0],
-      mixBlur: 0,
-      mixStrength: 1,
-      resolution: 1024,
-      args: [50, 50],
-      mirror: 1,
-      minDepthThreshold: 0.25,
+      resolution: 512,
+      args: [10, 10],
+      mirror: 0.75,
+      minDepthThreshold: 0,
       maxDepthThreshold: 1,
-      depthScale: 50,
-      metalness: 0,
-      roughness: 1
+      depthScale: 1,
+      metalness: .6,
+      roughness: 0.2
     }
   },
   {
@@ -114,8 +108,8 @@ export const scenesData: SceneConfig[] = [
     description: "Joguhaus Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt4",
-      scale: .85,
-      position: [.1, -.9, 0],
+      scale: .82,
+      position: [0, -.82, 0],
       rotation: [0, 0, 0],
     },
     labels: [
@@ -132,20 +126,17 @@ export const scenesData: SceneConfig[] = [
     ],
     reflector: {
       enabled: true,
-      scale: [.07, .05, 0.1],
+      scale: [.35, .25, 0.1],
       position: [-2, 1, 0],
       rotation: [0, 1.57, 0],
-      blur: [0,0],
-      mixBlur: 0,
-      mixStrength: 1,
-      resolution: 1024,
-      args: [50, 50],
-      mirror: 1,
-      minDepthThreshold: 0.25,
+      resolution: 512,
+      args: [10, 10],
+      mirror: 0.75,
+      minDepthThreshold: 0,
       maxDepthThreshold: 1,
-      depthScale: 50,
-      metalness: 0,
-      roughness: 1
+      depthScale: 1,
+      metalness: 0.5,
+      roughness: 0.2
     }
   },
 ];

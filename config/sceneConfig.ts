@@ -23,7 +23,7 @@ export const SCENE_RENDER_CONFIG = {
 export const CANVAS_CONFIG = {
   gl: {
     antialias: true,
-    preserveDrawingBuffer: true,
+    preserveDrawingBuffer: false,
     alpha: true,
     powerPreference: "high-performance" as const,
     toneMapping: THREE.ACESFilmicToneMapping,
@@ -35,7 +35,6 @@ export const CANVAS_CONFIG = {
 
 // OrbitControls 기본 설정
 export const ORBIT_CONTROLS_CONFIG = {
-  AUTO_ROTATE_SPEED: 0.1,
   MIN_POLAR_ANGLE: Math.PI / 3,
   MAX_POLAR_ANGLE: Math.PI,
   MIN_AZIMUTH_ANGLE: -Infinity,

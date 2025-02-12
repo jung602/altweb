@@ -40,8 +40,6 @@ export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(
       enableZoom: isExpanded,
       enablePan: isExpanded,
       enableRotate: true,
-      autoRotate: isActive && !isExpanded && isCenter,
-      autoRotateSpeed: ORBIT_CONTROLS_CONFIG.AUTO_ROTATE_SPEED,
       minPolarAngle: isExpanded ? 0 : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
       maxPolarAngle: isExpanded ? Math.PI : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
       minAzimuthAngle: -Infinity,

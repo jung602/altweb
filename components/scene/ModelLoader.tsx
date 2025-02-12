@@ -19,77 +19,82 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
   const modelPath = `${basePath}/gltf/compressed_${component.toLowerCase()}.glb`
   
   const { scene } = useGLTF(modelPath, true)
-  
   const hasPreloaded = useRef(false)
+  const cleanupRef = useRef<(() => void) | null>(null)
 
-  // 첫 로드 시 다음 모델 미리 로드
+  // 첫 로드 시 다음 모델 미리 로드 - 순차적으로 처리
   useEffect(() => {
-    if (!hasPreloaded.current && !MODEL_PRELOAD_MAP[component]) {
-      const currentIndex = MODEL_COMPONENTS.indexOf(component);
-      const nextIndex = currentIndex + 1;
-      
-      if (nextIndex < MODEL_COMPONENTS.length) {
-        const nextComponent = MODEL_COMPONENTS[nextIndex];
-        const nextModelPath = `${basePath}/gltf/compressed_${nextComponent.toLowerCase()}.glb`;
-        useGLTF.preload(nextModelPath);
-        MODEL_PRELOAD_MAP[component] = true;
-        hasPreloaded.current = true;
+    const preloadNextModel = async () => {
+      if (!hasPreloaded.current && !MODEL_PRELOAD_MAP[component]) {
+        const currentIndex = MODEL_COMPONENTS.indexOf(component);
+        const nextIndex = currentIndex + 1;
+        
+        if (nextIndex < MODEL_COMPONENTS.length) {
+          const nextComponent = MODEL_COMPONENTS[nextIndex];
+          const nextModelPath = `${basePath}/gltf/compressed_${nextComponent.toLowerCase()}.glb`;
+          await useGLTF.preload(nextModelPath);
+          MODEL_PRELOAD_MAP[component] = true;
+          hasPreloaded.current = true;
+        }
       }
-    }
+    };
+
+    preloadNextModel();
   }, [component, basePath]);
 
-  // 메시 최적화
+  // 메시 최적화 - 메모리 누수 방지를 위한 개선
   useEffect(() => {
+    const meshes: THREE.Mesh[] = [];
+    const materials: THREE.Material[] = [];
+    const geometries: THREE.BufferGeometry[] = [];
+
     scene.traverse((child: any) => {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        meshes.push(child);
         
-        // 기하학 데이터 최적화
         if (child.geometry) {
           child.geometry.computeBoundingSphere();
           child.geometry.computeBoundingBox();
+          geometries.push(child.geometry);
         }
 
-        // 재질 최적화 적용
         if (child.material) {
           if (Array.isArray(child.material)) {
-            child.material.forEach(optimizeMaterial);
+            child.material.forEach((mat: THREE.Material) => {
+              optimizeMaterial(mat);
+              materials.push(mat);
+            });
           } else {
             optimizeMaterial(child.material);
+            materials.push(child.material);
           }
         }
       }
     });
 
-    // 클린업
-    return () => {
-      scene.traverse((child: any) => {
-        if (child.isMesh) {
-          if (child.geometry) {
-            child.geometry.dispose();
-          }
-          if (child.material) {
-            if (Array.isArray(child.material)) {
-              child.material.forEach((mat: THREE.Material) => mat.dispose());
-            } else {
-              child.material.dispose();
-            }
-          }
+    // 클린업 함수 저장
+    cleanupRef.current = () => {
+      geometries.forEach(geometry => geometry.dispose());
+      materials.forEach(material => material.dispose());
+      meshes.forEach(mesh => {
+        mesh.geometry?.dispose();
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach(mat => mat.dispose());
+        } else {
+          mesh.material?.dispose();
         }
       });
+      useGLTF.clear(modelPath);
     };
-  }, [scene]);
 
-  useEffect(() => {
     return () => {
-      // 모델이 언마운트될 때 메모리에서 제거
-      useGLTF.preload(modelPath);
-      setTimeout(() => {
-        useGLTF.clear(modelPath);
-      }, 0);
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
     };
-  }, [modelPath]);
+  }, [scene, modelPath]);
 
   return <primitive object={scene} {...props} />
 })

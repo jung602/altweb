@@ -11,6 +11,7 @@ import { ModelLoader } from './ModelLoader';
 import { Controls, ControlsRef } from './Controls';
 import { ANIMATION_CONFIG } from '../../config/sceneConfig';
 import React from 'react';
+import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 
 const startTime = {
   current: Date.now()
@@ -34,54 +35,82 @@ export const Scene = memo(({ config }: SceneProps) => {
   const clickStartTime = useRef<number>(0);
   const CLICK_THRESHOLD = 200;
   const groupRef = useRef<THREE.Group>(null);
-  const rotationSpeed = 0.001;
-  const lastRotation = useRef<number>(0);
   const isUserInteracting = useRef(false);
+  const responsiveScale = useResponsiveScale(config.model.scale);
 
-  useFrame(() => {
-    if (groupRef.current && !isExpanded && !isUserInteracting.current) {
-      const elapsedTime = (Date.now() - startTime.current) * 0.001;
-      const maxRotation = Math.PI / 4;
-      const newRotation = Math.sin(elapsedTime * rotationSpeed) * maxRotation;
-      groupRef.current.rotation.y = newRotation;
-      lastRotation.current = newRotation;
+  const [{ rotationX, rotationY }, rotationApi] = useSpring(() => ({
+    rotationX: 0,
+    rotationY: 0,
+    config: {
+      mass: 1,
+      tension: 170,
+      friction: 26
+    }
+  }));
+
+  const handleMouseMove = useCallback((event: MouseEvent | TouchEvent) => {
+    if (!isUserInteracting.current) {
+      let x, y;
+      
+      if ('touches' in event) {
+        // 터치 이벤트인 경우
+        const touch = event.touches[0];
+        x = (touch.clientX / window.innerWidth) * 2 - 1;
+        y = -(touch.clientY / window.innerHeight) * 2 + 1;
+      } else {
+        // 마우스 이벤트인 경우
+        x = (event.clientX / window.innerWidth) * 2 - 1;
+        y = -(event.clientY / window.innerHeight) * 2 + 1;
+      }
+      
+      rotationApi.start({
+        rotationX: y * 0,
+        rotationY: x * 0.3
+      });
+    }
+  }, [rotationApi]);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleMouseMove);
+    };
+  }, [handleMouseMove]);
+
+  const springs = useSpring<{ scale: [number, number, number] }>({
+    scale: isExpanded 
+      ? [responsiveScale * 0.8, responsiveScale * 0.8, responsiveScale * 0.8] 
+      : [responsiveScale * 0.7, responsiveScale * 0.7, responsiveScale * 0.7],
+    config: {
+      mass: ANIMATION_CONFIG.SPRING.mass,
+      tension: ANIMATION_CONFIG.SPRING.tension,
+      friction: ANIMATION_CONFIG.SPRING.friction
     }
   });
 
-  const handlePointerDown = (e: any) => {
+  const handlePointerDown = useCallback((e: any) => {
     e.stopPropagation();
-    clickStartTime.current = Date.now();
+    clickStartTime.current = performance.now();
     isUserInteracting.current = true;
-  };
+  }, []);
 
-  const handlePointerUp = (e: any) => {
+  const handlePointerUp = useCallback((e: any) => {
     e.stopPropagation();
-    const clickDuration = Date.now() - clickStartTime.current;
+    const clickDuration = performance.now() - clickStartTime.current;
     if (clickDuration < CLICK_THRESHOLD) {
       toggleExpanded();
     }
     isUserInteracting.current = false;
-  };
-
-  useEffect(() => {
-    if (groupRef.current) {
-      if (!isExpanded && !isUserInteracting.current) {
-        const elapsedTime = (Date.now() - startTime.current) * 0.001;
-        const maxRotation = Math.PI / 4;
-        const newRotation = Math.sin(elapsedTime * rotationSpeed) * maxRotation;
-        groupRef.current.rotation.y = newRotation;
-      } else {
-        lastRotation.current = groupRef.current.rotation.y;
-      }
-    }
-  }, [isExpanded]);
+  }, [toggleExpanded]);
 
   const debouncedHoverHandler = useMemo(
     () => debounce((hovering: boolean) => {
       if (!isMobileDevice.current) {
         setModelHovered(hovering && isExpanded);
       }
-    }, 100),
+    }, 50),
     [isExpanded, setModelHovered]
   );
 
@@ -90,26 +119,6 @@ export const Scene = memo(({ config }: SceneProps) => {
       debouncedHoverHandler.cancel();
     };
   }, [debouncedHoverHandler]);
-
-  const { scale } = useSpring({
-    scale: config.model.scale * 0.7,
-    config: {
-      ...ANIMATION_CONFIG.SPRING,
-      duration: 800,
-      easing: t => t * (2 - t)
-    },
-    immediate: true
-  });
-
-  useEffect(() => {
-    if (isExpanded) {
-      // @ts-ignore
-      scale.start(config.model.scale * 0.8);
-    } else {
-      // @ts-ignore
-      scale.start(config.model.scale * 0.7);
-    }
-  }, [isExpanded, config.model.scale]);
 
   return (
     <group>
@@ -126,9 +135,11 @@ export const Scene = memo(({ config }: SceneProps) => {
       
       <animated.group
         ref={groupRef}
-        scale={scale}
+        scale={springs.scale}
+        rotation-x={rotationX}
+        rotation-y={rotationY}
+        rotation-z={0}
         position={config.model.position}
-        rotation={[0, lastRotation.current, 0]}
         onPointerEnter={() => debouncedHoverHandler(true)}
         onPointerLeave={() => debouncedHoverHandler(false)}
         onPointerDown={handlePointerDown}
