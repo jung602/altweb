@@ -52,6 +52,20 @@ export const Scene = memo(({ config }: SceneProps) => {
     }
   }));
 
+  // 씬이 변경될 때마다 회전값 초기화
+  useEffect(() => {
+    rotationApi.start({
+      rotationX: 0,
+      rotationY: 0,
+      immediate: true
+    });
+    
+    // Controls 초기화
+    if (controlsRef.current) {
+      controlsRef.current.reset();
+    }
+  }, [config.model.component]);
+
   const handleMouseMove = useCallback((event: MouseEvent | TouchEvent) => {
     if (!isUserInteracting.current && !isExpanded) {
       let x, y;

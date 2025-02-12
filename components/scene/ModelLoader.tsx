@@ -22,6 +22,11 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
   const hasPreloaded = useRef(false)
   const cleanupRef = useRef<(() => void) | null>(null)
 
+  // 모델 로드 시 초기 회전값 설정
+  useEffect(() => {
+    scene.rotation.set(0, 0, 0);
+  }, [scene]);
+
   // 첫 로드 시 다음 모델 미리 로드 - 순차적으로 처리
   useEffect(() => {
     const preloadNextModel = async () => {
@@ -52,6 +57,7 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        child.rotation.set(0, 0, 0);
         meshes.push(child);
         
         if (child.geometry) {
