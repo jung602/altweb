@@ -74,7 +74,7 @@ export const scenesData: SceneConfig[] = [
     model: {
       component: "Alt3",
       scale: .85,
-      position: [0, -.05, 0],
+      position: [0, -1.05, 0],
       rotation: [0, 0, 0],
     },
     labels: [
