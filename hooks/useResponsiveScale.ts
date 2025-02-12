@@ -6,7 +6,7 @@ const getScaleFactor = (width: number): number => {
   if (width > 1024) return 1.3;      // 데스크탑
   if (width > 768) return 1.2;       // 태블릿
   if (width > 480) return 1;         // 큰 모바일
-  return 0.8;                        // 작은 모바일
+  return 1;                        // 작은 모바일
 };
 
 export const useResponsiveScale = (baseScale: number) => {

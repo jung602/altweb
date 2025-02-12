@@ -12,6 +12,7 @@ import { Controls, ControlsRef } from './Controls';
 import { ANIMATION_CONFIG } from '../../config/sceneConfig';
 import React from 'react';
 import { useResponsiveScale } from '../../hooks/useResponsiveScale';
+import { useResponsivePosition } from '../../hooks/useResponsivePosition';
 
 const startTime = {
   current: Date.now()
@@ -30,6 +31,7 @@ export const Scene = memo(({ config }: SceneProps) => {
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const setModelHovered = useSceneStore((state) => state.setModelHovered);
+  const isTransitioning = useSceneStore((state) => state.isTransitioning);
   const controlsRef = useRef<ControlsRef>(null);
   const isMobileDevice = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
   const clickStartTime = useRef<number>(0);
@@ -37,6 +39,7 @@ export const Scene = memo(({ config }: SceneProps) => {
   const groupRef = useRef<THREE.Group>(null);
   const isUserInteracting = useRef(false);
   const responsiveScale = useResponsiveScale(config.model.scale);
+  const responsivePosition = useResponsivePosition(config.model.position);
 
   const [{ rotationX, rotationY }, rotationApi] = useSpring(() => ({
     rotationX: 0,
@@ -49,7 +52,7 @@ export const Scene = memo(({ config }: SceneProps) => {
   }));
 
   const handleMouseMove = useCallback((event: MouseEvent | TouchEvent) => {
-    if (!isUserInteracting.current) {
+    if (!isUserInteracting.current && !isExpanded) {
       let x, y;
       
       if ('touches' in event) {
@@ -68,7 +71,7 @@ export const Scene = memo(({ config }: SceneProps) => {
         rotationY: x * 0.3
       });
     }
-  }, [rotationApi]);
+  }, [rotationApi, isExpanded]);
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
@@ -135,11 +138,13 @@ export const Scene = memo(({ config }: SceneProps) => {
       
       <animated.group
         ref={groupRef}
-        scale={springs.scale}
+        scale={isTransitioning 
+          ? [responsiveScale * (isExpanded ? 0.8 : 0.7), responsiveScale * (isExpanded ? 0.8 : 0.7), responsiveScale * (isExpanded ? 0.8 : 0.7)]
+          : springs.scale}
         rotation-x={rotationX}
         rotation-y={rotationY}
         rotation-z={0}
-        position={config.model.position}
+        position={responsivePosition}
         onPointerEnter={() => debouncedHoverHandler(true)}
         onPointerLeave={() => debouncedHoverHandler(false)}
         onPointerDown={handlePointerDown}

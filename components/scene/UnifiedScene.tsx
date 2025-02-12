@@ -80,14 +80,6 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
               </Canvas>
             </div>
             <div className="absolute inset-0 pointer-events-none">
-              {scenes[currentIndex].labels?.map((label, index) => (
-                <Label
-                  key={`${scenes[currentIndex].id}-label-${index}`}
-                  title={label.title}
-                  content={label.content}
-                  position={label.position}
-                />
-              ))}
             </div>
           </div>
         </div>

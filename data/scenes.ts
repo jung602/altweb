@@ -139,4 +139,5 @@ export const scenesData: SceneConfig[] = [
       roughness: 0.2
     }
   },
+  
 ];
