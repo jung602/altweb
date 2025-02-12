@@ -74,6 +74,7 @@ const SceneWrapper = React.memo(({
           width={baseSize}
           height={baseSize}
           reflectorEnabled={isCenter}
+          isCenter={isCenter}
         />
       </div>
     </div>

@@ -34,6 +34,8 @@ interface SceneProps {
   height?: number;
   /** reflector 활성화 여부 */
   reflectorEnabled?: boolean;
+  /** 씬이 가운데 위치해 있는지 여부 */
+  isCenter?: boolean;
 }
 
 /**
@@ -67,7 +69,7 @@ const Model = memo(({ component, ...props }: { component: ModelComponentType } &
 }, (prevProps, nextProps) => prevProps.component === nextProps.component);
 
 // Scene 컴포넌트도 메모이제이션
-export const Scene = memo(({ config, isActive, width = 2000, height = 2000, reflectorEnabled = true }: SceneProps) => {
+export const Scene = memo(({ config, isActive, width = 2000, height = 2000, reflectorEnabled = true, isCenter = false }: SceneProps) => {
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const isDragging = useRef(false);
@@ -261,6 +263,7 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000, refl
                   isExpanded={isExpanded}
                   isInteracting={isDragging.current}
                   isActive={isActive}
+                  isCenter={isCenter}
                   onStart={() => isDragging.current = true}
                   onEnd={() => isDragging.current = false}
                 />
@@ -282,5 +285,6 @@ export const Scene = memo(({ config, isActive, width = 2000, height = 2000, refl
     prevProps.width === nextProps.width &&
     prevProps.height === nextProps.height &&
     prevProps.config === nextProps.config &&
-    prevProps.reflectorEnabled === nextProps.reflectorEnabled;
+    prevProps.reflectorEnabled === nextProps.reflectorEnabled &&
+    prevProps.isCenter === nextProps.isCenter;
 });
