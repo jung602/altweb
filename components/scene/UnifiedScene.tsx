@@ -34,20 +34,58 @@ const SceneWrapper = React.memo(({
   isInitialized: boolean;
   isExpanded: boolean;
 }) => {
+  const [isTransitioning, setIsTransitioning] = React.useState(false);
+  const prevIndexRef = React.useRef(currentIndex);
+  const timeoutRef = React.useRef<NodeJS.Timeout>();
+  
   const distance = index - currentIndex;
   const isCenter = distance === 0;
+  const direction = currentIndex - prevIndexRef.current;
   
-  // 렌더링할 씬 결정
+  // 현재 씬, 이전 씬, 다음 씬 중 하나라도 해당되면 렌더링
   const shouldRender = 
-    (isExpanded ? isCenter : true) && // isExpanded 상태일 때는 현재 씬만 렌더링
-    (index === currentIndex || // 현재 씬
-    index === currentIndex + 1 || // 다음 씬
-    (currentIndex > 0 && index === currentIndex - 1)); // 이전 씬
+    index === currentIndex || // 현재 씬
+    index === prevIndexRef.current || // 이전 씬
+    (direction > 0 && index === currentIndex + 1) || // 다음 씬 (앞으로)
+    (direction < 0 && index === currentIndex - 1); // 다음 씬 (뒤로)
+
+  React.useEffect(() => {
+    if (prevIndexRef.current !== currentIndex) {
+      setIsTransitioning(true);
+      
+      // 이전 타이머 클리어
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      // 트랜지션이 완료되면 상태 초기화
+      timeoutRef.current = setTimeout(() => {
+        prevIndexRef.current = currentIndex;
+        setIsTransitioning(false);
+      }, 1000);
+    }
+    
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [currentIndex]);
 
   if (!shouldRender) return null;
 
   const offset = distance * gap;
   const zIndex = isCenter ? SCENE_RENDER_CONFIG.Z_INDEX.CENTER : SCENE_RENDER_CONFIG.Z_INDEX.SIDE;
+  
+  // 거리에 따른 opacity 계산
+  const calculateOpacity = () => {
+    if (!isTransitioning) return isCenter ? 1 : 0;
+    
+    // 거리에 따른 opacity 계산 (0~1)
+    const absDistance = Math.abs(distance);
+    if (absDistance >= 1) return 0;
+    return 1 - absDistance;  // 중앙에 가까울수록 1에 가까워짐
+  };
 
   return (
     <div
@@ -58,11 +96,12 @@ const SceneWrapper = React.memo(({
         height: `${baseSize}px`,
         transform: `translate(-50%, -50%) ${isVertical ? `translateY(${offset}vh)` : `translateX(${offset}vw)`}`,
         transformOrigin: 'center center',
-        transition: isInitialized ? `all ${ANIMATION_CONFIG.TRANSITION_DURATION}ms cubic-bezier(0.4, 0.0, 0.2, 1)` : 'none',
-        willChange: 'transform',
+        transition: isInitialized ? 
+          `transform 1000ms cubic-bezier(0.4, 0.0, 0.2, 1),
+           opacity 800ms cubic-bezier(0.4, 0.0, 0.2, 1)` : 'none',
+        willChange: 'transform, opacity',
         zIndex,
-        opacity: isExpanded && !isCenter ? 0 : isCenter ? 1 : 0.2,
-        visibility: isExpanded && !isCenter ? 'hidden' : 'visible'
+        opacity: calculateOpacity()
       }}
     >
       <div 
