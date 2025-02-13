@@ -18,39 +18,37 @@ interface ModelLoaderProps {
 export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
   const modelPath = `${basePath}/gltf/compressed_${component.toLowerCase()}.glb`
-  const [isNewModelReady, setIsNewModelReady] = useState(true)
+  const [isNewModelReady, setIsNewModelReady] = useState(false)
   const [previousScene, setPreviousScene] = useState<THREE.Group | null>(null)
   const isInitialMount = useRef(true)
   const isMobile = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+  const hasPreloaded = useRef(false)
+  const cleanupRef = useRef<(() => void) | null>(null)
   
   const { scene } = useGLTF(modelPath, true, undefined, (loader) => {
-    // DRACO 로더 설정
     const dracoLoader = new DRACOLoader()
     dracoLoader.setDecoderPath('/draco/')
     loader.setDRACOLoader(dracoLoader)
 
-    // 기본 onLoad 설정
     loader.manager.onLoad = () => {
       setIsNewModelReady(true)
     }
   })
   
-  const hasPreloaded = useRef(false)
-  const cleanupRef = useRef<(() => void) | null>(null)
-
-  // 모델이 변경될 때 이전 모델 저장
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false
+      setIsNewModelReady(true)
       return
     }
 
-    if (previousScene) {
-      setPreviousScene(null)
-    }
-    setPreviousScene(scene.clone())
     setIsNewModelReady(false)
     
+    if (scene) {
+      const clonedScene = scene.clone()
+      setPreviousScene(clonedScene)
+    }
+
     return () => {
       if (previousScene) {
         previousScene.traverse((child: any) => {
@@ -63,102 +61,98 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
             }
           }
         })
+        setPreviousScene(null)
       }
     }
   }, [component])
 
-  // 모델 로드 시 초기 회전값 설정
   useEffect(() => {
-    scene.rotation.set(0, 0, 0);
-  }, [scene]);
+    scene.rotation.set(0, 0, 0)
+  }, [scene])
 
-  // 첫 로드 시 다음 모델 미리 로드 - 순차적으로 처리
   useEffect(() => {
     const preloadNextModel = async () => {
       if (!hasPreloaded.current && !MODEL_PRELOAD_MAP[component]) {
-        const currentIndex = MODEL_COMPONENTS.indexOf(component);
-        const nextIndex = currentIndex + 1;
+        const currentIndex = MODEL_COMPONENTS.indexOf(component)
+        const nextIndex = (currentIndex + 1) % MODEL_COMPONENTS.length
+        const nextComponent = MODEL_COMPONENTS[nextIndex]
+        const nextModelPath = `${basePath}/gltf/compressed_${nextComponent.toLowerCase()}.glb`
         
-        if (nextIndex < MODEL_COMPONENTS.length) {
-          const nextComponent = MODEL_COMPONENTS[nextIndex];
-          const nextModelPath = `${basePath}/gltf/compressed_${nextComponent.toLowerCase()}.glb`;
-          await useGLTF.preload(nextModelPath);
-          MODEL_PRELOAD_MAP[component] = true;
-          hasPreloaded.current = true;
+        try {
+          await useGLTF.preload(nextModelPath)
+          MODEL_PRELOAD_MAP[component] = true
+          hasPreloaded.current = true
+        } catch (error) {
+          console.error('Failed to preload next model:', error)
         }
       }
-    };
+    }
 
-    preloadNextModel();
-  }, [component, basePath]);
+    preloadNextModel()
+  }, [component, basePath])
 
-  // 메시 최적화 - 메모리 누수 방지를 위한 개선
   useEffect(() => {
-    const meshes: THREE.Mesh[] = [];
-    const materials: THREE.Material[] = [];
-    const geometries: THREE.BufferGeometry[] = [];
+    const meshes: THREE.Mesh[] = []
+    const materials: THREE.Material[] = []
+    const geometries: THREE.BufferGeometry[] = []
 
     scene.traverse((child: any) => {
       if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        child.rotation.set(0, 0, 0);
-        meshes.push(child);
+        child.castShadow = true
+        child.receiveShadow = true
+        child.rotation.set(0, 0, 0)
+        meshes.push(child)
         
         if (child.geometry) {
-          child.geometry.computeBoundingSphere();
-          child.geometry.computeBoundingBox();
-          geometries.push(child.geometry);
+          child.geometry.computeBoundingSphere()
+          child.geometry.computeBoundingBox()
+          geometries.push(child.geometry)
         }
 
         if (child.material) {
           if (Array.isArray(child.material)) {
             child.material.forEach((mat: THREE.Material) => {
-              optimizeMaterial(mat);
-              materials.push(mat);
-            });
+              optimizeMaterial(mat)
+              materials.push(mat)
+            })
           } else {
-            optimizeMaterial(child.material);
-            materials.push(child.material);
+            optimizeMaterial(child.material)
+            materials.push(child.material)
           }
         }
       }
-    });
+    })
 
-    // 클린업 함수 저장
     cleanupRef.current = () => {
-      geometries.forEach(geometry => geometry.dispose());
-      materials.forEach(material => material.dispose());
+      geometries.forEach(geometry => geometry.dispose())
+      materials.forEach(material => material.dispose())
       meshes.forEach(mesh => {
-        mesh.geometry?.dispose();
+        mesh.geometry?.dispose()
         if (Array.isArray(mesh.material)) {
-          mesh.material.forEach(mat => mat.dispose());
+          mesh.material.forEach(mat => mat.dispose())
         } else {
-          mesh.material?.dispose();
+          mesh.material?.dispose()
         }
-      });
-      useGLTF.clear(modelPath);
-    };
+      })
+      useGLTF.clear(modelPath)
+    }
 
     return () => {
       if (cleanupRef.current) {
-        cleanupRef.current();
+        cleanupRef.current()
       }
-    };
-  }, [scene, modelPath]);
+    }
+  }, [scene, modelPath])
 
-  // 모바일 최적화를 scene이 로드된 후에 적용
   useEffect(() => {
     if (scene && isMobile.current) {
       scene.traverse((child: any) => {
         if (child.isMesh) {
           if (child.material) {
-            // 텍스처 품질 낮추기
             if (child.material.map) {
               child.material.map.minFilter = THREE.LinearFilter
               child.material.map.magFilter = THREE.LinearFilter
             }
-            // 그림자 품질 조정
             child.castShadow = false
             child.receiveShadow = false
           }
