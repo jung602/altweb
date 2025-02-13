@@ -69,6 +69,7 @@ export const useSceneScroll = () => {
       touchStartY.current = e.touches[0].clientY;
       touchStartX.current = e.touches[0].clientX;
       accumulatedDelta.current = 0; // 터치 시작시 누적값 리셋
+      setBlurred(true); // 터치 시작시 블러 적용
     },
     move: (e: React.TouchEvent) => {
       if (isExpanded) return;
@@ -82,7 +83,7 @@ export const useSceneScroll = () => {
       const deltaX = touchStartX.current - currentX;
       
       // 터치 민감도 조절
-      const threshold = isMobileDevice.current ? 80 : 120;
+      const threshold = isMobileDevice.current ? 50 : 80; // 모바일에서 더 민감하게 조정
       
       if (Math.abs(deltaY) > threshold || Math.abs(deltaX) > threshold) {
         const direction = deltaY > 0 ? 1 : -1;
@@ -99,7 +100,10 @@ export const useSceneScroll = () => {
     end: () => {
       touchStartY.current = 0;
       touchStartX.current = 0;
-      accumulatedDelta.current = 0; // 터치 종료시 누적값 리셋
+      accumulatedDelta.current = 0;
+      setTimeout(() => {
+        setBlurred(false); // 터치 종료 후 블러 해제
+      }, 300);
     }
   };
 

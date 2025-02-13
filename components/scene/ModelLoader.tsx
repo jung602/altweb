@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
 import { GroupProps } from '@react-three/fiber'
 import { ModelComponentType, MODEL_COMPONENTS } from "../../types/scene"
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { DRACOLoader } from 'three-stdlib'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { optimizeMaterial } from '../../utils/materialOptimizer'
 import { MODEL_PRELOAD_MAP } from '../../config/sceneConfig'
@@ -21,10 +21,37 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
   const [isNewModelReady, setIsNewModelReady] = useState(true)
   const [previousScene, setPreviousScene] = useState<THREE.Group | null>(null)
   const isInitialMount = useRef(true)
+  const isMobile = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
   
   const { scene } = useGLTF(modelPath, true, undefined, (loader) => {
-    loader.manager.onLoad = () => {
-      setIsNewModelReady(true)
+    // DRACO 로더 설정
+    const dracoLoader = new DRACOLoader()
+    dracoLoader.setDecoderPath('/draco/')
+    loader.setDRACOLoader(dracoLoader)
+
+    // 모바일에서 텍스처 품질 조정
+    if (isMobile.current) {
+      loader.manager.onLoad = () => {
+        scene.traverse((child: any) => {
+          if (child.isMesh) {
+            if (child.material) {
+              // 텍스처 품질 낮추기
+              if (child.material.map) {
+                child.material.map.minFilter = THREE.LinearFilter
+                child.material.map.magFilter = THREE.LinearFilter
+              }
+              // 그림자 품질 조정
+              child.castShadow = false
+              child.receiveShadow = false
+            }
+          }
+        })
+        setIsNewModelReady(true)
+      }
+    } else {
+      loader.manager.onLoad = () => {
+        setIsNewModelReady(true)
+      }
     }
   })
   
