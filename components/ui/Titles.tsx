@@ -29,8 +29,10 @@ const TitleItem = ({
       style={{
         transform,
         opacity: hovered ? opacity * 0.5 : opacity,
-        visibility: (opacity === 0 || (isExpanded && !isCurrent)) ? 'hidden' : 'visible',
-        pointerEvents: (opacity === 0 || (isExpanded && !isCurrent)) ? 'none' : 'auto'
+        visibility: opacity === 0 ? 'hidden' : 'visible',
+        display: (isExpanded && !isCurrent) ? 'none' : 'block',
+        pointerEvents: (opacity === 0 || (isExpanded && !isCurrent)) ? 'none' : 'auto',
+        transition: 'all 0.5s ease-out, visibility 0s'
       }}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
