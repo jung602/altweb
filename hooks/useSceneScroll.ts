@@ -8,6 +8,7 @@ export const useSceneScroll = () => {
   const setCurrentScene = useSceneStore((state) => state.setCurrentScene);
   const isModelHovered = useSceneStore((state) => state.isModelHovered);
   const isExpanded = useSceneStore((state) => state.isExpanded);
+  const setBlurred = useSceneStore((state) => state.setBlurred);
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [baseSize, setBaseSize] = useState(2000);
@@ -41,6 +42,7 @@ export const useSceneScroll = () => {
     const delta = e.deltaY;
     if (Math.abs(delta) > 0) {
       isScrolling.current = true;
+      setBlurred(true);  // 스크롤 시작 시 블러 적용
       const direction = delta > 0 ? 1 : -1;
       const newIndex = currentIndex + direction;
       
@@ -49,15 +51,17 @@ export const useSceneScroll = () => {
         lastScrollTime.current = now;
         accumulatedDelta.current = 0;
         
-        // 스크롤 잠금 해제를 위한 타이머 설정
+        // 스크롤 완료 후 블러 해제
         setTimeout(() => {
           isScrolling.current = false;
+          setBlurred(false);
         }, scrollThreshold);
       } else {
         isScrolling.current = false;
+        setBlurred(false);
       }
     }
-  }, [currentIndex, scenes.length, setCurrentScene, isModelHovered, isExpanded]);
+  }, [currentIndex, scenes.length, setCurrentScene, isExpanded, isModelHovered, setBlurred]);
 
   const handleTouch = {
     start: (e: React.TouchEvent) => {

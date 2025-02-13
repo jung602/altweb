@@ -25,6 +25,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const isIndexView = useSceneStore((state) => state.isIndexView);
+  const isBlurred = useSceneStore((state) => state.isBlurred);
 
   const handleTouchEvents = useMemo(() => ({
     onTouchStart: handleTouch.start,
@@ -78,8 +79,12 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
                   config={scenes[currentIndex]}
                 />
               </Canvas>
-            </div>
-            <div className="absolute inset-0 pointer-events-none">
+              <div 
+                className={`absolute inset-0 pointer-events-none backdrop-blur-sm transition-opacity duration-300 ${
+                  isBlurred ? 'opacity-100' : 'opacity-0'
+                }`}
+                id="blur-layer" 
+              />
             </div>
           </div>
         </div>

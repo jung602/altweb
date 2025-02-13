@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import { useEffect, useRef, memo } from 'react'
+import { useEffect, useRef, memo, useState } from 'react'
 import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
 import { GroupProps } from '@react-three/fiber'
@@ -18,10 +18,47 @@ interface ModelLoaderProps {
 export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
   const modelPath = `${basePath}/gltf/compressed_${component.toLowerCase()}.glb`
+  const [isNewModelReady, setIsNewModelReady] = useState(true)
+  const [previousScene, setPreviousScene] = useState<THREE.Group | null>(null)
+  const isInitialMount = useRef(true)
   
-  const { scene } = useGLTF(modelPath, true)
+  const { scene } = useGLTF(modelPath, true, undefined, (loader) => {
+    loader.manager.onLoad = () => {
+      setIsNewModelReady(true)
+    }
+  })
+  
   const hasPreloaded = useRef(false)
   const cleanupRef = useRef<(() => void) | null>(null)
+
+  // 모델이 변경될 때 이전 모델 저장
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+
+    if (previousScene) {
+      setPreviousScene(null)
+    }
+    setPreviousScene(scene.clone())
+    setIsNewModelReady(false)
+    
+    return () => {
+      if (previousScene) {
+        previousScene.traverse((child: any) => {
+          if (child.isMesh) {
+            child.geometry?.dispose()
+            if (Array.isArray(child.material)) {
+              child.material.forEach((mat: THREE.Material) => mat.dispose())
+            } else {
+              child.material?.dispose()
+            }
+          }
+        })
+      }
+    }
+  }, [component])
 
   // 모델 로드 시 초기 회전값 설정
   useEffect(() => {
@@ -103,20 +140,41 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
     };
   }, [scene, modelPath]);
 
-  return <primitive 
-    object={scene} 
-    {...props}
-    onPointerOver={(e: ThreeEvent<PointerEvent>) => {
-      e.stopPropagation();
-      document.body.style.cursor = 'pointer';
-      if (props.onPointerEnter) props.onPointerEnter(e);
-    }}
-    onPointerOut={(e: ThreeEvent<PointerEvent>) => {
-      e.stopPropagation();
-      document.body.style.cursor = 'auto';
-      if (props.onPointerLeave) props.onPointerLeave(e);
-    }}
-  />
+  return (
+    <>
+      <primitive 
+        object={scene} 
+        {...props}
+        visible={isNewModelReady}
+        onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation()
+          document.body.style.cursor = 'pointer'
+          if (props.onPointerEnter) props.onPointerEnter(e)
+        }}
+        onPointerOut={(e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation()
+          document.body.style.cursor = 'auto'
+          if (props.onPointerLeave) props.onPointerLeave(e)
+        }}
+      />
+      {previousScene && !isNewModelReady && (
+        <primitive 
+          object={previousScene} 
+          {...props}
+          onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+            e.stopPropagation()
+            document.body.style.cursor = 'pointer'
+            if (props.onPointerEnter) props.onPointerEnter(e)
+          }}
+          onPointerOut={(e: ThreeEvent<PointerEvent>) => {
+            e.stopPropagation()
+            document.body.style.cursor = 'auto'
+            if (props.onPointerLeave) props.onPointerLeave(e)
+          }}
+        />
+      )}
+    </>
+  )
 })
 
 ModelLoader.displayName = 'ModelLoader' 

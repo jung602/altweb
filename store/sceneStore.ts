@@ -25,6 +25,7 @@ interface InteractionState {
   areLabelsOpen: boolean
   isLoading: boolean
   error: string | null
+  isBlurred: boolean
 }
 
 interface StoreState extends ViewState, SceneState, InteractionState {
@@ -47,6 +48,7 @@ interface StoreState extends ViewState, SceneState, InteractionState {
   
   // 비동기 액션
   loadScene: (index: number) => Promise<void>
+  setBlurred: (blurred: boolean) => void
 }
 
 // 초기 상태를 상수로 분리
@@ -69,6 +71,7 @@ const initialState = {
   areLabelsOpen: false,
   isLoading: false,
   error: null,
+  isBlurred: false,
 }
 
 // 타입 가드
@@ -220,6 +223,11 @@ export const useSceneStore = create<StoreState>()(
             )
           }
         },
+
+        setBlurred: (blurred) =>
+          set((state) => {
+            state.isBlurred = blurred;
+          }),
       })),
       {
         name: 'scene-store',
