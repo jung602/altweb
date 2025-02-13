@@ -68,8 +68,8 @@ export const useSceneScroll = () => {
       if (isExpanded) return;
       touchStartY.current = e.touches[0].clientY;
       touchStartX.current = e.touches[0].clientX;
-      accumulatedDelta.current = 0; // 터치 시작시 누적값 리셋
-      setBlurred(true); // 터치 시작시 블러 적용
+      accumulatedDelta.current = 0;
+      setBlurred(true);
     },
     move: (e: React.TouchEvent) => {
       if (isExpanded) return;
@@ -82,18 +82,21 @@ export const useSceneScroll = () => {
       const deltaY = touchStartY.current - currentY;
       const deltaX = touchStartX.current - currentX;
       
-      // 터치 민감도 조절
-      const threshold = isMobileDevice.current ? 50 : 80; // 모바일에서 더 민감하게 조정
-      
-      if (Math.abs(deltaY) > threshold || Math.abs(deltaX) > threshold) {
-        const direction = deltaY > 0 ? 1 : -1;
-        const newIndex = currentIndex + direction;
+      // 수직 스크롤만 감지하도록 수정
+      if (Math.abs(deltaY) > 20) { // 작은 수직 움직임은 무시
+        const threshold = isMobileDevice.current ? 30 : 50;
         
-        if (newIndex >= 0 && newIndex < scenes.length) {
-          setCurrentScene(newIndex);
-          lastScrollTime.current = now;
-          touchStartY.current = currentY;
-          touchStartX.current = currentX;
+        if (Math.abs(deltaY) > threshold) {
+          const direction = deltaY > 0 ? 1 : -1;
+          const newIndex = currentIndex + direction;
+          
+          if (newIndex >= 0 && newIndex < scenes.length) {
+            e.preventDefault(); // 브라우저 기본 스크롤 동작 방지
+            setCurrentScene(newIndex);
+            lastScrollTime.current = now;
+            touchStartY.current = currentY;
+            touchStartX.current = currentX;
+          }
         }
       }
     },
@@ -102,7 +105,7 @@ export const useSceneScroll = () => {
       touchStartX.current = 0;
       accumulatedDelta.current = 0;
       setTimeout(() => {
-        setBlurred(false); // 터치 종료 후 블러 해제
+        setBlurred(false);
       }, 300);
     }
   };
