@@ -29,29 +29,9 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
     dracoLoader.setDecoderPath('/draco/')
     loader.setDRACOLoader(dracoLoader)
 
-    // 모바일에서 텍스처 품질 조정
-    if (isMobile.current) {
-      loader.manager.onLoad = () => {
-        scene.traverse((child: any) => {
-          if (child.isMesh) {
-            if (child.material) {
-              // 텍스처 품질 낮추기
-              if (child.material.map) {
-                child.material.map.minFilter = THREE.LinearFilter
-                child.material.map.magFilter = THREE.LinearFilter
-              }
-              // 그림자 품질 조정
-              child.castShadow = false
-              child.receiveShadow = false
-            }
-          }
-        })
-        setIsNewModelReady(true)
-      }
-    } else {
-      loader.manager.onLoad = () => {
-        setIsNewModelReady(true)
-      }
+    // 기본 onLoad 설정
+    loader.manager.onLoad = () => {
+      setIsNewModelReady(true)
     }
   })
   
@@ -166,6 +146,26 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
       }
     };
   }, [scene, modelPath]);
+
+  // 모바일 최적화를 scene이 로드된 후에 적용
+  useEffect(() => {
+    if (scene && isMobile.current) {
+      scene.traverse((child: any) => {
+        if (child.isMesh) {
+          if (child.material) {
+            // 텍스처 품질 낮추기
+            if (child.material.map) {
+              child.material.map.minFilter = THREE.LinearFilter
+              child.material.map.magFilter = THREE.LinearFilter
+            }
+            // 그림자 품질 조정
+            child.castShadow = false
+            child.receiveShadow = false
+          }
+        }
+      })
+    }
+  }, [scene])
 
   return (
     <>
