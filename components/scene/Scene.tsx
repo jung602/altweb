@@ -47,8 +47,8 @@ export const Scene = memo(({ config }: SceneProps) => {
     rotationY: 0,
     config: {
       mass: 1,
-      tension: 170,
-      friction: 26
+      tension: 120,
+      friction: 50
     }
   }));
 

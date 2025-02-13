@@ -179,37 +179,16 @@ export function HorizontalTitles() {
     const nearestIndex = Math.round(-dragOffset / titleSpacing);
     const boundedIndex = Math.max(0, Math.min(scenes.length - 1, currentIndex + nearestIndex));
     
-    // 부드러운 애니메이션으로 스냅
-    const startOffset = dragOffset;
-    const targetOffset = -(boundedIndex - currentIndex) * titleSpacing;
-    const startTime = performance.now();
-    const duration = 500; // 800ms에서 500ms로 단축
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      const easeProgress = easing.easeOutElastic(progress);
-      const currentOffset = startOffset + (targetOffset - startOffset) * easeProgress;
-      setDragOffset(currentOffset);
-
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-      } else {
-        setDragOffset(0);
-        if (boundedIndex !== currentIndex) {
-          setCurrentScene(boundedIndex);
-          setTimeout(() => {
-            setBlurred(false);
-          }, 100);
-        } else {
-          setBlurred(false);
-        }
-      }
-    };
-
-    cancelAnimationFrame(animationRef.current!);
-    animationRef.current = requestAnimationFrame(animate);
+    // 즉시 목표 위치로 이동
+    setDragOffset(0);
+    if (boundedIndex !== currentIndex) {
+      setCurrentScene(boundedIndex);
+      setTimeout(() => {
+        setBlurred(false);
+      }, 100);
+    } else {
+      setBlurred(false);
+    }
   };
 
   useEffect(() => {
@@ -228,7 +207,7 @@ export function HorizontalTitles() {
           className={`flex items-center justify-center ${!isExpanded ? 'cursor-grab active:cursor-grabbing' : ''}`}
           style={{
             transform: `translateX(${dragOffset}px)`,
-            transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+            transition: 'none'
           }}
           onMouseDown={handleDragStart}
           onTouchStart={handleDragStart}
@@ -368,41 +347,16 @@ export function VerticalTitles() {
     
     const boundedIndex = Math.max(0, Math.min(scenes.length - 1, currentIndex + nearestIndex));
     
-    // 부드러운 애니메이션으로 스냅
-    const startOffset = dragOffset;
-    const targetOffset = -(boundedIndex - currentIndex) * titleSpacing;
-    const startTime = performance.now();
-    const duration = 500; // 800ms에서 500ms로 단축
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // 첫 번째와 마지막 타이틀의 경우 easeOutExpo 사용 (바운스 없음)
-      const easeProgress = (currentIndex === 0 || currentIndex === scenes.length - 1) 
-        ? easing.easeOutExpo(progress) 
-        : easing.easeOutElastic(progress);
-      
-      const currentOffset = startOffset + (targetOffset - startOffset) * easeProgress;
-      setDragOffset(currentOffset);
-
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-      } else {
-        setDragOffset(0);
-        if (boundedIndex !== currentIndex) {
-          setCurrentScene(boundedIndex);
-          setTimeout(() => {
-            setBlurred(false);
-          }, 100);
-        } else {
-          setBlurred(false);
-        }
-      }
-    };
-
-    cancelAnimationFrame(animationRef.current!);
-    animationRef.current = requestAnimationFrame(animate);
+    // 즉시 목표 위치로 이동
+    setDragOffset(0);
+    if (boundedIndex !== currentIndex) {
+      setCurrentScene(boundedIndex);
+      setTimeout(() => {
+        setBlurred(false);
+      }, 100);
+    } else {
+      setBlurred(false);
+    }
   };
 
   useEffect(() => {
@@ -421,7 +375,7 @@ export function VerticalTitles() {
           className={`flex flex-col items-center justify-center ${!isExpanded ? 'cursor-grab active:cursor-grabbing' : ''}`}
           style={{
             transform: `translateY(${dragOffset}px)`,
-            transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+            transition: 'none'
           }}
           onMouseDown={handleDragStart}
           onTouchStart={handleDragStart}
