@@ -18,20 +18,26 @@ interface ModelLoaderProps {
 export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
   const modelPath = `${basePath}/gltf/compressed_${component.toLowerCase()}.glb`
-  const [isNewModelReady, setIsNewModelReady] = useState(true)
+  const [isNewModelReady, setIsNewModelReady] = useState(false)
   const [previousScene, setPreviousScene] = useState<THREE.Group | null>(null)
   const isInitialMount = useRef(true)
   const isMobile = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+  const loadingTimeout = useRef<NodeJS.Timeout | null>(null)
   
   const { scene } = useGLTF(modelPath, true, undefined, (loader) => {
-    // DRACO 로더 설정
     const dracoLoader = new DRACOLoader()
     dracoLoader.setDecoderPath('/draco/')
     loader.setDRACOLoader(dracoLoader)
 
-    // 기본 onLoad 설정
     loader.manager.onLoad = () => {
-      setIsNewModelReady(true)
+      // 모바일에서는 로딩 완료 후 약간의 지연을 두어 전환
+      if (isMobile.current) {
+        loadingTimeout.current = setTimeout(() => {
+          setIsNewModelReady(true)
+        }, 100)
+      } else {
+        setIsNewModelReady(true)
+      }
     }
   })
   
@@ -42,16 +48,22 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false
+      setIsNewModelReady(true)
       return
     }
 
-    if (previousScene) {
-      setPreviousScene(null)
-    }
-    setPreviousScene(scene.clone())
     setIsNewModelReady(false)
     
+    // 이전 모델 복제 및 저장
+    if (scene) {
+      const clonedScene = scene.clone(true)
+      setPreviousScene(clonedScene)
+    }
+
     return () => {
+      if (loadingTimeout.current) {
+        clearTimeout(loadingTimeout.current)
+      }
       if (previousScene) {
         previousScene.traverse((child: any) => {
           if (child.isMesh) {
@@ -147,20 +159,37 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
     };
   }, [scene, modelPath]);
 
-  // 모바일 최적화를 scene이 로드된 후에 적용
+  // 모바일 최적화 강화
   useEffect(() => {
     if (scene && isMobile.current) {
       scene.traverse((child: any) => {
         if (child.isMesh) {
+          // 메시 최적화
+          if (child.geometry && child.geometry.attributes) {
+            if (child.geometry.attributes.position) {
+              child.geometry.attributes.position.needsUpdate = false
+            }
+            if (child.geometry.attributes.normal) {
+              child.geometry.attributes.normal.needsUpdate = false
+            }
+            if (child.geometry.attributes.uv) {
+              child.geometry.attributes.uv.needsUpdate = false
+            }
+          }
+          
           if (child.material) {
-            // 텍스처 품질 낮추기
+            // 텍스처 최적화
             if (child.material.map) {
               child.material.map.minFilter = THREE.LinearFilter
               child.material.map.magFilter = THREE.LinearFilter
+              child.material.map.anisotropy = 1
             }
-            // 그림자 품질 조정
+            // 그림자 비활성화
             child.castShadow = false
             child.receiveShadow = false
+            // 재질 최적화
+            child.material.precision = 'lowp'
+            child.material.fog = false
           }
         }
       })
