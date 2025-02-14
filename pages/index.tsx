@@ -52,7 +52,7 @@ export default function Home() {
         relative
       `}
     >
-      <div className='fixed top-3 left-3 mix-blend-difference text-slate-50 text-sm font-geist-sans z-[1002]'>
+      <div className='fixed top-3 left-3 mix-blend-difference text-slate-50 text-sm font-geist-sans z-[10000]'>
         <Image
           src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/logowhite.png`}
           alt="Logo"
