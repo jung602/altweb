@@ -24,7 +24,7 @@ const LoadingScreen: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
     <AnimatePresence mode="wait">
       {isLoading && (
         <motion.div
-          className="fixed top-0 left-0 w-screen h-screen backdrop-blur-md z-[9999] overflow-hidden"
+          className="fixed top-0 left-0 w-screen h-[100dvh] backdrop-blur-md z-[9999] overflow-hidden"
           initial={{ 
             backgroundColor: 'rgba(0, 0, 0, 1)',
             opacity: 1 
@@ -55,7 +55,7 @@ const LoadingScreen: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
             }}
           >
             <motion.div
-              className="text-slate-50 font-geist-sans text-7xl font-light tracking-tighter text-right"
+              className="text-slate-50 font-geist-sans text-[12rem] leading-[0.8] font-light tracking-tighter text-right"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
