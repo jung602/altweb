@@ -68,7 +68,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
                 camera={{
                   position: [5 * 29, 6.5 * 29, -10 * 29],
                   fov: 1,
-                  near: 50,
+                  near: 0.1,
                   far: 2000,
                   zoom: 1
                 }}

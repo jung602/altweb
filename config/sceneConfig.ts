@@ -32,7 +32,7 @@ export const CANVAS_CONFIG = {
     outputColorSpace: THREE.LinearSRGBColorSpace,
     samples: 8,
   },
-  dpr: [1.5, 2] as [number, number]
+  dpr: [1, 2] as [number, number]
 };
 
 // OrbitControls 기본 설정
