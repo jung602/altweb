@@ -55,6 +55,10 @@ export const Scene = memo(({ config }: SceneProps) => {
         config: ANIMATION_CONFIG.SPRING
       });
     }
+    
+    if (!isExpanded && controlsRef.current) {
+      controlsRef.current.reset();
+    }
   }, [rotationApi, isExpanded]);
 
   const handleMouseMove = useCallback((event: MouseEvent | TouchEvent) => {

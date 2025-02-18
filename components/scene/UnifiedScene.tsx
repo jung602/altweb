@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import { Scene } from './Scene';
 import { HorizontalTitles, VerticalTitles } from '../ui/Titles';
 import { useSceneScroll } from '../../hooks/useSceneScroll';
@@ -9,10 +9,24 @@ import { IndexView } from '../ui/IndexView';
 import { Canvas } from '@react-three/fiber';
 import Label from '../ui/Label';
 import { CANVAS_CONFIG } from '../../config/sceneConfig';
+import { Vector3 } from 'three';
 
 interface UnifiedSceneProps {
   isVertical?: boolean;
 }
+
+const INITIAL_CAMERA_CONFIG = {
+  position: [5 * 29, 6.5 * 29, -10 * 29] as [number, number, number],
+  fov: 1,
+  near: 50,
+  far: 2000,
+  zoom: 1
+};
+
+const EXPANDED_CAMERA_CONFIG = {
+  ...INITIAL_CAMERA_CONFIG,
+  position: [5 * 29, 6.5 * 29, -10 * 29] as [number, number, number],
+};
 
 export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
   const {
@@ -36,6 +50,8 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
   const handleExpandToggle = useCallback(() => {
     toggleExpanded();
   }, [toggleExpanded]);
+
+  const cameraConfig = isExpanded ? EXPANDED_CAMERA_CONFIG : INITIAL_CAMERA_CONFIG;
 
   if (isIndexView) {
     return <IndexView />;
@@ -65,13 +81,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
             <div className="absolute inset-0">
               <Canvas
                 style={{ width: '100%', height: '100%' }}
-                camera={{
-                  position: [5 * 29, 6.5 * 29, -10 * 29],
-                  fov: 1,
-                  near: 0.1,
-                  far: 2000,
-                  zoom: 1
-                }}
+                camera={cameraConfig}
                 gl={CANVAS_CONFIG.gl}
                 shadows
               >
