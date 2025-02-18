@@ -194,9 +194,10 @@ export function HorizontalTitles() {
   };
 
   useEffect(() => {
+    const animation = animationRef.current;
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (animation) {
+        cancelAnimationFrame(animation);
       }
     };
   }, []);
@@ -362,9 +363,10 @@ export function VerticalTitles() {
   };
 
   useEffect(() => {
+    const animation = animationRef.current;
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (animation) {
+        cancelAnimationFrame(animation);
       }
     };
   }, []);

@@ -1,7 +1,7 @@
 // components//LavelNav.tsx
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useSceneStore } from '../../store/sceneStore';
-import { ArrowRight, ArrowDown, ArrowLeft } from 'lucide-react';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
 
 export const LabelNavigation = () => {
   const isExpanded = useSceneStore((state) => state.isExpanded);
@@ -38,8 +38,6 @@ export const LabelNavigation = () => {
   }
 
   if (!isExpanded) return null;
-
-  const currentScene = scenes[currentIndex];
 
   return (
     <>

@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import localFont from "next/font/local";
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Navigation } from '../components/layout/Nav';
 import { useSceneStore } from '@/store/sceneStore';
 

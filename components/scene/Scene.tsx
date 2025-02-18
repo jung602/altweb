@@ -2,7 +2,6 @@ import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { Reflector, Stats } from '@react-three/drei';
 import { useSpring, animated } from '@react-spring/three';
-import { useFrame } from '@react-three/fiber';
 import { debounce } from 'lodash';
 import { useSceneStore } from '../../store/sceneStore';
 import type { SceneConfig } from '../../types/scene';
@@ -13,10 +12,6 @@ import { ANIMATION_CONFIG } from '../../config/sceneConfig';
 import React from 'react';
 import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 import { useResponsivePosition } from '../../hooks/useResponsivePosition';
-
-const startTime = {
-  current: Date.now()
-};
 
 /**
  * Scene 컴포넌트의 props 인터페이스
@@ -52,19 +47,15 @@ export const Scene = memo(({ config }: SceneProps) => {
     }
   }));
 
-  // 씬이 변경될 때마다 회전값 초기화
   useEffect(() => {
-    rotationApi.start({
-      rotationX: 0,
-      rotationY: 0,
-      immediate: true
-    });
-    
-    // Controls 초기화
-    if (controlsRef.current) {
-      controlsRef.current.reset();
+    if (rotationApi) {
+      rotationApi.start({
+        rotationX: 0,
+        rotationY: 0,
+        config: ANIMATION_CONFIG.SPRING
+      });
     }
-  }, [config.model.component]);
+  }, [rotationApi, isExpanded]);
 
   const handleMouseMove = useCallback((event: MouseEvent | TouchEvent) => {
     if (!isUserInteracting.current && !isExpanded) {

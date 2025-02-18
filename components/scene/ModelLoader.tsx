@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import { useEffect, useRef, memo, useState } from 'react'
+import { useEffect, useRef, memo, useState, useCallback } from 'react'
 import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
 import { GroupProps } from '@react-three/fiber'
@@ -25,6 +25,23 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
   const hasPreloaded = useRef(false)
   const cleanupRef = useRef<(() => void) | null>(null)
   
+  const preloadNextModel = useCallback(async () => {
+    if (!hasPreloaded.current && !MODEL_PRELOAD_MAP[component]) {
+      const currentIndex = MODEL_COMPONENTS.indexOf(component)
+      const nextIndex = (currentIndex + 1) % MODEL_COMPONENTS.length
+      const nextComponent = MODEL_COMPONENTS[nextIndex]
+      const nextModelPath = `${basePath}/gltf/compressed_${nextComponent.toLowerCase()}.glb`
+      
+      try {
+        await useGLTF.preload(nextModelPath)
+        MODEL_PRELOAD_MAP[component] = true
+        hasPreloaded.current = true
+      } catch (error) {
+        console.error('Failed to preload next model:', error)
+      }
+    }
+  }, [basePath, component])
+
   const { scene } = useGLTF(modelPath, true, undefined, (loader) => {
     const dracoLoader = new DRACOLoader()
     dracoLoader.setDecoderPath('/draco/')
@@ -71,25 +88,10 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
   }, [scene])
 
   useEffect(() => {
-    const preloadNextModel = async () => {
-      if (!hasPreloaded.current && !MODEL_PRELOAD_MAP[component]) {
-        const currentIndex = MODEL_COMPONENTS.indexOf(component)
-        const nextIndex = (currentIndex + 1) % MODEL_COMPONENTS.length
-        const nextComponent = MODEL_COMPONENTS[nextIndex]
-        const nextModelPath = `${basePath}/gltf/compressed_${nextComponent.toLowerCase()}.glb`
-        
-        try {
-          await useGLTF.preload(nextModelPath)
-          MODEL_PRELOAD_MAP[component] = true
-          hasPreloaded.current = true
-        } catch (error) {
-          console.error('Failed to preload next model:', error)
-        }
-      }
+    if (previousScene !== scene) {
+      preloadNextModel();
     }
-
-    preloadNextModel()
-  }, [component, basePath])
+  }, [previousScene, scene, preloadNextModel]);
 
   useEffect(() => {
     const meshes: THREE.Mesh[] = []
