@@ -22,6 +22,8 @@ const TitleItem = ({
 }) => {
   const [hovered, setHovered] = useState(false);
   
+  if (isExpanded && !isCurrent) return null;
+  
   return (
     <div
       className={`absolute text-center transition-all duration-500 ease-out cursor-pointer pointer-events-auto select-none
@@ -30,8 +32,7 @@ const TitleItem = ({
         transform,
         opacity: hovered ? opacity * 0.5 : opacity,
         visibility: opacity === 0 ? 'hidden' : 'visible',
-        display: (isExpanded && !isCurrent) ? 'none' : 'block',
-        pointerEvents: (opacity === 0 || (isExpanded && !isCurrent)) ? 'none' : 'auto',
+        pointerEvents: opacity === 0 ? 'none' : 'auto',
         transition: 'all 0.5s ease-out, visibility 0s'
       }}
       onClick={onClick}

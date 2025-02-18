@@ -29,6 +29,7 @@ export const Scene = memo(({ config, controlsRef }: SceneProps) => {
   const setModelHovered = useSceneStore((state) => state.setModelHovered);
   const isTransitioning = useSceneStore((state) => state.isTransitioning);
   const setTransitioning = useSceneStore((state) => state.setTransitioning);
+  const setBlurred = useSceneStore((state) => state.setBlurred);
   const isMobileDevice = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
   const clickStartTime = useRef<number>(0);
   const CLICK_THRESHOLD = 200;
@@ -145,8 +146,18 @@ export const Scene = memo(({ config, controlsRef }: SceneProps) => {
         isExpanded={isExpanded}
         isActive={!isUserInteracting.current}
         isCenter={true}
-        onStart={() => { isUserInteracting.current = true }}
-        onEnd={() => { isUserInteracting.current = false }}
+        onStart={() => { 
+          isUserInteracting.current = true;
+          if (!isExpanded) {
+            setBlurred(true);
+          }
+        }}
+        onEnd={() => { 
+          isUserInteracting.current = false;
+          if (!isExpanded) {
+            setBlurred(false);
+          }
+        }}
       />
       
       <ambientLight intensity={1} />

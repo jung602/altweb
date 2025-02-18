@@ -147,7 +147,7 @@ export const scenesData: SceneConfig[] = [
     model: {
       component: "Alt5",
       scale: .8,
-      position: [0, -.82, 0],
+      position: [-0.15, -.82, 0],
       rotation: [0, 0, 0],
     },
     labels: [
@@ -162,5 +162,19 @@ export const scenesData: SceneConfig[] = [
         position: [0, .5, 0]
       }
     ],
+    reflector: {
+      enabled: true,
+      scale: [.088, .048, 0.1],
+      position: [-1.7, 0.7, 1.45],
+      rotation: [0, -3.15, 0],
+      resolution: 512,
+      args: [10, 10],
+      mirror: 1,
+      minDepthThreshold: 0,
+      maxDepthThreshold: 1,
+      depthScale: 1,
+      metalness: .1,
+      roughness: 0
+    }
   },
 ];
