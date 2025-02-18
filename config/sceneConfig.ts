@@ -30,9 +30,9 @@ export const CANVAS_CONFIG = {
     toneMapping: THREE.ACESFilmicToneMapping,
     toneMappingExposure: 1,
     outputColorSpace: THREE.LinearSRGBColorSpace,
-    samples: 4,
+    samples: 8,
   },
-  dpr: [1, 2] as [number, number]
+  dpr: [1.5, 2] as [number, number]
 };
 
 // OrbitControls 기본 설정

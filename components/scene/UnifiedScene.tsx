@@ -68,8 +68,8 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
                 camera={{
                   position: [5 * 29, 6.5 * 29, -10 * 29],
                   fov: 1,
-                  near: 40,
-                  far: 1000,
+                  near: 50,
+                  far: 2000,
                   zoom: 1
                 }}
                 gl={CANVAS_CONFIG.gl}
