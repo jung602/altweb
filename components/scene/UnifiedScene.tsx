@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect, useRef } from 'react';
 import { Scene } from './Scene';
 import { HorizontalTitles, VerticalTitles } from '../ui/Titles';
 import { useSceneScroll } from '../../hooks/useSceneScroll';
@@ -52,6 +52,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
   }, [toggleExpanded]);
 
   const cameraConfig = isExpanded ? EXPANDED_CAMERA_CONFIG : INITIAL_CAMERA_CONFIG;
+  const controlsRef = useRef(null);
 
   if (isIndexView) {
     return <IndexView />;
@@ -87,6 +88,7 @@ export default function UnifiedScene({ isVertical = true }: UnifiedSceneProps) {
               >
                 <Scene
                   config={scenes[currentIndex]}
+                  controlsRef={controlsRef}
                 />
               </Canvas>
               <div 

@@ -9,13 +9,15 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { optimizeMaterial } from '../../utils/materialOptimizer'
 import { MODEL_PRELOAD_MAP } from '../../config/sceneConfig'
 import { ThreeEvent } from '@react-three/fiber'
+import { useSceneStore } from '../../store/sceneStore'
 
 interface ModelLoaderProps {
   component: ModelComponentType
+  controlsRef?: React.RefObject<any>
   [key: string]: any
 }
 
-export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
+export const ModelLoader = memo(({ component, controlsRef, ...props }: ModelLoaderProps) => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
   const modelPath = `${basePath}/gltf/compressed_${component.toLowerCase()}.glb`
   const [isNewModelReady, setIsNewModelReady] = useState(false)
@@ -66,6 +68,11 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
       setPreviousScene(clonedScene)
     }
 
+    // Reset controls when model changes
+    if (controlsRef?.current) {
+      controlsRef.current.reset()
+    }
+
     return () => {
       if (previousScene) {
         previousScene.traverse((child: any) => {
@@ -81,10 +88,15 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
         setPreviousScene(null)
       }
     }
-  }, [component])
+  }, [component, controlsRef])
 
   useEffect(() => {
     scene.rotation.set(0, 0, 0)
+    scene.traverse((child: any) => {
+      if (child.isMesh) {
+        child.rotation.set(0, 0, 0)
+      }
+    })
   }, [scene])
 
   useEffect(() => {

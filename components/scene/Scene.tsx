@@ -20,15 +20,15 @@ import { useResponsivePosition } from '../../hooks/useResponsivePosition';
 interface SceneProps {
   /** 씬 설정 객체 */
   config: SceneConfig;
+  controlsRef?: React.RefObject<any>;
 }
 
-export const Scene = memo(({ config }: SceneProps) => {
+export const Scene = memo(({ config, controlsRef }: SceneProps) => {
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const setModelHovered = useSceneStore((state) => state.setModelHovered);
   const isTransitioning = useSceneStore((state) => state.isTransitioning);
   const setTransitioning = useSceneStore((state) => state.setTransitioning);
-  const controlsRef = useRef<ControlsRef>(null);
   const isMobileDevice = useRef(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
   const clickStartTime = useRef<number>(0);
   const CLICK_THRESHOLD = 200;
@@ -56,7 +56,7 @@ export const Scene = memo(({ config }: SceneProps) => {
       });
     }
     
-    if (!isExpanded && controlsRef.current) {
+    if (!isExpanded && controlsRef?.current) {
       controlsRef.current.reset();
     }
   }, [rotationApi, isExpanded]);
@@ -174,6 +174,7 @@ export const Scene = memo(({ config }: SceneProps) => {
         <React.Suspense fallback={null}>
           <ModelLoader 
             component={config.model.component}
+            controlsRef={controlsRef}
           />
         </React.Suspense>
         {isExpanded && config.labels?.map((label, index) => (
