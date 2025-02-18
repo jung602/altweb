@@ -18,8 +18,8 @@ interface UnifiedSceneProps {
 const INITIAL_CAMERA_CONFIG = {
   position: [5 * 29, 6.5 * 29, -10 * 29] as [number, number, number],
   fov: 1,
-  near: 50,
-  far: 2000,
+  near: 60,
+  far: 3000,
   zoom: 1
 };
 
