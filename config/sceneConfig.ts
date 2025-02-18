@@ -30,6 +30,7 @@ export const CANVAS_CONFIG = {
     toneMapping: THREE.ACESFilmicToneMapping,
     toneMappingExposure: 1,
     outputColorSpace: THREE.LinearSRGBColorSpace,
+    samples: 4,
   },
   dpr: [1, 2] as [number, number]
 };

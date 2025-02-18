@@ -33,18 +33,26 @@ export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(
     }));
 
     const config = useMemo(() => ({
-      minPolarAngle: ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
-      maxPolarAngle: ORBIT_CONTROLS_CONFIG.MAX_POLAR_ANGLE,
-      minAzimuthAngle: ORBIT_CONTROLS_CONFIG.MIN_AZIMUTH_ANGLE,
-      maxAzimuthAngle: ORBIT_CONTROLS_CONFIG.MAX_AZIMUTH_ANGLE,
+      minPolarAngle: isExpanded ? 0 : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
+      maxPolarAngle: isExpanded ? Math.PI : ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE,
+      minAzimuthAngle: isExpanded ? -Infinity : -Infinity,
+      maxAzimuthAngle: isExpanded ? Infinity : Infinity,
       minDistance: ORBIT_CONTROLS_CONFIG.MIN_DISTANCE,
       maxDistance: ORBIT_CONTROLS_CONFIG.MAX_DISTANCE,
       enableZoom: isExpanded,
       enablePan: false,
-      enableRotate: isExpanded,
+      enableRotate: true,
+      autoRotate: !isExpanded,
+      autoRotateSpeed: 0.1,
       onStart,
       onEnd
     }), [isExpanded, onStart, onEnd]);
+
+    useFrame(() => {
+      if (controlsRef.current) {
+        controlsRef.current.update();
+      }
+    });
 
     return <OrbitControls ref={controlsRef} {...config} />;
   }

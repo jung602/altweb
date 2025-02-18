@@ -146,7 +146,7 @@ export const scenesData: SceneConfig[] = [
     description: "Joguhaus Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt5",
-      scale: .82,
+      scale: .8,
       position: [0, -.82, 0],
       rotation: [0, 0, 0],
     },

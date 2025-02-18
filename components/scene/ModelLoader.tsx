@@ -152,16 +152,17 @@ export const ModelLoader = memo(({ component, ...props }: ModelLoaderProps) => {
         if (child.isMesh) {
           if (child.material) {
             if (child.material.map) {
-              child.material.map.minFilter = THREE.LinearFilter
-              child.material.map.magFilter = THREE.LinearFilter
+              child.material.map.minFilter = THREE.LinearMipmapLinearFilter;
+              child.material.map.magFilter = THREE.LinearFilter;
+              child.material.map.anisotropy = 4;
             }
-            child.castShadow = false
-            child.receiveShadow = false
+            child.castShadow = false;
+            child.receiveShadow = false;
           }
         }
-      })
+      });
     }
-  }, [scene])
+  }, [scene]);
 
   return (
     <>
