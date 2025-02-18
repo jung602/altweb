@@ -139,5 +139,28 @@ export const scenesData: SceneConfig[] = [
       roughness: 0.2
     }
   },
-  
+  {
+    id: "5",
+    title: "Akki Room",
+    location: "Tokyo, Japan",
+    description: "Joguhaus Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
+    model: {
+      component: "Alt5",
+      scale: .82,
+      position: [0, -.82, 0],
+      rotation: [0, 0, 0],
+    },
+    labels: [
+      {
+        title: "Shelf",
+        content: "Custom Made",
+        position: [1, 1, 0]
+      },
+      {
+        title: "Chair",
+        content: "Herman Miller",
+        position: [0, .5, 0]
+      }
+    ],
+  },
 ];
