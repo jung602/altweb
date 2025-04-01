@@ -55,7 +55,17 @@ export function useModel({
   isDev = process.env.NODE_ENV === 'development',
   renderer = null
 }: UseModelOptions): UseModelResult {
-  const modelPath = `${basePath}/models/main/compressed_${component.toLowerCase()}.glb`;
+  // 반응형 정보 가져오기
+  const { isMobile, isTablet } = useResponsiveDevice();
+  
+  // 모바일 또는 태블릿인 경우 모바일용 모델 사용
+  const isUsingMobileModel = isMobile || isTablet;
+  
+  // 모델 경로 설정 (draco 또는 draco-mobile 사용)
+  const modelFolder = isUsingMobileModel ? 'draco-mobile' : 'draco';
+  const modelSuffix = isUsingMobileModel ? '_mobile_draco' : '_draco';
+  const modelPath = `${basePath}/models/main/${modelFolder}/compressed_${component.toLowerCase()}${modelSuffix}.glb`;
+  
   const [isNewModelReady, setIsNewModelReady] = useState(false);
   const [previousScene, setPreviousScene] = useState<THREE.Group | null>(null);
   const isInitialMount = useRef(true);
@@ -64,8 +74,6 @@ export function useModel({
   const memoryStatsRef = useRef<MemoryStats | null>(null);
   const modelAnalysisRef = useRef<any>(null);
   
-  // 반응형 정보 가져오기
-  const { isMobile } = useResponsiveDevice();
 
   // 다음 모델 프리로드
   const preloadNextModel = useCallback(async () => {
@@ -73,7 +81,9 @@ export function useModel({
       const currentIndex = MODEL_COMPONENTS.indexOf(component);
       const nextIndex = (currentIndex + 1) % MODEL_COMPONENTS.length;
       const nextComponent = MODEL_COMPONENTS[nextIndex];
-      const nextModelPath = `${basePath}/models/main/compressed_${nextComponent.toLowerCase()}.glb`;
+      
+      // 다음 모델의 경로도 현재 디바이스 타입에 맞게 설정
+      const nextModelPath = `${basePath}/models/main/${modelFolder}/compressed_${nextComponent.toLowerCase()}${modelSuffix}.glb`;
       
       try {
         await useGLTF.preload(nextModelPath);
@@ -84,7 +94,7 @@ export function useModel({
         devLog(`다음 모델 프리로드 실패: ${error}`, 'error');
       }
     }
-  }, [basePath, component]);
+  }, [basePath, component, modelFolder, modelSuffix]);
 
   // GLTF 모델 로드
   const { scene } = useGLTF(modelPath, true, undefined, (loader) => {
@@ -111,7 +121,7 @@ export function useModel({
 
     loader.manager.onLoad = () => {
       setIsNewModelReady(true);
-      devLog(`모델 로드 완료: ${component}`, 'debug');
+      devLog(`모델 로드 완료: ${component} (${isUsingMobileModel ? '모바일 버전' : '데스크탑 버전'})`, 'debug');
       if (onLoad) onLoad();
     };
   });

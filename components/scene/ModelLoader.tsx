@@ -1,39 +1,9 @@
-import { useGLTF } from '@react-three/drei'
-import { useEffect, useRef, memo, useState, useCallback } from 'react'
+import { memo } from 'react'
 import * as THREE from 'three'
-import { GLTF } from 'three-stdlib'
-import { GroupProps, useThree } from '@react-three/fiber'
-import { ModelComponentType, MODEL_COMPONENTS } from "../../types/scene"
-import { DRACOLoader } from 'three-stdlib'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js'
-import { 
-  optimizeMaterial, 
-  optimizeSceneMaterials, 
-  checkAndFixSceneMaterials,
-  optimizeSceneForMobile,
-  updateSceneTextures
-} from '../../utils/materialOptimizer'
-import { 
-  cleanupGLTFModel, 
-  disposeSceneResources, 
-  disposeTexture,
-  MemoryStats,
-  estimateTextureMemory,
-  formatBytes
-} from '../../utils/sceneCleanup'
-import { stopThreePropagation, setThreeCursor } from '../../utils/eventUtils'
-import { devLog, successLog, startGroup, endGroup, conditionalLog } from '../../utils/logger'
-import { MODEL_PRELOAD_MAP } from '../../config/sceneConfig'
+import { useThree } from '@react-three/fiber'
+import { ModelComponentType } from "../../types/scene"
 import { ThreeEvent } from '@react-three/fiber'
-import { useSceneStore } from '../../store/sceneStore'
-import { useResponsiveDevice } from '../../hooks/useResponsiveDevice'
-import { 
-  analyzeModelMemoryUsage, 
-  generateOptimizationSuggestions,
-  analyzeAndLogModelInfo,
-  checkMemoryUsageAndSuggestOptimizations
-} from '../../utils/modelAnalyzer'
+import { stopThreePropagation, setThreeCursor } from '../../utils/eventUtils'
 import { useModel } from '../../hooks/useModel'
 
 interface ModelLoaderProps {
@@ -41,14 +11,6 @@ interface ModelLoaderProps {
   controlsRef?: React.RefObject<any>
   [key: string]: any
 }
-
-/**
- * 객체의 회전을 초기화하는 유틸리티 함수
- * @param object - 회전을 초기화할 Three.js 객체
- */
-const resetRotation = (object: THREE.Object3D) => {
-  object.rotation.set(0, 0, 0);
-};
 
 export const ModelLoader = memo(({ component, controlsRef, ...props }: ModelLoaderProps) => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''

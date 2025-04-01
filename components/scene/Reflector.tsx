@@ -101,7 +101,7 @@ export const Reflector: React.FC<ReflectorProps> = ({ config }) => {
       }
       
       // 디바이스 타입에 따라 해상도 설정
-      const resolution = isMobile ? 1024 : 2048;
+      const resolution = isMobile ? 512 : 2048;
       
       // 리플렉터 생성 - 바닐라 Three.js Reflector에서 지원하는 속성만 사용
       const reflector = new ThreeReflector(
