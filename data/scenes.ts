@@ -197,15 +197,15 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: true,
+      enabled: false,
       items: [
         {
-          position: [0,-.3,1.41],
-          rotation: [0.1,3.15,0],
+          position: [1.98, .81, .93],
+          rotation: [-Math.PI / -2, -1.66, 0],
+          args: [1.57, .977],
           resolution: 2048,
-          args: [0.4, 3],
-          color: "#aaaaaa",
-          radius: .01
+          color: "#eeeeee",
+          radius: .05
         }
       ]
     }

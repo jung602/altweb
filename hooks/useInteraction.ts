@@ -1,6 +1,7 @@
-import { useCallback, useRef, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { devLog } from '../utils/logger';
 import { ANIMATION_CONFIG } from '../config/sceneConfig';
+import { useEventHandlers } from './useEventHandlers';
 
 interface PointerPosition {
   x: number;
@@ -39,12 +40,10 @@ interface UseInteractionResult {
   handlePointerMove: (e: any) => void;
   isUserInteracting: React.MutableRefObject<boolean>;
   isDragging: boolean;
-  startInteraction: (x: number, y: number) => void;
-  endInteraction: (x: number, y: number, isClick: boolean) => void;
 }
 
 /**
- * 포인터 및 씬 인터랙션을 통합적으로 처리하는 훅
+ * 3D 씬 인터랙션을 처리하는 훅
  * @param options - 인터랙션 옵션
  * @returns 인터랙션 핸들러와 상태
  */
@@ -75,10 +74,6 @@ export function useInteraction(options: UseInteractionOptions = {}): UseInteract
     onMouseMove
   } = options;
 
-  const clickStartTime = useRef<number>(0);
-  const clickStartPosition = useRef<PointerPosition | null>(null);
-  const isUserInteracting = useRef<boolean>(false);
-  const lastPosition = useRef<PointerPosition | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // 드래그 시 회전 처리
@@ -86,7 +81,6 @@ export function useInteraction(options: UseInteractionOptions = {}): UseInteract
     if (!isExpanded && rotationApi && rotationY) {
       rotationApi.start({
         rotationY: rotationY.get() + deltaX * 0.01,
-        // x축 회전은 제한
         config: ANIMATION_CONFIG.SPRING
       });
     }
@@ -95,11 +89,16 @@ export function useInteraction(options: UseInteractionOptions = {}): UseInteract
     if (onDrag) {
       onDrag(deltaX, deltaY);
     }
-  }, [isExpanded, rotationApi, rotationY, onDrag]);
+    
+    // 이미 드래그 중이 아니라면 상태 설정
+    if (!isDragging) {
+      setIsDragging(true);
+    }
+  }, [isExpanded, rotationApi, rotationY, onDrag, isDragging]);
 
   // 마우스 움직임에 따른 자동 회전 처리
   const handleSceneMouseMove = useCallback((x: number, y: number) => {
-    if (rotationApi) {
+    if (rotationApi && !isExpanded && !isDragging) {
       rotationApi.start({
         rotationX: y * 0, // x축 회전은 비활성화
         rotationY: x * 0.3,
@@ -111,151 +110,39 @@ export function useInteraction(options: UseInteractionOptions = {}): UseInteract
     if (onMouseMove) {
       onMouseMove(x, y);
     }
-  }, [rotationApi, onMouseMove]);
+  }, [rotationApi, onMouseMove, isExpanded, isDragging]);
 
-  // 인터랙션 시작 처리
-  const startInteraction = useCallback((x: number, y: number) => {
-    clickStartTime.current = performance.now();
-    clickStartPosition.current = { x, y };
-    lastPosition.current = { x, y };
-    isUserInteracting.current = true;
-    
-    if (debug) {
-      devLog(`인터랙션 시작: (${x}, ${y})`, 'debug');
-    }
-    
-    // 블러 효과 설정
-    if (!isExpanded && setBlurred) {
-      setBlurred(true);
-    }
-    
-    // 외부 인터랙션 시작 핸들러 호출
-    if (onInteractionStart) {
-      onInteractionStart();
-    }
-  }, [onInteractionStart, isExpanded, setBlurred, debug]);
+  // 이벤트 핸들러 생성
+  const {
+    handlePointerDown,
+    handlePointerUp,
+    handlePointerMove,
+    handleMouseMove,
+    isUserInteracting,
+    handleDrag
+  } = useEventHandlers({
+    clickThreshold,
+    moveThreshold,
+    debug,
+    onInteractionStart,
+    onInteractionEnd,
+    onDrag: handleSceneDrag,
+    onMove: handleSceneMouseMove,
+    onBlurChange: setBlurred,
+    onClick: toggleExpanded
+  });
 
-  // 인터랙션 종료 처리
-  const endInteraction = useCallback((x: number, y: number, isClick: boolean) => {
-    if (isClick && toggleExpanded) {
-      toggleExpanded();
-      if (debug) {
-        devLog('클릭 이벤트 발생', 'debug');
+  // 인터랙션 종료 시 드래깅 상태 리셋
+  useEffect(() => {
+    const checkInteraction = () => {
+      if (!isUserInteracting.current && isDragging) {
+        setIsDragging(false);
       }
-    }
+    };
     
-    clickStartPosition.current = null;
-    lastPosition.current = null;
-    isUserInteracting.current = false;
-    setIsDragging(false);
-    
-    // 블러 효과 해제
-    if (!isExpanded && setBlurred) {
-      setBlurred(false);
-    }
-    
-    if (debug) {
-      devLog(`인터랙션 종료: (${x}, ${y})`, 'debug');
-    }
-    
-    // 외부 인터랙션 종료 핸들러 호출
-    if (onInteractionEnd) {
-      onInteractionEnd();
-    }
-  }, [toggleExpanded, onInteractionEnd, isExpanded, setBlurred, debug]);
-
-  // 드래그 처리
-  const handleDrag = useCallback((currentX: number, currentY: number) => {
-    if (!lastPosition.current) return;
-    
-    const deltaX = currentX - lastPosition.current.x;
-    const deltaY = currentY - lastPosition.current.y;
-    
-    // 씬 드래그 처리
-    handleSceneDrag(deltaX, deltaY);
-    
-    lastPosition.current = { x: currentX, y: currentY };
-    
-    if (debug) {
-      devLog(`드래그: deltaX=${deltaX}, deltaY=${deltaY}`, 'debug');
-    }
-  }, [handleSceneDrag, debug]);
-
-  // 포인터 다운 이벤트 처리
-  const handlePointerDown = useCallback((e: any) => {
-    e.stopPropagation();
-    const x = e.clientX || e.touches?.[0]?.clientX;
-    const y = e.clientY || e.touches?.[0]?.clientY;
-    startInteraction(x, y);
-  }, [startInteraction]);
-
-  // 포인터 업 이벤트 처리
-  const handlePointerUp = useCallback((e: any) => {
-    e.stopPropagation();
-    
-    if (!clickStartPosition.current) return;
-    
-    const endX = e.clientX || e.changedTouches?.[0]?.clientX;
-    const endY = e.clientY || e.changedTouches?.[0]?.clientY;
-    const clickDuration = performance.now() - clickStartTime.current;
-    
-    const moveDistance = Math.sqrt(
-      Math.pow(endX - clickStartPosition.current.x, 2) +
-      Math.pow(endY - clickStartPosition.current.y, 2)
-    );
-
-    // 짧은 시간 내에 적은 움직임이 있었을 때만 클릭으로 처리
-    const isClick = clickDuration < clickThreshold && moveDistance < moveThreshold;
-    endInteraction(endX, endY, isClick);
-  }, [clickThreshold, moveThreshold, endInteraction]);
-
-  // 포인터 이동 이벤트 처리
-  const handlePointerMove = useCallback((e: any) => {
-    if (!isUserInteracting.current || !clickStartPosition.current) return;
-    
-    const currentX = e.clientX || e.touches?.[0]?.clientX;
-    const currentY = e.clientY || e.touches?.[0]?.clientY;
-    
-    if (!isDragging) {
-      const moveDistance = Math.sqrt(
-        Math.pow(currentX - clickStartPosition.current.x, 2) +
-        Math.pow(currentY - clickStartPosition.current.y, 2)
-      );
-
-      // 일정 거리 이상 움직였을 때는 드래그 시작
-      if (moveDistance > moveThreshold) {
-        setIsDragging(true);
-        if (debug) {
-          devLog('드래그 시작', 'debug');
-        }
-      }
-    } else {
-      // 드래그 중이면 드래그 처리
-      handleDrag(currentX, currentY);
-    }
-  }, [moveThreshold, isDragging, handleDrag, debug]);
-
-  // 마우스 움직임에 따른 자동 회전 처리
-  const handleMouseMove = useCallback((event: MouseEvent | TouchEvent) => {
-    // 사용자 인터랙션 중이거나 확장 상태이거나 드래그 중이면 무시
-    if (isUserInteracting.current || isExpanded || isDragging) return;
-    
-    let x, y;
-    
-    if ('touches' in event) {
-      // 터치 이벤트인 경우
-      const touch = event.touches[0];
-      x = (touch.clientX / window.innerWidth) * 2 - 1;
-      y = -(touch.clientY / window.innerHeight) * 2 + 1;
-    } else {
-      // 마우스 이벤트인 경우
-      x = (event.clientX / window.innerWidth) * 2 - 1;
-      y = -(event.clientY / window.innerHeight) * 2 + 1;
-    }
-    
-    // 씬 마우스 이동 처리
-    handleSceneMouseMove(x, y);
-  }, [handleSceneMouseMove, isExpanded, isDragging]);
+    const intervalId = setInterval(checkInteraction, 100);
+    return () => clearInterval(intervalId);
+  }, [isUserInteracting, isDragging]);
 
   // 포인터 이동 이벤트 리스너 등록
   useEffect(() => {
@@ -284,8 +171,6 @@ export function useInteraction(options: UseInteractionOptions = {}): UseInteract
     handlePointerUp,
     handlePointerMove,
     isUserInteracting,
-    isDragging,
-    startInteraction,
-    endInteraction
+    isDragging
   };
 } 

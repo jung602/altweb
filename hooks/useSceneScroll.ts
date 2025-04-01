@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSceneStore } from '../store/sceneStore';
 import { useResponsiveDevice } from './useResponsiveDevice';
-import { useTouchNavigation } from './useTouchNavigation';
-import { useWheelNavigation } from './useWheelNavigation';
+import { useDeviceNavigation } from './useDeviceNavigation';
 
 /**
  * 씬 스크롤 및 네비게이션을 처리하는 훅
@@ -27,21 +26,12 @@ export const useSceneScroll = () => {
     setIsInitialized(true);
   }, []);
 
-  // 휠 네비게이션 훅 사용
-  const { containerRef } = useWheelNavigation({
+  // 통합된 디바이스 네비게이션 훅 사용
+  const { containerRef, handleTouch } = useDeviceNavigation({
     currentIndex,
     totalItems: scenes.length,
     isExpanded,
     isModelHovered,
-    onIndexChange: setCurrentScene,
-    onBlurChange: setBlurred
-  });
-
-  // 터치 네비게이션 훅 사용
-  const { handleTouchStart, handleTouchMove, handleTouchEnd } = useTouchNavigation({
-    currentIndex,
-    totalItems: scenes.length,
-    isExpanded,
     onIndexChange: setCurrentScene,
     onBlurChange: setBlurred
   });
@@ -53,10 +43,6 @@ export const useSceneScroll = () => {
     baseSize,
     dimensions: { width, height },
     isInitialized,
-    handleTouch: {
-      start: handleTouchStart,
-      move: handleTouchMove,
-      end: handleTouchEnd
-    }
+    handleTouch
   };
 };

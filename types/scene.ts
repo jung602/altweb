@@ -27,6 +27,7 @@ export interface ReflectorItemConfig {
   color?: string;
   radius?: number;
   smoothness?: number;
+  clipBias?: number;
 }
 
 export interface ReflectorConfig {

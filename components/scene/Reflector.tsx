@@ -100,9 +100,9 @@ export const Reflector: React.FC<ReflectorProps> = ({ config }) => {
       const reflector = new ThreeReflector(
         geometry,
         {
-          clipBias: 0,
-          textureWidth: item.resolution ?? 2048,
-          textureHeight: item.resolution ?? 2048,
+          clipBias: item.clipBias ?? 0,
+          textureWidth: item.resolution ?? 1024,
+          textureHeight: item.resolution ?? 1024,
           color: item.color ? new THREE.Color(item.color).getHex() : 0x202020
         }
       );
