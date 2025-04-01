@@ -83,7 +83,10 @@ export const Scene = memo(({ config, controlsRef }: SceneProps) => {
           // 인터랙션 시작 시 추가 로직이 필요한 경우 여기에 작성
         }}
         onEnd={() => { 
-          // 인터랙션 종료 시 추가 로직이 필요한 경우 여기에 작성
+          // OrbitControls 회전 종료 시 블러 효과 제거
+          if (setBlurred) {
+            setBlurred(false);
+          }
         }}
       />
       
