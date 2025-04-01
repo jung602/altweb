@@ -3,6 +3,8 @@ import { SceneConfig } from '../../types/scene';
 import { FrontSide, Shape, BufferGeometry, Group, Mesh, Material } from 'three';
 import * as THREE from 'three';
 import { Reflector as ThreeReflector } from 'three/examples/jsm/objects/Reflector.js';
+import { optimizeMaterial } from '../../utils/materialOptimizer';
+import { useResponsiveDevice } from '../../hooks/useResponsiveDevice';
 
 interface ReflectorProps {
   config: SceneConfig['reflector'];
@@ -36,6 +38,8 @@ const createRoundedRectShape = (width: number, height: number, radius: number) =
 };
 
 export const Reflector: React.FC<ReflectorProps> = ({ config }) => {
+  const { isMobile } = useResponsiveDevice();
+  
   const reflectorItems = useMemo(() => {
     if (!config?.enabled) return [];
     
@@ -96,13 +100,16 @@ export const Reflector: React.FC<ReflectorProps> = ({ config }) => {
         geometry = new THREE.PlaneGeometry(item.width, item.height);
       }
       
+      // 디바이스 타입에 따라 해상도 설정
+      const resolution = isMobile ? 1024 : 2048;
+      
       // 리플렉터 생성 - 바닐라 Three.js Reflector에서 지원하는 속성만 사용
       const reflector = new ThreeReflector(
         geometry,
         {
-          clipBias: item.clipBias ?? 0,
-          textureWidth: item.resolution ?? 1024,
-          textureHeight: item.resolution ?? 1024,
+          clipBias: item.clipBias ?? 0.1,
+          textureWidth: resolution,
+          textureHeight: resolution,
           color: item.color ? new THREE.Color(item.color).getHex() : 0x202020
         }
       );
@@ -124,13 +131,26 @@ export const Reflector: React.FC<ReflectorProps> = ({ config }) => {
       }
       
       reflector.userData.isReflector = true;
-      reflector.castShadow = true;
-      reflector.receiveShadow = true;
+      
+      // 모든 리플렉터의 그림자 비활성화
+      reflector.castShadow = false;
+      reflector.receiveShadow = false;
+      
+      // 리플렉터의 재질 최적화
+      if (reflector.material) {
+        if (Array.isArray(reflector.material)) {
+          reflector.material.forEach(material => {
+            optimizeMaterial(material, { isMobile });
+          });
+        } else {
+          optimizeMaterial(reflector.material, { isMobile });
+        }
+      }
       
       // 그룹에 추가
       groupRef.current?.add(reflector);
     });
-  }, [reflectorItems, config?.enabled]);
+  }, [reflectorItems, config?.enabled, isMobile]);
   
   if (!config?.enabled) return null;
   

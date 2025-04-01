@@ -31,14 +31,13 @@ export const scenesData: SceneConfig[] = [
           position: [0, 1, 1.75],
           rotation: [-Math.PI / 1, 0, 0],
           args: [1.74, 1.96],
-          resolution: 2048,
-          color: "#000000"
+          color: "#a0a0a0",
         },
         {
           position: [-1.15, 0.6, 1.65],
           rotation: [-Math.PI / 1.02, 0, 0],
           args: [.25, 1.11],
-          resolution: 2048,
+          clipBias: 0,
           color: "#aaaaaa"
         }
       ]
@@ -101,9 +100,8 @@ export const scenesData: SceneConfig[] = [
         {
           position: [-2.11, 1, 0],
           rotation: [0, 1.57, 0],
-          resolution: 2048,
           args: [2.85, 2],
-          color: "#aaaaaa"
+          color: "#a0a0a0"
         }
       ]
     }
@@ -137,9 +135,8 @@ export const scenesData: SceneConfig[] = [
         {
           position: [-1.95, 1, 0],
           rotation: [0, 1.57, 0],
-          resolution: 2048,
           args: [3.5, 2.5],
-          color: "#aaaaaa"
+          color: "#a0a0a0"
         },
       ]
     }
@@ -199,14 +196,6 @@ export const scenesData: SceneConfig[] = [
     reflector: {
       enabled: false,
       items: [
-        {
-          position: [1.98, .81, .93],
-          rotation: [-Math.PI / -2, -1.66, 0],
-          args: [1.57, .977],
-          resolution: 2048,
-          color: "#eeeeee",
-          radius: .05
-        }
       ]
     }
   },
@@ -239,9 +228,9 @@ export const scenesData: SceneConfig[] = [
         {
           position: [-2.41, 1.64, -0.01],
           rotation: [0, 1.57, 0],
-          resolution: 2048,
           args: [1.73, 1.43],
-          color: "#aaaaaa"
+          color: "#a0a0a0",
+          clipBias: 0
         },
       ]
     }
@@ -278,6 +267,7 @@ export const scenesData: SceneConfig[] = [
           args: [1.57, .977],
           resolution: 2048,
           color: "#eeeeee",
+          clipBias: 0,
           radius: .05
         },
       ]
