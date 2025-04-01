@@ -34,6 +34,11 @@ export interface MemoryStats {
 export function estimateTextureMemory(texture: THREE.Texture): number {
   if (!texture || !texture.image) return 0;
   
+  // KTX2/압축 텍스처 처리 (CompressedTexture 타입)
+  if (texture instanceof THREE.CompressedTexture) {
+    return estimateCompressedTextureMemory(texture);
+  }
+  
   let width = 0;
   let height = 0;
   
@@ -59,6 +64,82 @@ export function estimateTextureMemory(texture: THREE.Texture): number {
   
   // 총 메모리 계산
   return Math.floor(width * height * bytesPerPixel * mipmapFactor);
+}
+
+/**
+ * 압축 텍스처(KTX2, DDS, PVR 등)의 메모리 사용량을 추정하는 함수
+ * @param texture - 압축 텍스처
+ * @returns 추정 메모리 사용량 (바이트)
+ */
+export function estimateCompressedTextureMemory(texture: THREE.CompressedTexture): number {
+  // 텍스처에 mipmaps 배열이 없으면 0 반환
+  if (!texture.mipmaps || texture.mipmaps.length === 0) {
+    // 이미지 데이터가 있으면 대체 계산법 사용
+    if (texture.image) {
+      const width = texture.image.width || 0;
+      const height = texture.image.height || 0;
+      
+      if (width > 0 && height > 0) {
+        // ASTC, ETC, PVRTC, S3TC 등 포맷별 압축률 추정
+        // 압축 포맷은 texture.format 또는 texture.internalFormat으로 접근 가능할 수 있음
+        const format = (texture as any).format;
+        let bitsPerPixel = 4; // 기본값 (포맷 판별 불가시)
+        
+        // Three.js 압축 텍스처 포맷 상수값 확인
+        if (format) {
+          // ASTC 포맷 (대략 8x8 블록 가정)
+          if (format >= 0x93B0 && format <= 0x93BD) {
+            bitsPerPixel = 2; // ~2bpp (ASTC 평균)
+          } 
+          // ETC2/EAC 포맷
+          else if (format >= 0x9270 && format <= 0x9279) {
+            bitsPerPixel = 4; // ~4bpp
+          }
+          // S3TC/DXT 포맷
+          else if (format >= 0x83F0 && format <= 0x83F3) {
+            bitsPerPixel = 4; // ~4bpp (DXT1은 4bpp, DXT5는 8bpp)
+          }
+          // PVRTC 포맷
+          else if (format >= 0x8C00 && format <= 0x8C03) {
+            bitsPerPixel = 4; // 2bpp 또는 4bpp
+          }
+        }
+        
+        // 바이트로 변환 (8비트 = 1바이트)
+        const bytesPerPixel = bitsPerPixel / 8;
+        
+        // 압축 텍스처는 밉맵이 이미 포함되어 있으므로 1.33 대신 1.0 사용
+        return Math.floor(width * height * bytesPerPixel);
+      }
+    }
+    
+    return 0;
+  }
+  
+  // mipmaps 배열에서 데이터 크기 합산
+  let totalSize = 0;
+  
+  for (const mipmap of texture.mipmaps) {
+    // data 속성이 존재하는 경우 (ImageData 또는 ArrayBuffer)
+    if (mipmap.data) {
+      if (mipmap.data instanceof Uint8Array || mipmap.data instanceof ArrayBuffer) {
+        totalSize += mipmap.data.byteLength;
+      } else if (typeof mipmap.data === 'object' && 'length' in mipmap.data) {
+        totalSize += (mipmap.data as any).length;
+      }
+    } 
+    // data가 없지만 width/height가 있는 경우 (일부 WebGL 구현에서)
+    else if (mipmap.width && mipmap.height) {
+      // 압축 포맷별로 bpp(bits per pixel)가 다름
+      // 대략적인 추정값 사용
+      const bytesPerPixel = 0.5; // 압축 텍스처는 일반적으로 4bpp 이하
+      totalSize += mipmap.width * mipmap.height * bytesPerPixel;
+    }
+  }
+  
+  // GPU 메모리에 로드되었을 때의 실제 크기는 약간 더 클 수 있음
+  // WebGL 구현 및 드라이버 최적화에 따라 달라짐
+  return Math.floor(totalSize);
 }
 
 /**
@@ -409,4 +490,183 @@ export function cleanupGLTFModel(
   useGLTF.clear(modelPath);
   
   return stats;
+}
+
+/**
+ * 텍스처 유형을 문자열로 반환하는 함수
+ * @param texture - 텍스처 객체
+ * @returns 텍스처 유형 문자열
+ */
+export function getTextureType(texture: THREE.Texture): string {
+  if (texture instanceof THREE.CompressedTexture) {
+    // 압축 텍스처의 포맷 확인
+    const format = (texture as any).format;
+    
+    // KTX2 파일 확장자 확인 (source.data.src가 있는 경우)
+    if (texture.source?.data?.src) {
+      const src = texture.source.data.src.toLowerCase();
+      if (src.endsWith('.ktx2') || src.includes('.ktx2?')) {
+        return 'KTX2';
+      }
+    }
+    
+    // 포맷 기반 압축 유형 반환
+    if (format) {
+      // ASTC 포맷
+      if (format >= 0x93B0 && format <= 0x93BD) {
+        return 'ASTC';
+      } 
+      // ETC2/EAC 포맷
+      else if (format >= 0x9270 && format <= 0x9279) {
+        return 'ETC2';
+      }
+      // S3TC/DXT 포맷
+      else if (format >= 0x83F0 && format <= 0x83F3) {
+        return 'S3TC';
+      }
+      // PVRTC 포맷
+      else if (format >= 0x8C00 && format <= 0x8C03) {
+        return 'PVRTC';
+      }
+      // 기타 압축 포맷
+      return `압축(${format.toString(16)})`;
+    }
+    
+    return '압축';
+  }
+  
+  // 일반 텍스처
+  if (texture.source?.data?.src) {
+    const src = texture.source.data.src.toLowerCase();
+    if (src.endsWith('.jpg') || src.endsWith('.jpeg')) {
+      return 'JPEG';
+    } else if (src.endsWith('.png')) {
+      return 'PNG';
+    } else if (src.endsWith('.webp')) {
+      return 'WebP';
+    }
+  }
+  
+  return '일반';
+}
+
+/**
+ * 텍스처의 압축률을 계산하는 함수
+ * @param texture - 텍스처 객체
+ * @returns 압축률 (0.0-1.0, 낮을수록 더 많이 압축됨)
+ */
+export function calculateTextureCompressionRatio(texture: THREE.Texture): number {
+  if (!texture || !texture.image) return 1.0;
+  
+  const width = texture.image.width || 0;
+  const height = texture.image.height || 0;
+  
+  if (width === 0 || height === 0) return 1.0;
+  
+  // 비압축 RGBA 텍스처의 이론적 크기 (4바이트/픽셀)
+  const uncompressedSize = width * height * 4;
+  
+  // 실제 추정 메모리 사용량
+  const estimatedSize = estimateTextureMemory(texture);
+  
+  // 압축률 계산 (0.0-1.0, 낮을수록 더 압축됨)
+  return estimatedSize / uncompressedSize;
+}
+
+/**
+ * 씬에서 압축 텍스처 정보를 분석하는 함수
+ * @param scene - 분석할 씬
+ * @returns 압축 텍스처 분석 결과
+ */
+export function analyzeCompressedTextures(scene: THREE.Object3D): {
+  totalTextures: number;
+  compressedTextures: number;
+  ktx2Textures: number;
+  compressionRatio: number;
+  savedMemory: number;
+  textureDetails: Array<{
+    name: string;
+    type: string;
+    size: number;
+    dimensions: string;
+    compressionRatio: number;
+  }>;
+} {
+  const textures: THREE.Texture[] = [];
+  const compressedTextures: THREE.CompressedTexture[] = [];
+  const ktx2Textures: THREE.CompressedTexture[] = [];
+  const textureDetails: Array<{
+    name: string;
+    type: string;
+    size: number;
+    dimensions: string;
+    compressionRatio: number;
+  }> = [];
+  
+  let totalUncompressedSize = 0;
+  let totalCompressedSize = 0;
+  
+  // 씬에서 모든 텍스처 수집
+  scene.traverse((child: any) => {
+    if (child.isMesh && child.material) {
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      
+      materials.forEach((material: THREE.Material) => {
+        // 모든 가능한 텍스처 속성 검사
+        const textureProps = [
+          'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 
+          'emissiveMap', 'displacementMap', 'alphaMap', 'bumpMap',
+          'envMap', 'lightMap'
+        ] as const;
+        
+        textureProps.forEach(prop => {
+          const texture = (material as any)[prop] as THREE.Texture;
+          if (texture && !textures.includes(texture)) {
+            textures.push(texture);
+            
+            // 비압축 RGBA 사이즈 계산
+            const width = texture.image?.width || 0;
+            const height = texture.image?.height || 0;
+            if (width > 0 && height > 0) {
+              totalUncompressedSize += width * height * 4;
+            }
+            
+            // 실제 메모리 사용량 계산
+            const size = estimateTextureMemory(texture);
+            totalCompressedSize += size;
+            
+            // 압축 텍스처 분류
+            if (texture instanceof THREE.CompressedTexture) {
+              compressedTextures.push(texture);
+              
+              // KTX2 텍스처 확인
+              const type = getTextureType(texture);
+              if (type === 'KTX2') {
+                ktx2Textures.push(texture);
+              }
+            }
+            
+            // 텍스처 상세 정보 저장
+            textureDetails.push({
+              name: texture.name || child.name || '이름 없음',
+              type: getTextureType(texture),
+              size: size,
+              dimensions: `${width}×${height}`,
+              compressionRatio: calculateTextureCompressionRatio(texture)
+            });
+          }
+        });
+      });
+    }
+  });
+  
+  // 결과 반환
+  return {
+    totalTextures: textures.length,
+    compressedTextures: compressedTextures.length,
+    ktx2Textures: ktx2Textures.length,
+    compressionRatio: totalUncompressedSize > 0 ? totalCompressedSize / totalUncompressedSize : 1.0,
+    savedMemory: totalUncompressedSize - totalCompressedSize,
+    textureDetails: textureDetails.sort((a, b) => b.size - a.size) // 크기 기준 내림차순 정렬
+  };
 } 

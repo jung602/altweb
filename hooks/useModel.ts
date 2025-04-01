@@ -1,7 +1,7 @@
 import { useGLTF } from '@react-three/drei';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
-import { DRACOLoader } from 'three-stdlib';
+import { DRACOLoader, KTX2Loader } from 'three-stdlib';
 import { ModelComponentType, MODEL_COMPONENTS } from '../types/scene';
 import { MODEL_PRELOAD_MAP } from '../config/sceneConfig';
 import { devLog, startGroup, endGroup, conditionalLog } from '../utils/logger';
@@ -30,6 +30,7 @@ interface UseModelOptions {
   defaultColor?: THREE.Color;
   checkInterval?: number;
   isDev?: boolean;
+  renderer?: THREE.WebGLRenderer | null;
 }
 
 interface UseModelResult {
@@ -51,7 +52,8 @@ export function useModel({
   onError,
   defaultColor = new THREE.Color(0xCCCCCC),
   checkInterval = 1000,
-  isDev = process.env.NODE_ENV === 'development'
+  isDev = process.env.NODE_ENV === 'development',
+  renderer = null
 }: UseModelOptions): UseModelResult {
   const modelPath = `${basePath}/models/main/compressed_${component.toLowerCase()}.glb`;
   const [isNewModelReady, setIsNewModelReady] = useState(false);
@@ -86,9 +88,21 @@ export function useModel({
 
   // GLTF 모델 로드
   const { scene } = useGLTF(modelPath, true, undefined, (loader) => {
+    // Draco 로더 설정
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
     loader.setDRACOLoader(dracoLoader);
+
+    // KTX2 로더 설정
+    if (renderer) {
+      const ktx2Loader = new KTX2Loader();
+      ktx2Loader.setTranscoderPath('/basis/');
+      ktx2Loader.detectSupport(renderer);
+      loader.setKTX2Loader(ktx2Loader);
+      if (isDev) devLog('KTX2 텍스처 로더가 활성화되었습니다.', 'info');
+    } else if (isDev) {
+      devLog('렌더러가 제공되지 않아 KTX2 텍스처 로더를 설정할 수 없습니다.', 'warn');
+    }
 
     loader.manager.onError = (url) => {
       devLog(`텍스처 로드 에러: ${url}`, 'error');

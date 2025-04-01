@@ -1,5 +1,10 @@
 import * as THREE from 'three'
-import { formatBytes, estimateTextureMemory } from './sceneCleanup'
+import { 
+  formatBytes, 
+  estimateTextureMemory, 
+  getTextureType,
+  analyzeCompressedTextures 
+} from './sceneCleanup'
 import { LogLevel } from './logger'
 
 /**
@@ -9,11 +14,14 @@ import { LogLevel } from './logger'
  */
 export function analyzeModelMemoryUsage(scene: THREE.Group) {
   const textures: THREE.Texture[] = [];
-  const largeTextures: {texture: THREE.Texture, size: number}[] = [];
+  const largeTextures: {texture: THREE.Texture, size: number, type: string}[] = [];
+  const compressedTextures: THREE.CompressedTexture[] = [];
+  const ktx2Textures: THREE.CompressedTexture[] = [];
   const geometries: THREE.BufferGeometry[] = [];
   const largeGeometries: {geometry: THREE.BufferGeometry, size: number}[] = [];
   let totalTextureMemory = 0;
   let totalGeometryMemory = 0;
+  let uncompressedTextureSize = 0; // 압축하지 않았을 때의 이론적 크기
   
   // 씬 순회하며 리소스 수집 및 분석
   scene.traverse((child: any) => {
@@ -48,15 +56,41 @@ export function analyzeModelMemoryUsage(scene: THREE.Group) {
           ];
           
           maps.forEach(map => {
-            if (map) {
+            if (map && !textures.includes(map)) { // 중복 방지
               textures.push(map);
+              
+              // 텍스처 유형 확인 및 분류
+              const textureType = getTextureType(map);
               const textureSize = estimateTextureMemory(map);
+              
+              // 압축 전 이론적 크기 계산 (RGBA 기준)
+              if (map.image) {
+                const width = map.image.width || 0;
+                const height = map.image.height || 0;
+                if (width > 0 && height > 0) {
+                  uncompressedTextureSize += width * height * 4; // RGBA = 4 bytes per pixel
+                }
+              }
+              
+              // 메모리 사용량 합산
               totalTextureMemory += textureSize;
               
+              // 압축 텍스처 분류
+              if (map instanceof THREE.CompressedTexture) {
+                compressedTextures.push(map);
+                
+                // KTX2 텍스처 확인
+                if (textureType === 'KTX2') {
+                  ktx2Textures.push(map);
+                }
+              }
+              
+              // 큰 텍스처 탐지
               if (textureSize > 4 * 1024 * 1024) { // 4MB 이상
                 largeTextures.push({
                   texture: map,
-                  size: textureSize
+                  size: textureSize,
+                  type: textureType
                 });
               }
             }
@@ -70,12 +104,24 @@ export function analyzeModelMemoryUsage(scene: THREE.Group) {
   const uniqueTextures = new Set(textures);
   const duplicateTextureCount = textures.length - uniqueTextures.size;
   
+  // 압축률 계산
+  const compressionRatio = uncompressedTextureSize > 0 ? 
+    totalTextureMemory / uncompressedTextureSize : 1.0;
+  
+  // 압축으로 절약된 메모리
+  const savedMemoryByCompression = uncompressedTextureSize - totalTextureMemory;
+  
   return {
     textureCount: textures.length,
     uniqueTextureCount: uniqueTextures.size,
     duplicateTextureCount,
+    compressedTextureCount: compressedTextures.length,
+    ktx2TextureCount: ktx2Textures.length,
     geometryCount: geometries.length,
     totalTextureMemory,
+    uncompressedTextureSize,
+    compressionRatio,
+    savedMemoryByCompression,
     totalGeometryMemory,
     totalMemory: totalTextureMemory + totalGeometryMemory,
     largeTextures,
@@ -100,9 +146,25 @@ export function generateOptimizationSuggestions(analysis: any): string[] {
     suggestions.push(`${analysis.duplicateTextureCount}개의 중복 텍스처가 발견되었습니다. 텍스처를 공유하도록 모델을 최적화하세요.`);
   }
   
+  // 압축 텍스처 관련 제안
+  if (analysis.ktx2TextureCount === 0 && analysis.compressedTextureCount === 0) {
+    suggestions.push(`압축 텍스처가 사용되지 않고 있습니다. KTX2 또는 다른 GPU 압축 형식을 사용하여 텍스처 메모리 사용량을 줄이세요.`);
+  } else if (analysis.ktx2TextureCount < analysis.textureCount * 0.5) { // 50% 미만의 텍스처가 KTX2
+    suggestions.push(`${analysis.ktx2TextureCount}/${analysis.textureCount} 텍스처만 KTX2 압축 형식을 사용 중입니다. 모든 텍스처에 KTX2를 적용하여 메모리를 절약하세요.`);
+  }
+  
   if (analysis.largeTextures.length > 0) {
     const largestTexture = analysis.largeTextures.sort((a: {size: number}, b: {size: number}) => b.size - a.size)[0];
-    suggestions.push(`가장 큰 텍스처는 ${formatBytes(largestTexture.size)}를 사용합니다. 이 텍스처의 해상도를 줄이는 것을 고려하세요.`);
+    suggestions.push(`가장 큰 텍스처(${largestTexture.type})는 ${formatBytes(largestTexture.size)}를 사용합니다. 이 텍스처의 해상도를 줄이는 것을 고려하세요.`);
+    
+    // 비압축 대형 텍스처가 있는 경우 특별 제안
+    const largeNonCompressedTextures = analysis.largeTextures.filter(
+      (t: {type: string}) => t.type !== 'KTX2' && t.type !== 'ASTC' && t.type !== 'ETC2' && t.type !== 'S3TC' && t.type !== 'PVRTC'
+    );
+    
+    if (largeNonCompressedTextures.length > 0) {
+      suggestions.push(`${largeNonCompressedTextures.length}개의 대형 비압축 텍스처가 발견되었습니다. 이러한 텍스처를 KTX2로 변환하여 메모리를 절약하세요.`);
+    }
   }
   
   // 지오메트리 관련 제안
@@ -142,11 +204,35 @@ export function analyzeAndLogModelInfo(
   // 모델 메모리 사용량 분석
   const analysis = analyzeModelMemoryUsage(scene);
   
+  // 압축률 정보 계산
+  const compressionPercent = analysis.compressionRatio < 1 ? 
+    (1 - analysis.compressionRatio) * 100 : 0;
+  
   // 콘솔에 분석 결과 출력
   startGroup(`모델 '${component}' 메모리 분석`);
   devLog(`총 메모리: ${formatBytes(analysis.totalMemory)}`, 'info');
   devLog(`텍스처 메모리: ${formatBytes(analysis.totalTextureMemory)} (${analysis.textureCount}개 텍스처, ${analysis.uniqueTextureCount}개 고유)`, 'info');
+  
+  // 압축 텍스처 정보
+  if (analysis.compressedTextureCount > 0) {
+    devLog(`압축 텍스처: ${analysis.compressedTextureCount}개 (KTX2: ${analysis.ktx2TextureCount}개)`, 'info');
+    devLog(`압축률: ${compressionPercent.toFixed(1)}% (원본 대비 ${formatBytes(analysis.savedMemoryByCompression)} 절약)`, 'info');
+  } else {
+    devLog('압축 텍스처가 사용되지 않음 (KTX2와 같은 압축 포맷으로 최적화 필요)', 'warn');
+  }
+  
   devLog(`지오메트리 메모리: ${formatBytes(analysis.totalGeometryMemory)} (${analysis.geometryCount}개 지오메트리)`, 'info');
+  
+  // 가장 큰 텍스처 정보 출력
+  if (analysis.largeTextures.length > 0) {
+    const sortedTextures = analysis.largeTextures.sort((a: {size: number}, b: {size: number}) => b.size - a.size);
+    devLog('가장 큰 텍스처 (상위 3개):', 'info');
+    
+    sortedTextures.slice(0, 3).forEach((textureInfo: {texture: THREE.Texture, size: number, type: string}, index: number) => {
+      const name = textureInfo.texture.name || `텍스처 ${index + 1}`;
+      devLog(`  ${index + 1}. ${name} (${textureInfo.type}): ${formatBytes(textureInfo.size)}`, 'info');
+    });
+  }
   
   // 최적화 제안
   const suggestions = generateOptimizationSuggestions(analysis);
@@ -192,6 +278,16 @@ export function checkMemoryUsageAndSuggestOptimizations(
     if (analysis) {
       conditionalLog(`메모리 분석: 텍스처 ${formatBytes(analysis.totalTextureMemory)}, 지오메트리 ${formatBytes(analysis.totalGeometryMemory)}`, isDev);
       
+      // 압축 텍스처 정보 출력
+      if (analysis.compressedTextureCount > 0) {
+        conditionalLog(`압축 텍스처: ${analysis.compressedTextureCount}개 (KTX2: ${analysis.ktx2TextureCount}개)`, isDev);
+        
+        if (analysis.compressionRatio) {
+          const compressionPercent = (1 - analysis.compressionRatio) * 100;
+          conditionalLog(`텍스처 압축률: ${compressionPercent.toFixed(1)}% 절약됨`, isDev);
+        }
+      }
+      
       // 텍스처와 지오메트리 비율 계산
       if (stats.totalMemory > 0) {
         const textureRatio = analysis.totalTextureMemory / stats.totalMemory;
@@ -199,8 +295,21 @@ export function checkMemoryUsageAndSuggestOptimizations(
         
         // 텍스처가 대부분의 메모리를 차지하는 경우
         if (textureRatio > 0.7) { // 70% 이상
-          conditionalLog('최적화 제안: 텍스처 해상도를 줄이거나 압축 포맷(KTX2, BASIS)을 사용하세요.', isDev, 'warn');
+          // KTX2 텍스처 비율 확인
+          if (analysis.ktx2TextureCount === 0) {
+            conditionalLog('최적화 제안: KTX2 압축 텍스처를 사용하여 메모리 사용량을 줄이세요.', isDev, 'warn');
+          } else if (analysis.ktx2TextureCount < analysis.textureCount * 0.5) {
+            conditionalLog(`최적화 제안: 더 많은 텍스처를 KTX2로 변환하세요. (현재 ${analysis.ktx2TextureCount}/${analysis.textureCount} 변환됨)`, isDev, 'warn');
+          } else {
+            conditionalLog('최적화 제안: 텍스처 해상도를 줄이는 것을 고려하세요.', isDev, 'warn');
+          }
         }
+      }
+      
+      // 대형 텍스처 정보 출력
+      if (analysis.largeTextures && analysis.largeTextures.length > 0) {
+        const largestTexture = analysis.largeTextures.sort((a: {size: number}, b: {size: number}) => b.size - a.size)[0];
+        conditionalLog(`가장 큰 텍스처(${largestTexture.type}): ${formatBytes(largestTexture.size)}`, isDev, 'warn');
       }
     }
   }

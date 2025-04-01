@@ -2,10 +2,11 @@ import { useGLTF } from '@react-three/drei'
 import { useEffect, useRef, memo, useState, useCallback } from 'react'
 import * as THREE from 'three'
 import { GLTF } from 'three-stdlib'
-import { GroupProps } from '@react-three/fiber'
+import { GroupProps, useThree } from '@react-three/fiber'
 import { ModelComponentType, MODEL_COMPONENTS } from "../../types/scene"
 import { DRACOLoader } from 'three-stdlib'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js'
 import { 
   optimizeMaterial, 
   optimizeSceneMaterials, 
@@ -52,6 +53,9 @@ const resetRotation = (object: THREE.Object3D) => {
 export const ModelLoader = memo(({ component, controlsRef, ...props }: ModelLoaderProps) => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
   const isDev = process.env.NODE_ENV === 'development'
+  
+  // R3F의 useThree 훅을 사용하여 렌더러 직접 접근
+  const { gl } = useThree();
 
   // 통합된 모델 관리 훅 사용
   const { scene, isNewModelReady, previousScene } = useModel({
@@ -63,7 +67,8 @@ export const ModelLoader = memo(({ component, controlsRef, ...props }: ModelLoad
         controlsRef.current.reset();
       }
     },
-    isDev
+    isDev,
+    renderer: gl // WebGLRenderer를 직접 전달
   })
 
   // Three.js 이벤트에 특화된 유틸리티 함수를 사용한 이벤트 핸들러
