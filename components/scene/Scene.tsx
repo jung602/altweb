@@ -45,7 +45,7 @@ const Model = memo(({
   setModelHovered: (isHovered: boolean) => void;
   controlsRef?: React.RefObject<any>;
 }) => {
-  const { getResponsiveScale, getResponsivePosition, isMobile } = useResponsiveDevice();
+  const { getResponsiveScale, getResponsivePosition, width } = useResponsiveDevice();
   
   // 기본 위치 및 스케일 계산
   const baseScale = sceneConfig.model.scale;
@@ -57,8 +57,8 @@ const Model = memo(({
   const basePosition = sceneConfig.model.position;
   const responsivePosition = getResponsivePosition(basePosition);
   
-  // 모바일에서는 y축 간격이 4, 다른 디바이스에서는 6
-  const ySpacing = isMobile ? 4 : 6;
+  // 브라우저 너비 기준: 768px 이하면 태블릿/모바일로 간주
+  const ySpacing = width <= 768 ? 4 : 6;
   const yPos = responsivePosition[1] + (index * -ySpacing);
   
   // 스프링 애니메이션 적용
@@ -172,10 +172,10 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   });
 
   // 현재 기기의 반응형 정보 가져오기
-  const { isMobile } = useResponsiveDevice();
+  const { width } = useResponsiveDevice();
   
-  // 모바일에서는 y축 간격이 4, 다른 디바이스에서는 6
-  const ySpacing = isMobile ? 4 : 6;
+  // 브라우저 너비 기준: 768px 이하면 간격 4, 그 이상이면 간격 6
+  const ySpacing = width <= 768 ? 4 : 6;
 
   // 전체 모델 그룹의 y축 위치 애니메이션
   const modelsPositionY = useSpring({
