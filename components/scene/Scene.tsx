@@ -10,6 +10,7 @@ import { Reflector } from './Reflector';
 import { useResponsiveDevice } from '../../hooks/useResponsiveDevice';
 import { useInteraction } from '../../hooks/useInteraction';
 import { ANIMATION_CONFIG } from '../../config/sceneConfig';
+import { useFrame } from '@react-three/fiber';
 
 /**
  * Scene 컴포넌트의 props 인터페이스
@@ -34,6 +35,7 @@ const Model = memo(({
   handlePointerDown,
   handlePointerUp,
   setModelHovered,
+  setBlurred,
   controlsRef
 }: {
   sceneConfig: SceneConfig;
@@ -43,6 +45,7 @@ const Model = memo(({
   handlePointerDown: (e: any) => void;
   handlePointerUp: (e: any) => void;
   setModelHovered: (isHovered: boolean) => void;
+  setBlurred?: (isBlurred: boolean) => void;
   controlsRef?: React.RefObject<any>;
 }) => {
   const { getResponsiveScale, getResponsivePosition, width } = useResponsiveDevice();
@@ -74,41 +77,133 @@ const Model = memo(({
     }
   });
 
+  // 모델 회전을 위한 상태 관리
+  const [rotationSpring, rotationApi] = useSpring(() => ({
+    rotationY: sceneConfig.model.rotation[1],
+    config: {
+      ...ANIMATION_CONFIG.SPRING,
+      friction: 35,  // 부드러운 회전을 위한 마찰 설정
+      tension: 80    // 자연스러운 움직임을 위한 장력 설정
+    }
+  }));
+
+  const isCurrentModel = index === currentIndex;
+  const modelRef = useRef<THREE.Group>(null);
+  const isDragging = useRef(false);
+  const lastMouseX = useRef(0);
+  const previouslyCurrentRef = useRef(isCurrentModel);
+  
+  // 모델별 사용자 상호작용 처리
+  const handleModelPointerDown = (e: any) => {
+    // 기존 이벤트 핸들러 호출
+    handlePointerDown(e);
+    
+    // 드래그 시작 지점 기록
+    lastMouseX.current = e.clientX;
+    isDragging.current = true;
+  };
+  
+  const handleModelPointerUp = (e: any) => {
+    // 기존 이벤트 핸들러 호출
+    handlePointerUp(e);
+    
+    // 드래그 종료
+    isDragging.current = false;
+  };
+  
+  // 포인터 이동 처리
+  const handleModelPointerMove = (e: any) => {
+    if (isDragging.current && !isExpanded && isCurrentModel) {
+      const deltaX = e.clientX - lastMouseX.current;
+      lastMouseX.current = e.clientX;
+      
+      // 회전 애니메이션 적용
+      rotationApi.start({
+        rotationY: rotationSpring.rotationY.get() + deltaX * 0.01,
+        config: ANIMATION_CONFIG.SPRING
+      });
+    }
+  };
+  
+  // 전역 이벤트 리스너 등록
+  useEffect(() => {
+    if (isCurrentModel && !isExpanded) {
+      window.addEventListener('pointermove', handleModelPointerMove);
+      
+      return () => {
+        window.removeEventListener('pointermove', handleModelPointerMove);
+      };
+    }
+  }, [isCurrentModel, isExpanded]);
+  
+  // 자동 회전 처리
+  useFrame(() => {
+    if (modelRef.current && isCurrentModel && !isExpanded && !isDragging.current) {
+      // 스프링 애니메이션으로 부드러운 회전
+      rotationApi.start({
+        rotationY: rotationSpring.rotationY.get() + 0.00015,
+        config: {
+          ...ANIMATION_CONFIG.SPRING,
+          friction: 200, // 높은 마찰력으로 부드러운 회전
+          tension: 50   // 낮은 장력으로 부드러운 회전
+        }
+      });
+    }
+  });
+
+  // 현재 모델이 변경되었을 때 초기 상태로 회전 애니메이션 적용
+  useEffect(() => {
+    if (previouslyCurrentRef.current && !isCurrentModel) {
+      // 이전에 현재 모델이었다가 다른 모델로 넘어간 경우
+      // 부드러운 애니메이션으로 초기 회전 상태로 돌아가기
+      rotationApi.start({
+        rotationY: sceneConfig.model.rotation[1],
+        config: {
+          ...ANIMATION_CONFIG.SPRING,
+          friction: 35,
+          tension: 80
+        }
+      });
+    }
+    
+    // 현재 상태 기록
+    previouslyCurrentRef.current = isCurrentModel;
+  }, [isCurrentModel, sceneConfig.model.rotation, rotationApi]);
+
   return (
     <animated.group
+      ref={modelRef}
       position-x={spring.positionX}
       position-y={spring.positionY}
       position-z={spring.positionZ}
       scale-x={spring.scale}
       scale-y={spring.scale}
       scale-z={spring.scale}
-      rotation={[
-        sceneConfig.model.rotation[0],
-        sceneConfig.model.rotation[1],
-        sceneConfig.model.rotation[2]
-      ]}
+      rotation-x={sceneConfig.model.rotation[0]}
+      rotation-y={rotationSpring.rotationY}
+      rotation-z={sceneConfig.model.rotation[2]}
       onPointerEnter={(e) => {
-        if (index === currentIndex) {
+        if (isCurrentModel) {
           e.stopPropagation();
           setModelHovered(true);
         }
       }}
       onPointerLeave={(e) => {
-        if (index === currentIndex) {
+        if (isCurrentModel) {
           e.stopPropagation();
           setModelHovered(false);
         }
       }}
       onPointerDown={(e) => {
-        if (index === currentIndex) {
+        if (isCurrentModel) {
           e.stopPropagation();
-          handlePointerDown(e);
+          handleModelPointerDown(e);
         }
       }}
       onPointerUp={(e) => {
-        if (index === currentIndex) {
+        if (isCurrentModel) {
           e.stopPropagation();
-          handlePointerUp(e);
+          handleModelPointerUp(e);
         }
       }}
     >
@@ -119,7 +214,27 @@ const Model = memo(({
         />
       </React.Suspense>
       
-      {index === currentIndex && <Reflector config={sceneConfig.reflector} />}
+      {isCurrentModel && (
+        <>
+          <Reflector config={sceneConfig.reflector} />
+          <Controls
+            ref={controlsRef}
+            isExpanded={isExpanded}
+            isActive={true}
+            isCenter={true}
+            currentIndex={currentIndex}
+            onStart={() => {
+              // 인터랙션 시작 시 추가 로직이 필요한 경우 여기에 작성
+            }}
+            onEnd={() => {
+              // OrbitControls 회전 종료 시 블러 효과 제거
+              if (setBlurred) {
+                setBlurred(false);
+              }
+            }}
+          />
+        </>
+      )}
     </animated.group>
   );
 });
@@ -164,10 +279,11 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
     isExpanded,
     toggleExpanded,
     setBlurred,
-    rotationApi,
-    rotationY: rotationSpring.rotationY,
+    // 회전 관련 설정 제거 (개별 모델에서 처리하도록 변경)
+    // rotationApi,
+    // rotationY: rotationSpring.rotationY,
     debug: isDev,
-    enableRotation: !isExpanded,
+    enableRotation: false, // 전역 회전 비활성화
     enableMouseTracking: true
   });
 
@@ -190,16 +306,24 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
     }
   }, [isExpanded, controlsRef]);
 
-  // 현재, 이전, 다음 모델만 로드하도록 관리
+  // 현재, 이전, 다음 모델만 로드하도록 관리 및 isExpanded 상태에 따라 메모리 해제
   useEffect(() => {
-    // 인덱스가 변경됨
-    if (currentIndex !== prevIndex) {
-      // 이전 타이머가 있으면 제거
-      if (unloadTimerRef.current) {
-        clearTimeout(unloadTimerRef.current);
-        unloadTimerRef.current = null;
+    // 이전 타이머가 있으면 제거
+    if (unloadTimerRef.current) {
+      clearTimeout(unloadTimerRef.current);
+      unloadTimerRef.current = null;
+    }
+    
+    // isExpanded 상태일 때는 현재 모델만 유지하고 다른 모델은 메모리에서 해제
+    if (isExpanded) {
+      if (visibleModels.length > 1 || !visibleModels.includes(currentIndex)) {
+        setVisibleModels([currentIndex]);
       }
-      
+      return;
+    }
+
+    // 인덱스가 변경됨 (isExpanded가 false일 때만 인접 모델 로드)
+    if (currentIndex !== prevIndex) {
       // 현재, 이전, 다음 모델을 한번에 계산
       const newVisibleModels = [
         Math.max(0, currentIndex - 1), 
@@ -211,14 +335,14 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
       const combinedModels = [...new Set([...visibleModels, ...newVisibleModels])];
       setVisibleModels(combinedModels);
       
-      // 5초 후 현재, 이전, 다음 모델만 남기고 나머지 제거
+      // 1초 후 현재, 이전, 다음 모델만 남기고 나머지 제거
       unloadTimerRef.current = setTimeout(() => {
         setVisibleModels(newVisibleModels);
-      }, 1000); // 5초 후 불필요한 모델 언로드
+      }, 1000);
       
       setPrevIndex(currentIndex);
     }
-  }, [currentIndex, allConfigs.length, visibleModels, prevIndex]);
+  }, [currentIndex, allConfigs.length, visibleModels, prevIndex, isExpanded]);
   
   // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => {
@@ -232,22 +356,6 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
 
   return (
     <group>
-      <Controls
-        ref={controlsRef}
-        isExpanded={isExpanded}
-        isActive={!isUserInteracting.current || isExpanded}
-        isCenter={true}
-        onStart={() => { 
-          // 인터랙션 시작 시 추가 로직이 필요한 경우 여기에 작성
-        }}
-        onEnd={() => { 
-          // OrbitControls 회전 종료 시 블러 효과 제거
-          if (setBlurred) {
-            setBlurred(false);
-          }
-        }}
-      />
-      
       <color attach="background" args={['black']} />
       <hemisphereLight intensity={0.5} groundColor="black" />
 
@@ -284,6 +392,7 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
               handlePointerDown={handlePointerDown}
               handlePointerUp={handlePointerUp}
               setModelHovered={setModelHovered}
+              setBlurred={setBlurred}
               controlsRef={controlsRef}
             />
           )

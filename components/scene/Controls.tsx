@@ -8,6 +8,7 @@ export interface ControlsProps {
   isExpanded: boolean;
   isActive: boolean;
   isCenter: boolean;
+  currentIndex: number;
   onStart?: () => void;
   onEnd?: () => void;
 }
@@ -18,7 +19,7 @@ export interface ControlsRef {
 }
 
 export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(
-  ({ isExpanded, isActive, isCenter, onStart, onEnd }, ref) => {
+  ({ isExpanded, isActive, isCenter, currentIndex, onStart, onEnd }, ref) => {
     const controlsRef = useRef<any>(null);
 
     useImperativeHandle(ref, () => ({
@@ -41,8 +42,8 @@ export const Controls = memo(forwardRef<ControlsRef, ControlsProps>(
       maxDistance: ORBIT_CONTROLS_CONFIG.MAX_DISTANCE,
       enableZoom: isExpanded,
       enablePan: false,
-      enableRotate: true,
-      autoRotate: !isExpanded,
+      enableRotate: isExpanded,
+      autoRotate: false,
       autoRotateSpeed: 0.05,
       onStart,
       onEnd

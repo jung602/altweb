@@ -106,9 +106,9 @@ export function useResponsiveDevice(debounceTime = 100): ResponsiveInfo {
   // 화면 너비에 따른 스케일 팩터 계산
   const getScaleFactor = useCallback((): number => {
     const { width } = windowSize;
-    if (width > 1440) return 1.5;      // 데스크탑 큰 화면
-    if (width > 1024) return 1.3;      // 데스크탑
-    if (width > 768) return 1.1;       // 태블릿
+    if (width > 1440) return 1.2;      // 데스크탑 큰 화면
+    if (width > 1024) return 1.05;      // 데스크탑
+    if (width > 768) return 0.9;       // 태블릿
     if (width > 480) return 0.8;         // 큰 모바일
     return .75;                          // 작은 모바일
   }, [windowSize.width]);
