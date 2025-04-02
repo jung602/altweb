@@ -421,12 +421,6 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
 
   // 현재, 이전, 다음 모델만 로드하도록 관리 및 isExpanded 상태에 따라 메모리 해제
   useEffect(() => {
-    // 이전 타이머가 있으면 제거
-    if (unloadTimerRef.current) {
-      clearTimeout(unloadTimerRef.current);
-      unloadTimerRef.current = null;
-    }
-    
     // isExpanded 상태일 때는 현재 모델만 유지하고 다른 모델은 메모리에서 해제
     if (isExpanded) {
       if (visibleModels.length > 1 || !visibleModels.includes(currentIndex)) {
@@ -436,35 +430,24 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
     }
 
     // 인덱스가 변경되었거나 isExpanded가 false로 변경된 경우 
-    // (이전에 expanded였고 현재 아닌 경우 이전/다음 모델 복원)
     if (currentIndex !== prevIndex || visibleModels.length === 1) {
-      // 현재, 이전, 다음 모델을 한번에 계산
+      // 현재, 이전, 다음 모델을 즉시 설정
       const newVisibleModels = [
         Math.max(0, currentIndex - 1), 
         currentIndex, 
         Math.min(allConfigs.length - 1, currentIndex + 1)
       ].filter((idx, i, arr) => arr.indexOf(idx) === i);
       
-      // 이전 뷰에 있던 모델도 잠시 유지 (애니메이션 위함)
-      const combinedModels = [...new Set([...visibleModels, ...newVisibleModels])];
-      setVisibleModels(combinedModels);
-      
-      // 1초 후 현재, 이전, 다음 모델만 남기고 나머지 제거
-      unloadTimerRef.current = setTimeout(() => {
-        setVisibleModels(newVisibleModels);
-      }, 1000);
-      
+      setVisibleModels(newVisibleModels);
       setPrevIndex(currentIndex);
     }
   }, [currentIndex, allConfigs.length, visibleModels, prevIndex, isExpanded]);
   
-  // 컴포넌트 언마운트 시 타이머 정리
+  // 컴포넌트 언마운트 시 정리
   useEffect(() => {
     return () => {
-      if (unloadTimerRef.current) {
-        clearTimeout(unloadTimerRef.current);
-        unloadTimerRef.current = null;
-      }
+      // 모든 모델 메모리 해제
+      setVisibleModels([]);
     };
   }, []);
 
