@@ -5,6 +5,7 @@ const repo = process.env.GITHUB_REPOSITORY?.replace(/.*?\//, '') || ''
 
 const nextConfig = {
   reactStrictMode: true,
+  output: 'export',
   images: {
     unoptimized: true,
   },
@@ -30,7 +31,8 @@ const nextConfig = {
     return config;
   },
 
-  // CORS 및 iframe 설정 추가
+  // Note: headers don't work with output: 'export', but we'll keep them for development
+  // They will be ignored during static export
   async headers() {
     return [
       {
