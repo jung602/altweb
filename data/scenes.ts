@@ -25,7 +25,7 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: false,
+      enabled: true,
       items: [
         {
           position: [0, 1, 1.75],
@@ -95,7 +95,7 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: false,
+      enabled: true,
       items: [
         {
           position: [-2.11, 1, 0],
@@ -130,7 +130,7 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: false,
+      enabled: true,
       items: [
         {
           position: [-1.95, 1, 0],
@@ -194,8 +194,16 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: false,
-      items: [
+      enabled: true,
+      items: [{
+        position: [0,-.3,1.41],
+        rotation: [0.1,3.15,0],
+        resolution: 2048,
+        args: [0.4, 3],
+        color: "#aaaaaa",
+        radius: .01,
+        clipBias: 0
+      }
       ]
     }
   },
@@ -223,7 +231,7 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: false,
+      enabled: true,
       items: [
         {
           position: [-2.41, 1.64, -0.01],
@@ -259,13 +267,16 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: false,
+      enabled: true,
       items: [
         {
-          position: [1.5, .81, .93],
+          position: [1.98, .81, .93],
           rotation: [-Math.PI / -2, -1.66, 0],
           args: [1.57, .977],
+          resolution: 2048,
           color: "#eeeeee",
+          radius: .05,
+          clipBias: 0
         },
       ]
     }

@@ -8,6 +8,7 @@ import { useResponsiveDevice } from '../../hooks/useResponsiveDevice';
 
 interface ReflectorProps {
   config: SceneConfig['reflector'];
+  isCurrentModel?: boolean;
 }
 
 // 라운딩된 직사각형 셰이프를 생성하는 함수
@@ -37,7 +38,7 @@ const createRoundedRectShape = (width: number, height: number, radius: number) =
   return shape;
 };
 
-export const Reflector: React.FC<ReflectorProps> = ({ config }) => {
+export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = true }) => {
   const { isMobile } = useResponsiveDevice();
   
   const reflectorItems = useMemo(() => {
@@ -64,7 +65,7 @@ export const Reflector: React.FC<ReflectorProps> = ({ config }) => {
   const groupRef = useRef<Group>(null);
   
   useEffect(() => {
-    if (!groupRef.current || !config?.enabled) return;
+    if (!groupRef.current || !config?.enabled || !isCurrentModel) return;
     
     // 기존 리플렉터 제거
     const existingReflectors = groupRef.current.children.filter(
@@ -89,13 +90,8 @@ export const Reflector: React.FC<ReflectorProps> = ({ config }) => {
       // 지오메트리 생성
       let geometry;
       if (item.radius > 0) {
-        geometry = new THREE.ExtrudeGeometry(
-          item.shape as Shape,
-          {
-            depth: 0.1,
-            bevelEnabled: false
-          }
-        );
+        // ExtrudeGeometry 대신 ShapeGeometry 사용하여 두께를 제거
+        geometry = new THREE.ShapeGeometry(item.shape as Shape);
       } else {
         geometry = new THREE.PlaneGeometry(item.width, item.height);
       }
@@ -140,9 +136,15 @@ export const Reflector: React.FC<ReflectorProps> = ({ config }) => {
       if (reflector.material) {
         if (Array.isArray(reflector.material)) {
           reflector.material.forEach(material => {
+            // 투명도 설정 추가
+            material.transparent = true;
+            material.opacity = 0.3; // 투명도 값 조정 (0-1 사이 값)
             optimizeMaterial(material, { isMobile });
           });
         } else {
+          // 투명도 설정 추가
+          reflector.material.transparent = true;
+          reflector.material.opacity = 0.3; // 투명도 값 조정 (0-1 사이 값)
           optimizeMaterial(reflector.material, { isMobile });
         }
       }
@@ -150,9 +152,10 @@ export const Reflector: React.FC<ReflectorProps> = ({ config }) => {
       // 그룹에 추가
       groupRef.current?.add(reflector);
     });
-  }, [reflectorItems, config?.enabled, isMobile]);
+  }, [reflectorItems, config?.enabled, isMobile, isCurrentModel]);
   
-  if (!config?.enabled) return null;
+  // Move the condition check here, after all hooks
+  if (!isCurrentModel || !config?.enabled) return null;
   
   return <group ref={groupRef} />;
 };

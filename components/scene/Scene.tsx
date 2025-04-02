@@ -317,7 +317,7 @@ const Model = memo(({
       </React.Suspense>
       
       {/* Reflector 항상 표시 */}
-      <Reflector config={sceneConfig.reflector} />
+      <Reflector config={sceneConfig.reflector} isCurrentModel={isCurrentModel} />
       
       {/* 확장된 상태에서만 Controls 표시 */}
       {isExpanded && isCurrentModel && (
