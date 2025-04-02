@@ -1,4 +1,4 @@
-import React, { memo, useRef, useEffect, useState } from 'react';
+import React, { memo, useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { Stats } from '@react-three/drei';
 import { animated, useSpring } from '@react-spring/three';
@@ -92,7 +92,31 @@ const Model = memo(({
   const modelRef = useRef<THREE.Group>(null);
   const isDragging = useRef(false);
   const lastMouseX = useRef(0);
+  const lastTime = useRef(0);
+  const rotationVelocity = useRef(0);
   const previouslyCurrentRef = useRef(isCurrentModel);
+  const inertiaAnimationRef = useRef<number | null>(null);
+  
+  // 관성 애니메이션 처리
+  const applyInertia = useCallback(() => {
+    if (!isDragging.current && Math.abs(rotationVelocity.current) > 0.0001) {
+      // 관성 효과 - 천천히 속도 감소
+      rotationVelocity.current *= 0.95;
+      
+      rotationApi.start({
+        rotationY: rotationSpring.rotationY.get() + rotationVelocity.current,
+        immediate: true
+      });
+      
+      inertiaAnimationRef.current = requestAnimationFrame(applyInertia);
+    } else {
+      rotationVelocity.current = 0;
+      if (inertiaAnimationRef.current) {
+        cancelAnimationFrame(inertiaAnimationRef.current);
+        inertiaAnimationRef.current = null;
+      }
+    }
+  }, [rotationApi, rotationSpring.rotationY]);
   
   // 모델별 사용자 상호작용 처리
   const handleModelPointerDown = (e: any) => {
@@ -101,31 +125,60 @@ const Model = memo(({
     
     // 드래그 시작 지점 기록
     lastMouseX.current = e.clientX;
+    lastTime.current = performance.now();
     isDragging.current = true;
+    
+    // 관성 애니메이션 중지
+    if (inertiaAnimationRef.current) {
+      cancelAnimationFrame(inertiaAnimationRef.current);
+      inertiaAnimationRef.current = null;
+    }
+    rotationVelocity.current = 0;
   };
   
   const handleModelPointerUp = (e: any) => {
     // 기존 이벤트 핸들러 호출
     handlePointerUp(e);
     
-    // 드래그 종료
+    // 드래그 종료 및 관성 시작
     isDragging.current = false;
+    
+    // 관성 애니메이션 시작
+    if (Math.abs(rotationVelocity.current) > 0.0001) {
+      inertiaAnimationRef.current = requestAnimationFrame(applyInertia);
+    }
   };
-  
+
   // 포인터 이동 처리
   const handleModelPointerMove = (e: any) => {
     if (isDragging.current && !isExpanded && isCurrentModel) {
+      const currentTime = performance.now();
+      const deltaTime = currentTime - lastTime.current;
       const deltaX = e.clientX - lastMouseX.current;
-      lastMouseX.current = e.clientX;
       
-      // 회전 애니메이션 적용
+      // 회전 계수 계산 - 화면 너비에 비례
+      const rotationFactor = (deltaX / window.innerWidth) * Math.PI * 1.2;
+      
+      // 속도 계산 (시간 기반)
+      if (deltaTime > 0) {
+        rotationVelocity.current = rotationFactor / deltaTime * 16; // 60fps 기준 정규화
+      }
+      
+      // 회전 애니메이션 적용 - 마찰이 낮아 더 쉽게 움직이고 관성이 있음
       rotationApi.start({
-        rotationY: rotationSpring.rotationY.get() + deltaX * 0.01,
-        config: ANIMATION_CONFIG.SPRING
+        rotationY: rotationSpring.rotationY.get() + rotationFactor,
+        config: {
+          ...ANIMATION_CONFIG.SPRING,
+          friction: 12,  // 더 낮은 마찰력으로 부드러운 회전
+          tension: 60    // 적절한 장력으로 반응성 유지
+        }
       });
+      
+      lastMouseX.current = e.clientX;
+      lastTime.current = currentTime;
     }
   };
-  
+
   // 전역 이벤트 리스너 등록
   useEffect(() => {
     if (isCurrentModel && !isExpanded) {
@@ -133,20 +186,32 @@ const Model = memo(({
       
       return () => {
         window.removeEventListener('pointermove', handleModelPointerMove);
+        // 클린업 시 관성 애니메이션 취소
+        if (inertiaAnimationRef.current) {
+          cancelAnimationFrame(inertiaAnimationRef.current);
+          inertiaAnimationRef.current = null;
+        }
       };
     }
-  }, [isCurrentModel, isExpanded]);
-  
-  // 자동 회전 처리
+  }, [isCurrentModel, isExpanded, handleModelPointerMove]);
+
+  // 자동 회전 처리 - 드래그나 관성 중이 아닐 때만
   useFrame(() => {
-    if (modelRef.current && isCurrentModel && !isExpanded && !isDragging.current) {
+    if (
+      modelRef.current && 
+      isCurrentModel && 
+      !isExpanded && 
+      !isDragging.current && 
+      Math.abs(rotationVelocity.current) < 0.0001 &&
+      !inertiaAnimationRef.current
+    ) {
       // 스프링 애니메이션으로 부드러운 회전
       rotationApi.start({
-        rotationY: rotationSpring.rotationY.get() + 0.00015,
+        rotationY: rotationSpring.rotationY.get() + 0.0003, // 약간 더 느리게
         config: {
           ...ANIMATION_CONFIG.SPRING,
           friction: 200, // 높은 마찰력으로 부드러운 회전
-          tension: 50   // 낮은 장력으로 부드러운 회전
+          tension: 40   // 더 낮은 장력으로 부드러운 회전
         }
       });
     }
@@ -157,6 +222,14 @@ const Model = memo(({
     if (previouslyCurrentRef.current && !isCurrentModel) {
       // 이전에 현재 모델이었다가 다른 모델로 넘어간 경우
       // 부드러운 애니메이션으로 초기 회전 상태로 돌아가기
+      
+      // 관성 애니메이션 중지
+      if (inertiaAnimationRef.current) {
+        cancelAnimationFrame(inertiaAnimationRef.current);
+        inertiaAnimationRef.current = null;
+      }
+      rotationVelocity.current = 0;
+      
       rotationApi.start({
         rotationY: sceneConfig.model.rotation[1],
         config: {
@@ -169,7 +242,16 @@ const Model = memo(({
     
     // 현재 상태 기록
     previouslyCurrentRef.current = isCurrentModel;
-  }, [isCurrentModel, sceneConfig.model.rotation, rotationApi]);
+  }, [isCurrentModel, sceneConfig.model.rotation, rotationApi, applyInertia]);
+
+  // 컴포넌트 언마운트 시 정리
+  useEffect(() => {
+    return () => {
+      if (inertiaAnimationRef.current) {
+        cancelAnimationFrame(inertiaAnimationRef.current);
+      }
+    };
+  }, []);
 
   // 이전/다음 모델일 경우 emission 텍스처 밝기 조정
   useEffect(() => {
@@ -234,26 +316,27 @@ const Model = memo(({
         />
       </React.Suspense>
       
-      {isCurrentModel && (
-        <>
-          <Reflector config={sceneConfig.reflector} />
-          <Controls
-            ref={controlsRef}
-            isExpanded={isExpanded}
-            isActive={true}
-            isCenter={true}
-            currentIndex={currentIndex}
-            onStart={() => {
-              // 인터랙션 시작 시 추가 로직이 필요한 경우 여기에 작성
-            }}
-            onEnd={() => {
-              // OrbitControls 회전 종료 시 블러 효과 제거
-              if (setBlurred) {
-                setBlurred(false);
-              }
-            }}
-          />
-        </>
+      {/* Reflector 항상 표시 */}
+      <Reflector config={sceneConfig.reflector} />
+      
+      {/* 확장된 상태에서만 Controls 표시 */}
+      {isExpanded && isCurrentModel && (
+        <Controls
+          ref={controlsRef}
+          isExpanded={isExpanded}
+          isActive={isCurrentModel}
+          isCenter={isCurrentModel}
+          currentIndex={currentIndex}
+          onStart={() => {
+            // 인터랙션 시작 시 추가 로직이 필요한 경우 여기에 작성
+          }}
+          onEnd={() => {
+            // OrbitControls 회전 종료 시 블러 효과 제거
+            if (setBlurred) {
+              setBlurred(false);
+            }
+          }}
+        />
       )}
     </animated.group>
   );
@@ -268,6 +351,9 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   const setBlurred = useSceneStore((state) => state.setBlurred);
   const groupRef = useRef<THREE.Group>(null);
   const isDev = process.env.NODE_ENV === 'development';
+
+  // 모델별 controlsRef를 관리하는 객체
+  const modelControlsRefs = useRef<{[key: number]: React.RefObject<any>}>({});
 
   // 이전 인덱스 추적
   const [prevIndex, setPrevIndex] = useState(currentIndex);
@@ -324,6 +410,13 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
     if (!isExpanded && controlsRef?.current) {
       controlsRef.current.reset();
     }
+    
+    // 모든 모델의 controlsRef를 리셋
+    Object.values(modelControlsRefs.current).forEach(ref => {
+      if (ref.current) {
+        ref.current.reset();
+      }
+    });
   }, [isExpanded, controlsRef]);
 
   // 현재, 이전, 다음 모델만 로드하도록 관리 및 isExpanded 상태에 따라 메모리 해제
@@ -401,9 +494,14 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
       
       {/* 각 모델을 y축으로 -6 간격으로 배치하는 그룹 전체를 애니메이션으로 이동 */}
       <animated.group position-y={modelsPositionY.y}>
-        {allConfigs.map((sceneConfig, index) => 
+        {allConfigs.map((sceneConfig, index) => {
+          // 모델별로 고유한 ref 생성 및 관리
+          if (!modelControlsRefs.current[index]) {
+            modelControlsRefs.current[index] = React.createRef();
+          }
+          
           // 현재 모델이 로드되어 있는지 확인
-          visibleModels.includes(index) && (
+          return visibleModels.includes(index) && (
             <Model
               key={`model-${index}`}
               sceneConfig={sceneConfig}
@@ -414,10 +512,10 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
               handlePointerUp={handlePointerUp}
               setModelHovered={setModelHovered}
               setBlurred={setBlurred}
-              controlsRef={controlsRef}
+              controlsRef={modelControlsRefs.current[index]}
             />
-          )
-        )}
+          );
+        })}
       </animated.group>
       {process.env.NODE_ENV === 'development' && <Stats />}
     </group>
