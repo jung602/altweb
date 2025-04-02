@@ -1,18 +1,20 @@
-import { memo } from 'react'
+import { memo, useEffect } from 'react'
 import * as THREE from 'three'
 import { useThree } from '@react-three/fiber'
 import { ModelComponentType } from "../../types/scene"
 import { ThreeEvent } from '@react-three/fiber'
 import { stopThreePropagation, setThreeCursor } from '../../utils/eventUtils'
 import { useModel } from '../../hooks/useModel'
+import { setSceneEmissionIntensity } from '../../utils/materialOptimizer'
 
 interface ModelLoaderProps {
   component: ModelComponentType
   controlsRef?: React.RefObject<any>
+  isCurrentModel?: boolean
   [key: string]: any
 }
 
-export const ModelLoader = memo(({ component, controlsRef, ...props }: ModelLoaderProps) => {
+export const ModelLoader = memo(({ component, controlsRef, isCurrentModel = true, ...props }: ModelLoaderProps) => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
   const isDev = process.env.NODE_ENV === 'development'
   
@@ -32,6 +34,23 @@ export const ModelLoader = memo(({ component, controlsRef, ...props }: ModelLoad
     isDev,
     renderer: gl // WebGLRenderer를 직접 전달
   })
+
+  // 모델 로드 후 emission 밝기 설정
+  useEffect(() => {
+    if (scene) {
+      if (!isCurrentModel) {
+        // 이전/다음 모델의 경우 emission 밝기를 0.5로 설정
+        setSceneEmissionIntensity(scene, 0.3, {
+          logInfo: isDev
+        });
+      } else {
+        // 현재 모델이 되면 emission 밝기를 1.0으로 복원
+        setSceneEmissionIntensity(scene, 1.0, {
+          logInfo: isDev
+        });
+      }
+    }
+  }, [scene, isCurrentModel, isDev]);
 
   // Three.js 이벤트에 특화된 유틸리티 함수를 사용한 이벤트 핸들러
   const pointerEnterHandler = stopThreePropagation<ThreeEvent<PointerEvent>>(

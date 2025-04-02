@@ -332,6 +332,55 @@ export function optimizeScene(
   }
 }
 
+/**
+ * 재질의 emission 텍스처 밝기를 설정하는 함수
+ * @param material - 설정할 재질
+ * @param intensity - 설정할 emission 강도 (0.0 ~ 1.0)
+ * @param options - 추가 옵션
+ */
+export function setEmissionIntensity(
+  material: THREE.Material,
+  intensity: number = 0.5,
+  options: { logInfo?: boolean } = {}
+): void {
+  if (material instanceof THREE.MeshStandardMaterial) {
+    // Emission 텍스처가 있을 때만 강도 설정
+    if (material.emissiveMap) {
+      material.emissiveIntensity = intensity;
+      
+      if (options.logInfo) {
+        console.log(`Emission 강도 설정: ${intensity} (${material.name || 'unnamed'})`);
+      }
+      
+      material.needsUpdate = true;
+    }
+  }
+}
+
+/**
+ * 씬의 모든 재질에 대해 emission 텍스처 밝기를 설정하는 함수
+ * @param scene - 설정할 씬
+ * @param intensity - 설정할 emission 강도 (0.0 ~ 1.0)
+ * @param options - 추가 옵션
+ */
+export function setSceneEmissionIntensity(
+  scene: THREE.Object3D,
+  intensity: number = 0.5,
+  options: { logInfo?: boolean } = {}
+): void {
+  scene.traverse((child: any) => {
+    if (child.isMesh && child.material) {
+      if (Array.isArray(child.material)) {
+        child.material.forEach((mat: THREE.Material) => {
+          setEmissionIntensity(mat, intensity, options);
+        });
+      } else {
+        setEmissionIntensity(child.material, intensity, options);
+      }
+    }
+  });
+}
+
 // 기존 함수명을 유지하지만 새 최적화 함수를 호출하는 래퍼 함수들
 export const optimizeSceneMaterials = optimizeScene;
 export const updateSceneTextures = (scene: THREE.Object3D, options: TextureOptions = {}) => {

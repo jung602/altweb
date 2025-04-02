@@ -11,6 +11,7 @@ import { useResponsiveDevice } from '../../hooks/useResponsiveDevice';
 import { useInteraction } from '../../hooks/useInteraction';
 import { ANIMATION_CONFIG } from '../../config/sceneConfig';
 import { useFrame } from '@react-three/fiber';
+import { setSceneEmissionIntensity } from '../../utils/materialOptimizer';
 
 /**
  * Scene 컴포넌트의 props 인터페이스
@@ -60,8 +61,8 @@ const Model = memo(({
   const basePosition = sceneConfig.model.position;
   const responsivePosition = getResponsivePosition(basePosition);
   
-  // 브라우저 너비 기준: 768px 이하면 태블릿/모바일로 간주
-  const ySpacing = width <= 768 ? 4 : 6;
+  // 브라우저 너비 기준: 768px 이하면 4, 768px 초과 1440px 이하면 5, 1440px 초과면 6
+  const ySpacing = width <= 768 ? 4 : width <= 1440 ? 5 : 6;
   const yPos = responsivePosition[1] + (index * -ySpacing);
   
   // 스프링 애니메이션 적용
@@ -170,6 +171,24 @@ const Model = memo(({
     previouslyCurrentRef.current = isCurrentModel;
   }, [isCurrentModel, sceneConfig.model.rotation, rotationApi]);
 
+  // 이전/다음 모델일 경우 emission 텍스처 밝기 조정
+  useEffect(() => {
+    // modelRef.current는 모델 로딩 후 설정됨
+    if (modelRef.current) {
+      if (!isCurrentModel) {
+        // 이전/다음 모델의 경우 emission 밝기를 0.5로 설정
+        setSceneEmissionIntensity(modelRef.current, 0.5, {
+          logInfo: process.env.NODE_ENV === 'development'
+        });
+      } else {
+        // 현재 모델이 되면 emission 밝기를 1.0으로 복원
+        setSceneEmissionIntensity(modelRef.current, 1.0, {
+          logInfo: process.env.NODE_ENV === 'development'
+        });
+      }
+    }
+  }, [isCurrentModel]);
+
   return (
     <animated.group
       ref={modelRef}
@@ -211,6 +230,7 @@ const Model = memo(({
         <ModelLoader 
           component={sceneConfig.model.component}
           controlsRef={controlsRef}
+          isCurrentModel={isCurrentModel}
         />
       </React.Suspense>
       
@@ -290,8 +310,8 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   // 현재 기기의 반응형 정보 가져오기
   const { width } = useResponsiveDevice();
   
-  // 브라우저 너비 기준: 768px 이하면 간격 4, 그 이상이면 간격 6
-  const ySpacing = width <= 768 ? 4 : 6;
+  // 브라우저 너비 기준: 768px 이하면 4, 768px 초과 1440px 이하면 5, 1440px 초과면 6
+  const ySpacing = width <= 768 ? 4 : width <= 1440 ? 5 : 6;
 
   // 전체 모델 그룹의 y축 위치 애니메이션
   const modelsPositionY = useSpring({
@@ -322,8 +342,9 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
       return;
     }
 
-    // 인덱스가 변경됨 (isExpanded가 false일 때만 인접 모델 로드)
-    if (currentIndex !== prevIndex) {
+    // 인덱스가 변경되었거나 isExpanded가 false로 변경된 경우 
+    // (이전에 expanded였고 현재 아닌 경우 이전/다음 모델 복원)
+    if (currentIndex !== prevIndex || visibleModels.length === 1) {
       // 현재, 이전, 다음 모델을 한번에 계산
       const newVisibleModels = [
         Math.max(0, currentIndex - 1), 
