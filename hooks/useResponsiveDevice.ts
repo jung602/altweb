@@ -109,8 +109,8 @@ export function useResponsiveDevice(debounceTime = 100): ResponsiveInfo {
     if (width > 1440) return 1.6;      // 데스크탑 큰 화면
     if (width > 1024) return 1.3;      // 데스크탑
     if (width > 768) return 1.2;       // 태블릿
-    if (width > 480) return 1;         // 큰 모바일
-    return 1;                          // 작은 모바일
+    if (width > 480) return 0.8;         // 큰 모바일
+    return .75;                          // 작은 모바일
   }, [windowSize.width]);
 
   // 화면 크기에 따른 기본 크기 계산

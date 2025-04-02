@@ -80,6 +80,8 @@ export default function UnifiedScene() {
               >
                 <Scene
                   config={scenes[currentIndex]}
+                  allConfigs={scenes}
+                  currentIndex={currentIndex}
                   controlsRef={controlsRef}
                 />
               </Canvas>

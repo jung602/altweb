@@ -25,7 +25,7 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: true,
+      enabled: false,
       items: [
         {
           position: [0, 1, 1.75],
@@ -95,7 +95,7 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: true,
+      enabled: false,
       items: [
         {
           position: [-2.11, 1, 0],
@@ -130,7 +130,7 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: true,
+      enabled: false,
       items: [
         {
           position: [-1.95, 1, 0],
@@ -223,7 +223,7 @@ export const scenesData: SceneConfig[] = [
       }
     ],
     reflector: {
-      enabled: true,
+      enabled: false,
       items: [
         {
           position: [-2.41, 1.64, -0.01],
