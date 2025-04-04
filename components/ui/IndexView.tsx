@@ -64,7 +64,7 @@ export const IndexView = () => {
         transition: 'opacity 800ms ease-in-out',
       }}
     >
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-1 p-1 max-w-[1400px] mx-auto pointer-events-auto">        
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-1 p-1 max-w-[1400px] mx-auto pointer-events-auto">        
         {scenes.map((scene, index) => (
           <div
             key={scene.id}
@@ -77,7 +77,7 @@ export const IndexView = () => {
             }}
             onClick={() => handleItemClick(index)}
           >
-            <div className="relative w-full aspect-square overflow-hidden">
+            <div className="relative w-[70%] md:w-full aspect-square overflow-hidden">
                   <Image 
                     src={scene.thumbnail} 
                     alt={scene.title} 
