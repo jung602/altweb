@@ -1,6 +1,7 @@
 import { useSceneStore } from '../../store/sceneStore';
 import { MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 const useWindowSize = () => {
   const [windowSize, setWindowSize] = useState({
@@ -76,13 +77,25 @@ export const IndexView = () => {
             }}
             onClick={() => handleItemClick(index)}
           >
+            <div className="relative w-full aspect-square overflow-hidden">
+                  <Image 
+                    src={scene.thumbnail} 
+                    alt={scene.title} 
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                  />
+                </div>
             <div className="grid grid-flow-col grid-row-2 h-full gap-x-0 gap-y-0">
+
                 <p className="font-geist-mono row-span-2 text-xs ">(0{scene.id})</p>
-                <h2 className="font-geist-sans col-span-2 text-xs mb-1">{scene.title}</h2>
-                <h3 className="font-geist-mono flex items-start text-slate-500 text-xs">
-                  <MapPin strokeWidth={1.5} className="w-3 h-3 mr-1" />
+                <div>
+                <p className="font-geist-sans col-span-2 text-xs mb-1">{scene.title}</p>
+                <p className="font-geist-mono flex items-start text-slate-500 text-xs">
+                <MapPin strokeWidth={1.5} className="w-3 h-3 mr-1" />
                   {scene.location}
-                </h3>
+                </p>
+                </div>
             </div>
           </div>
         ))}

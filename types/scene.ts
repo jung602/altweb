@@ -40,6 +40,7 @@ export interface SceneConfig {
   title: string;
   description: string;
   location: string;
+  thumbnail: string;
   model: {
     component: ModelComponentType;
     scale: number;

@@ -5,6 +5,7 @@ export const scenesData: SceneConfig[] = [
     id: "1",
     title: "Klar's Room",
     location: "Tokyo, Japan",
+    thumbnail: "/images/main/1.jpg",
     description: "Klar's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment.    Klar's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment. Klar's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment. Klar's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment.",
     model: {
       component: "Alt1",
@@ -47,6 +48,7 @@ export const scenesData: SceneConfig[] = [
     id: "2",
     title: "Lee's Room",
     location: "Seoul, South Korea",
+    thumbnail: "/images/main/2.jpg",
     description: "Lee's Room is a modern and minimalist space designed for relaxation and productivity. The room features a sleek desk, a comfortable chair, and a minimalist design that allows for a peaceful work environment.",
     model: {
       component: "Alt2",
@@ -75,6 +77,7 @@ export const scenesData: SceneConfig[] = [
     id: "3",
     title: "Vitra Room",
     location: "Birsfelden, Switzerland",
+    thumbnail: "/images/main/3.jpg",
     description: "Vitra Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt3",
@@ -110,6 +113,7 @@ export const scenesData: SceneConfig[] = [
     id: "4",
     title: "Joguhaus Room",
     location: "Seoul, South Korea",
+    thumbnail: "/images/main/4.jpg",
     description: "Joguhaus Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt4",
@@ -145,6 +149,7 @@ export const scenesData: SceneConfig[] = [
     id: "5",
     title: "Akki Room",
     location: "Tokyo, Japan",
+    thumbnail: "/images/main/5.jpg",
     description: "Joguhaus Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt5",
@@ -174,6 +179,7 @@ export const scenesData: SceneConfig[] = [
     id: "6",
     title: "Fabian Room",
     location: "Bern, Switzerland",
+    thumbnail: "/images/main/6.jpg",
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt6",
@@ -211,6 +217,7 @@ export const scenesData: SceneConfig[] = [
     id: "7",
     title: "TGC Room",
     location: "Seoul, South Korea",
+    thumbnail: "/images/main/7.jpg",
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt7",
@@ -247,6 +254,7 @@ export const scenesData: SceneConfig[] = [
     id: "8",
     title: "Smnstr Room",
     location: "Darmstadt, Germany",
+    thumbnail: "/images/main/8.jpg",
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt8",
@@ -285,6 +293,7 @@ export const scenesData: SceneConfig[] = [
     id: "9",
     title: "Rareraw Room",
     location: "Seoul, South Korea",
+    thumbnail: "/images/main/9.jpg",
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt9",
