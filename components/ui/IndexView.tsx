@@ -58,17 +58,17 @@ export const IndexView = () => {
 
   return (
     <div 
-      className="fixed inset-0 w-[100dvw] h-[100dvh] pointer-events-none overflow-auto pt-20"
+      className="fixed inset-0 w-[100dvw] h-[100dvh] overflow-auto pt-20 transition-all duration-300"
       style={{
         opacity: isLoaded ? 1 : 0,
         transition: 'opacity 800ms ease-in-out',
       }}
     >
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-1 p-1 max-w-[1400px] mx-auto pointer-events-auto">        
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1 p-1 max-w-[1400px] mx-auto">        
         {scenes.map((scene, index) => (
           <div
             key={scene.id}
-            className="text-slate-50/70 w-full backdrop-blur-sm rounded-lg p-4 cursor-pointer
+            className="text-slate-50/70 mx-6 sm:mx-12 lg:mx-0 lg:w-full backdrop-blur-sm rounded-lg p-4 cursor-pointer
               hover:text-slate-50 transition-all duration-300"
             style={{
               opacity: isLoaded ? 1 : 0,
@@ -77,7 +77,7 @@ export const IndexView = () => {
             }}
             onClick={() => handleItemClick(index)}
           >
-            <div className="relative w-[70%] md:w-full aspect-square overflow-hidden">
+            <div className="relative w-full aspect-square overflow-hidden">
                   <Image 
                     src={scene.thumbnail} 
                     alt={scene.title} 
@@ -86,7 +86,7 @@ export const IndexView = () => {
                     sizes="(max-width: 768px) 50vw, 25vw"
                   />
                 </div>
-            <div className="grid grid-flow-col grid-row-2 h-full gap-x-0 gap-y-0">
+            <div className="grid grid-flow-col grid-row-1 gap-x-0 gap-y-0 justify-between text-right">
 
                 <p className="font-geist-mono row-span-2 text-xs ">(0{scene.id})</p>
                 <div>
