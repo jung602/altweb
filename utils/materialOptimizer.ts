@@ -6,6 +6,19 @@ import {
   calculateTextureCompressionRatio, 
   analyzeCompressedTextures 
 } from './sceneCleanup';
+import { logger } from './logger';
+
+// 이미 최적화된 텍스처를 추적하는 Set (UUID 기반)
+const optimizedTextures = new Set<string>();
+
+// 이미 로깅된 텍스처를 추적하는 Set (UUID 기반)
+const loggedTextures = new Set<string>();
+
+// 이미 최적화된 씬을 추적하는 Set (UUID 기반)
+const optimizedScenes = new Set<string>();
+
+// 텍스처 중복 최적화 디버깅
+const logOptimizationAttempts = process.env.NODE_ENV === 'development';
 
 /**
  * 텍스처 최적화 옵션 인터페이스
@@ -18,6 +31,7 @@ export interface TextureOptions {
   logInfo?: boolean;
   isMobile?: boolean;
   supportKTX2?: boolean;  // KTX2 지원 여부
+  onTextureLoad?: (texture: THREE.Texture) => void;
 }
 
 /**
@@ -47,6 +61,18 @@ export function updateTexture(
   options: TextureOptions = {}
 ): void {
   if (!texture) return;
+  
+  // 이미 최적화된 텍스처는 건너뛰기 (UUID 기반 확인)
+  const textureId = texture.uuid;
+  if (optimizedTextures.has(textureId)) {
+    if (logOptimizationAttempts) {
+      logger.log(`텍스처 중복 최적화 방지 (UUID: ${textureId.substring(0, 8)}...)`, 'debug');
+    }
+    return;
+  }
+  
+  // 최적화 전에 Set에 추가하여 중복 방지
+  optimizedTextures.add(textureId);
   
   // 기본 옵션 설정
   const defaultOptions: TextureOptions = {
@@ -88,7 +114,7 @@ export function updateTexture(
       // KTX2 텍스처는 이미 압축되어 있으므로 메모리 최적화를 위한 추가 설정
       texture.flipY = false; // 텍스처 뒤집기 비활성화
       
-      if (mergedOptions.logInfo) {
+      if (mergedOptions.logInfo && !loggedTextures.has(textureId)) {
         const type = getTextureType(texture);
         const size = estimateTextureMemory(texture);
         const width = texture.image?.width || 0;
@@ -96,17 +122,23 @@ export function updateTexture(
         const compressionRatio = calculateTextureCompressionRatio(texture);
         const originalSize = width * height * 4; // 비압축 RGBA 기준
         
-        console.log(`${type} 압축 텍스처 최적화 적용:`, texture.name || 'unnamed');
-        console.log(`  - 크기: ${width}×${height}`);
-        console.log(`  - 메모리: ${formatBytes(size)} (원본 대비 ${Math.round(compressionRatio * 100)}%, ${formatBytes(originalSize)} 절약)`);
-        console.log(`  - 포맷: ${(texture as any).format?.toString(16) || '알 수 없음'}`);
+        logger.log(`${type} 압축 텍스처 최적화 적용: ${texture.name || 'unnamed'} (UUID: ${texture.uuid.substring(0, 8)}...)`, 'resource');
+        if (logger.getLogLevel() === 'detailed' || logger.getLogLevel() === 'verbose') {
+          logger.log(`  - 크기: ${width}×${height}`, 'resource');
+          logger.log(`  - 메모리: ${formatBytes(size)} (원본 대비 ${Math.round(compressionRatio * 100)}%, ${formatBytes(originalSize)} 절약)`, 'resource');
+          logger.log(`  - 포맷: ${(texture as any).format?.toString(16) || '알 수 없음'}`, 'resource');
+        }
+        
+        // 로깅된 텍스처 추적
+        loggedTextures.add(textureId);
       }
     }
   }
   
   // 텍스처 정보 로깅
-  if (mergedOptions.logInfo && texture.source?.data?.src) {
+  if (mergedOptions.logInfo && texture.source?.data?.src && !loggedTextures.has(textureId)) {
     console.log('텍스처 URL:', texture.source.data.src);
+    loggedTextures.add(textureId);
   }
   
   // 텍스처 업데이트 플래그 설정
@@ -170,7 +202,14 @@ export function updateMaterialTextures(
   
   // 모든 텍스처에 대해 업데이트 적용
   textures.forEach(texture => {
-    if (texture) updateTexture(texture, options);
+    if (texture) {
+      updateTexture(texture, options);
+      
+      // 텍스처 로드 완료 시 콜백 호출 (리소스 관리자에 등록)
+      if (options.onTextureLoad && texture.source?.data) {
+        options.onTextureLoad(texture);
+      }
+    }
   });
   
   // 재질 업데이트 플래그 설정
@@ -238,6 +277,25 @@ export function optimizeScene(
   scene: THREE.Object3D,
   options: SceneOptions = {}
 ): void {
+  // 씬 중복 최적화 방지
+  const sceneId = scene.uuid;
+  const sceneKey = `optimized_scene_${sceneId}`;
+  
+  if (optimizedScenes.has(sceneKey)) {
+    if (logOptimizationAttempts) {
+      logger.log(`씬 중복 최적화 방지 (UUID: ${sceneId.substring(0, 8)}...)`, 'debug');
+    }
+    return;
+  }
+  
+  // 최적화 전에 씬을 추적 Set에 추가
+  optimizedScenes.add(sceneKey);
+  
+  // 특별 디버깅용 로깅
+  if (logOptimizationAttempts && process.env.NODE_ENV === 'development') {
+    logger.log(`씬 최적화 시작 - 이미 최적화된 텍스처: ${optimizedTextures.size}개`, 'debug');
+  }
+  
   const defaultOptions: SceneOptions = {
     defaultColor: new THREE.Color(0xCCCCCC),
     checkTextureLoaded: false,
@@ -381,14 +439,96 @@ export function setSceneEmissionIntensity(
   });
 }
 
-// 기존 함수명을 유지하지만 새 최적화 함수를 호출하는 래퍼 함수들
-export const optimizeSceneMaterials = optimizeScene;
-export const updateSceneTextures = (scene: THREE.Object3D, options: TextureOptions = {}) => {
-  optimizeScene(scene, options);
+/**
+ * 미사용 텍스처 참조를 정리하는 함수
+ * @param scene - 정리할 씬
+ */
+export function clearTextureReferences(scene: THREE.Object3D): void {
+  // 현재 사용 중인 텍스처 참조 수집
+  const usedTextures = new Set<THREE.Texture>();
+  
+  // 씬에서 사용 중인 모든 텍스처 수집
+  scene.traverse((child: any) => {
+    if (child.isMesh && child.material) {
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      
+      materials.forEach((material: THREE.Material) => {
+        if (material instanceof THREE.MeshStandardMaterial ||
+            material instanceof THREE.MeshPhongMaterial ||
+            material instanceof THREE.MeshBasicMaterial) {
+          
+          // 모든 가능한 텍스처 맵 속성 검사
+          const textureProps = [
+            'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 
+            'emissiveMap', 'displacementMap', 'alphaMap', 'bumpMap',
+            'envMap', 'lightMap', 'specularMap'
+          ];
+          
+          textureProps.forEach(prop => {
+            const texture = (material as any)[prop];
+            if (texture) {
+              usedTextures.add(texture);
+            }
+          });
+        }
+      });
+    }
+  });
+  
+  // 최적화 여부 추적 Set에서 사용하지 않는 텍스처 참조 제거
+  let removedCount = 0;
+  for (const textureId of optimizedTextures) {
+    let found = false;
+    usedTextures.forEach(texture => {
+      if (texture.uuid === textureId) {
+        found = true;
+      }
+    });
+    
+    if (!found) {
+      optimizedTextures.delete(textureId);
+      removedCount++;
+    }
+  }
+  
+  // 디버깅용 로깅
+  if (logOptimizationAttempts && process.env.NODE_ENV === 'development' && removedCount > 0) {
+    logger.log(`텍스처 참조 정리: ${removedCount}개 제거됨, 남은 최적화된 텍스처: ${optimizedTextures.size}개`, 'debug');
+  }
+}
+
+// 기존 함수들에 clearTextureReferences 호출 추가
+export const optimizeSceneMaterials = (scene: THREE.Object3D, options: SceneOptions = {}) => {
+  const result = optimizeScene(scene, options);
+  clearTextureReferences(scene); // 참조 정리 추가
+  return result;
 };
+
+export const updateSceneTextures = (scene: THREE.Object3D, options: TextureOptions = {}) => {
+  // 동일 장면에 대한 중복 최적화 방지를 위해 씬 객체 자체를 식별자로 활용
+  const sceneId = scene.uuid;
+  const optimizationKey = `scene_${sceneId}`;
+  
+  // 씬이 이미 최적화 캐시에 있는지 확인
+  if (optimizedScenes.has(`optimized_scene_${sceneId}`)) {
+    if (logOptimizationAttempts) {
+      logger.log(`씬 중복 최적화 방지 (updateSceneTextures 호출) (UUID: ${sceneId.substring(0, 8)}...)`, 'debug');
+    }
+    return;
+  }
+  
+  if (!optimizedTextures.has(optimizationKey)) {
+    optimizedTextures.add(optimizationKey);
+    optimizeScene(scene, options);
+  } else if (logOptimizationAttempts && process.env.NODE_ENV === 'development') {
+    logger.log(`씬 중복 최적화 방지 (UUID: ${sceneId.substring(0, 8)}...)`, 'debug');
+  }
+};
+
 export const optimizeSceneForMobile = (scene: THREE.Object3D, options: SceneOptions = {}) => {
   optimizeScene(scene, { ...options, isMobile: true });
 };
+
 export const checkAndFixSceneMaterials = (scene: THREE.Object3D): boolean => {
   let hasFixedMaterial = false;
   scene.traverse((child: any) => {
@@ -411,4 +551,17 @@ export const checkAndFixSceneMaterials = (scene: THREE.Object3D): boolean => {
     }
   });
   return hasFixedMaterial;
-}; 
+};
+
+/**
+ * 전체 캐시 및 관련 컬렉션 초기화
+ */
+export function resetTextureOptimizationCache(): void {
+  optimizedTextures.clear();
+  loggedTextures.clear();
+  optimizedScenes.clear();
+  
+  if (logOptimizationAttempts) {
+    logger.log('텍스처 최적화 캐시 리셋됨', 'debug');
+  }
+} 

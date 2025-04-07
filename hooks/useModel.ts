@@ -9,18 +9,24 @@ import {
   optimizeSceneMaterials, 
   checkAndFixSceneMaterials,
   optimizeSceneForMobile,
-  updateSceneTextures
+  updateSceneTextures,
+  TextureOptions,
+  SceneOptions,
+  resetTextureOptimizationCache
 } from '../utils/materialOptimizer';
 import { 
   cleanupGLTFModel, 
   disposeSceneResources, 
+  forceGlobalMemoryCleanup,
   MemoryStats
 } from '../utils/sceneCleanup';
 import { 
   analyzeAndLogModelInfo,
-  checkMemoryUsageAndSuggestOptimizations
+  checkMemoryUsageAndSuggestOptimizations,
+  resetDisplayedWarnings
 } from '../utils/modelAnalyzer';
 import { useResponsiveDevice } from './useResponsiveDevice';
+import { ResourceManager } from '../utils/ResourceManager';
 
 interface UseModelOptions {
   component: ModelComponentType;
@@ -39,6 +45,37 @@ interface UseModelResult {
   previousScene: THREE.Group | null;
   memoryStats: MemoryStats | null;
 }
+
+// 확장된 TextureOptions 인터페이스
+interface ExtendedTextureOptions extends TextureOptions {
+  onTextureLoad?: (texture: THREE.Texture) => void;
+}
+
+// KTX2Loader 싱글톤 관리를 위한 변수 추가
+const globalKTX2Loader = {
+  instance: null as KTX2Loader | null,
+  initialized: false, // 초기화 여부 추적
+  loggedThisSession: false, // 세션 중 로깅 여부 추적
+  initialize: (renderer: THREE.WebGLRenderer) => {
+    if (!globalKTX2Loader.instance) {
+      devLog('KTX2Loader 싱글톤 인스턴스 생성', 'info');
+      const ktx2Loader = new KTX2Loader();
+      ktx2Loader.setTranscoderPath('/basis/');
+      ktx2Loader.detectSupport(renderer);
+      globalKTX2Loader.instance = ktx2Loader;
+      globalKTX2Loader.initialized = true;
+      globalKTX2Loader.loggedThisSession = true;
+      return ktx2Loader;
+    } else {
+      // 이미 초기화된 경우, 중복 로그 방지
+      if (!globalKTX2Loader.loggedThisSession) {
+        devLog('KTX2Loader 싱글톤 인스턴스 재사용', 'debug');
+        globalKTX2Loader.loggedThisSession = true;
+      }
+      return globalKTX2Loader.instance;
+    }
+  }
+};
 
 /**
  * 3D 모델의 로드, 최적화, 정리를 통합적으로 관리하는 훅
@@ -73,7 +110,82 @@ export function useModel({
   const cleanupRef = useRef<(() => void) | null>(null);
   const memoryStatsRef = useRef<MemoryStats | null>(null);
   const modelAnalysisRef = useRef<any>(null);
+  // 최적화 상태 추적을 위한 플래그
+  const optimizationStateRef = useRef({
+    isOptimizingScene: false,
+    hasOptimized: false,
+    hasAnalyzed: false,
+    lastOptimizedUUID: '',
+  });
   
+  // ResourceManager 인스턴스 생성
+  const resourceManagerRef = useRef<ResourceManager | null>(null);
+
+  // ResourceManager 초기화
+  useEffect(() => {
+    if (!resourceManagerRef.current) {
+      resourceManagerRef.current = new ResourceManager({
+        maxInactiveTime: 5 * 60 * 1000, // 5분
+        checkInterval: checkInterval,
+        logLevel: isDev ? 'detailed' : 'basic'
+      });
+
+      // 리소스 이벤트 리스너 설정
+      resourceManagerRef.current.on('resourceDisposed', ({ id, type }) => {
+        if (isDev) devLog(`리소스 해제됨: ${id} (${type})`, 'debug');
+      });
+
+      resourceManagerRef.current.on('cleanup', ({ disposedCount }) => {
+        if (isDev && disposedCount > 0) {
+          devLog(`미사용 리소스 정리: ${disposedCount}개 해제됨`, 'info');
+        }
+      });
+
+      // 페이지 언로드(새로고침 포함) 시 메모리 정리
+      const handleBeforeUnload = () => {
+        // Three.js 캐시 비우기
+        if (THREE.Cache && typeof THREE.Cache.clear === 'function') {
+          THREE.Cache.clear();
+        }
+        
+        // 모든 리소스 정리
+        if (resourceManagerRef.current) {
+          resourceManagerRef.current.forceCleanup(); // 모든 리소스 강제 정리
+        }
+        
+        // KTX2Loader 인스턴스 초기화
+        if (globalKTX2Loader.instance) {
+          // @ts-ignore - dispose 메서드가 없을 수 있음
+          if (globalKTX2Loader.instance.dispose) {
+            globalKTX2Loader.instance.dispose();
+          }
+          globalKTX2Loader.instance = null;
+          globalKTX2Loader.initialized = false;
+          globalKTX2Loader.loggedThisSession = false;
+        }
+        
+        // 텍스처 최적화 캐시 리셋
+        resetTextureOptimizationCache();
+        
+        // 경고 표시 상태 초기화
+        resetDisplayedWarnings();
+        
+        // 전역 메모리 정리 함수 호출
+        forceGlobalMemoryCleanup();
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        
+        if (resourceManagerRef.current) {
+          resourceManagerRef.current.dispose();
+          resourceManagerRef.current = null;
+        }
+      };
+    }
+  }, [checkInterval, isDev]);
 
   // 다음 모델 프리로드
   const preloadNextModel = useCallback(async () => {
@@ -103,13 +215,17 @@ export function useModel({
     dracoLoader.setDecoderPath('/draco/');
     loader.setDRACOLoader(dracoLoader);
 
-    // KTX2 로더 설정
+    // KTX2 로더 설정 - 싱글톤 패턴 적용
     if (renderer) {
-      const ktx2Loader = new KTX2Loader();
-      ktx2Loader.setTranscoderPath('/basis/');
-      ktx2Loader.detectSupport(renderer);
+      // 기존 KTX2Loader 인스턴스 재사용
+      const ktx2Loader = globalKTX2Loader.initialize(renderer);
       loader.setKTX2Loader(ktx2Loader);
-      if (isDev) devLog('KTX2 텍스처 로더가 활성화되었습니다.', 'info');
+      
+      // 세션별 한 번만 로그 출력 (첫 초기화 또는 재사용 시)
+      if (globalKTX2Loader.loggedThisSession) {
+        if (isDev) devLog('KTX2 텍스처 로더가 활성화되었습니다.', 'info');
+        globalKTX2Loader.loggedThisSession = false; // 다음 로그를 방지하기 위해 리셋
+      }
     } else if (isDev) {
       devLog('렌더러가 제공되지 않아 KTX2 텍스처 로더를 설정할 수 없습니다.', 'warn');
     }
@@ -126,58 +242,135 @@ export function useModel({
     };
   });
 
-  // 씬 초기화 및 최적화
-  useEffect(() => {
-    if (!scene) return;
+  // 씬 초기화 및 최적화 함수를 분리하여 효율성 향상
+  const optimizeCurrentScene = useCallback((currentScene: THREE.Group) => {
+    if (!currentScene || !resourceManagerRef.current) return;
+
+    const resourceManager = resourceManagerRef.current;
 
     // 씬의 회전 초기화
-    scene.rotation.set(0, 0, 0);
+    currentScene.rotation.set(0, 0, 0);
     
     // 각 메시 초기화 및 최적화
-    scene.traverse((child: any) => {
+    currentScene.traverse((child: any) => {
       if (child.isMesh) {
         // 각 메시의 회전 초기화
         child.rotation.set(0, 0, 0);
         
-        // 지오메트리 계산
+        // 지오메트리 계산 및 등록
         if (child.geometry) {
           child.geometry.computeBoundingSphere();
           child.geometry.computeBoundingBox();
+          resourceManager.registerResource(
+            `${component}_${child.name}_geometry`,
+            child.geometry,
+            'geometry'
+          );
+        }
+
+        // 재질 등록
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((material: THREE.Material, index: number) => {
+              resourceManager.registerResource(
+                `${component}_${child.name}_material_${index}`,
+                material,
+                'material'
+              );
+            });
+          } else {
+            resourceManager.registerResource(
+              `${component}_${child.name}_material`,
+              child.material,
+              'material'
+            );
+          }
         }
       }
     });
+
+    // 씬 자체를 리소스로 등록
+    resourceManager.registerResource(
+      `${component}_scene`,
+      currentScene,
+      'scene'
+    );
     
-    // 텍스처 업데이트
-    updateSceneTextures(scene, {
-      logInfo: isDev // 개발 모드에서만 텍스처 정보 로깅
-    });
+    // 텍스처 업데이트 - 한 번만 최적화되도록 updateSceneTextures 사용
+    const textureOptions: ExtendedTextureOptions = {
+      logInfo: isDev,
+      onTextureLoad: (texture: THREE.Texture) => {
+        resourceManager.registerResource(
+          `${component}_texture_${texture.uuid}`,
+          texture,
+          'texture'
+        );
+      }
+    };
     
-    // 재질 최적화
-    optimizeSceneMaterials(scene, {
+    // 모바일 기기인 경우 모바일 옵션 추가
+    const sceneOptions: SceneOptions = {
+      ...textureOptions,
       defaultColor,
       checkTextureLoaded: true,
-      setShadows: true
-    });
+      setShadows: true,
+      isMobile
+    };
     
-    // 모바일 기기를 위한 최적화
-    if (isMobile) {
-      optimizeSceneForMobile(scene);
+    // 하나의 통합된 최적화 호출로 대체
+    optimizeSceneMaterials(currentScene, sceneOptions);
+  }, [component, isMobile, isDev, defaultColor]);
+
+  // 씬 초기화 및 최적화
+  useEffect(() => {
+    if (!scene) return;
+    
+    const optimizationState = optimizationStateRef.current;
+    
+    // 동일한 씬에 대한 중복 최적화 방지
+    if (optimizationState.hasOptimized && optimizationState.lastOptimizedUUID === scene.uuid) {
+      if (isDev) devLog(`이미 최적화된 씬 (UUID: ${scene.uuid.substring(0, 8)}...)`, 'debug');
+      return;
     }
-  }, [scene, isMobile, isDev, defaultColor]);
+    
+    // 최적화 중 플래그 설정
+    optimizationState.isOptimizingScene = true;
+    
+    // 최적화 전 텍스처 캐시 초기화 - 동일한 UUID의 텍스처가 있을 경우 올바르게 처리하기 위함
+    resetTextureOptimizationCache();
+    
+    optimizeCurrentScene(scene);
+    
+    // 최적화 완료 상태 업데이트
+    optimizationState.isOptimizingScene = false;
+    optimizationState.hasOptimized = true;
+    optimizationState.lastOptimizedUUID = scene.uuid;
+    
+  }, [scene, optimizeCurrentScene, isDev]);
 
   // 메테리얼 정기 점검
   useEffect(() => {
     if (!scene) return;
     
-    // 주기적으로 메테리얼 상태 확인 및 업데이트
+    // 중복 실행 방지를 위한 플래그
+    let isCheckingMaterials = false;
+
+    // 메테리얼 상태 확인 및 업데이트를 더 적은 빈도로 수행
     const intervalId = setInterval(() => {
-      // 확장된 materialOptimizer 유틸리티를 사용하여 씬의 모든 재질 확인 및 수정
+      // 이미 체크 중이면 건너뛰기
+      if (isCheckingMaterials) return;
+      
+      isCheckingMaterials = true;
+      
+      // 메테리얼 확인만 수행하고, 씬 최적화는 하지 않음
       const hasFixedMaterial = checkAndFixSceneMaterials(scene);
       
       if (hasFixedMaterial && isDev) {
         devLog('일부 메테리얼이 수정되었습니다.', 'info');
       }
-    }, checkInterval);
+      
+      isCheckingMaterials = false;
+    }, checkInterval * 5); // 체크 간격을 5배로 늘림
     
     return () => clearInterval(intervalId);
   }, [scene, checkInterval, isDev]);
@@ -195,8 +388,59 @@ export function useModel({
     if (scene) {
       const clonedScene = scene.clone();
       setPreviousScene(clonedScene);
+
+      // 이전 리소스 정리
+      if (resourceManagerRef.current) {
+        resourceManagerRef.current.cleanup(); // cleanupUnusedResources 대신 public cleanup 메서드 사용
+        
+        // 텍스처 최적화 캐시 리셋 - 모델이 변경될 때 캐시를 초기화하여 새로운 모델에 대한 최적화 보장
+        resetTextureOptimizationCache();
+        
+        // 경고 표시 상태 초기화 - 모델이 변경될 때마다 경고를 다시 표시할 수 있도록
+        resetDisplayedWarnings();
+        
+        // 최적화 상태 초기화
+        optimizationStateRef.current = {
+          isOptimizingScene: false,
+          hasOptimized: false,
+          hasAnalyzed: false,
+          lastOptimizedUUID: '',
+        };
+        
+        // 메모리 정리 강화
+        if (THREE.Cache && typeof THREE.Cache.clear === 'function') {
+          THREE.Cache.clear(); // Three.js 캐시 비우기
+        }
+        
+        // 가비지 컬렉션 힌트
+        if (window.gc) {
+          try {
+            window.gc();
+          } catch (e) {
+            // gc 함수가 없거나 호출할 수 없는 경우 무시
+          }
+        }
+        
+        if (isDev) devLog('불필요한 리소스 정리 완료', 'info');
+      }
+      
+      // 모델 변경 시 한 번만 모델 분석 수행
+      if (isDev && !optimizationStateRef.current.hasAnalyzed) {
+        // 분리된 유틸리티 함수 사용하여 모델 분석 및 로깅
+        const analysis = analyzeAndLogModelInfo(
+          scene, 
+          component, 
+          devLog, 
+          startGroup, 
+          endGroup
+        );
+        
+        // 분석 결과 저장
+        modelAnalysisRef.current = analysis;
+        optimizationStateRef.current.hasAnalyzed = true;
+      }
     }
-  }, [component, scene]);
+  }, [component, scene, isDev]);
 
   // 모델 변경 시 프리로드
   useEffect(() => {
@@ -254,23 +498,6 @@ export function useModel({
       }
     };
   }, [scene, modelPath, component, isDev]);
-
-  // 모델 분석 (개발 모드에서만)
-  useEffect(() => {
-    if (isDev && scene) {
-      // 분리된 유틸리티 함수 사용하여 모델 분석 및 로깅
-      const analysis = analyzeAndLogModelInfo(
-        scene, 
-        component, 
-        devLog, 
-        startGroup, 
-        endGroup
-      );
-      
-      // 분석 결과 저장
-      modelAnalysisRef.current = analysis;
-    }
-  }, [scene, component, isDev]);
 
   return {
     scene,

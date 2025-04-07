@@ -1,6 +1,5 @@
 import React, { memo, useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { Stats } from '@react-three/drei';
 import { animated, useSpring } from '@react-spring/three';
 import { useSceneStore } from '../../store/sceneStore';
 import type { SceneConfig } from '../../types/scene';
@@ -10,8 +9,10 @@ import { Reflector } from './Reflector';
 import { useResponsiveDevice } from '../../hooks/useResponsiveDevice';
 import { useInteraction } from '../../hooks/useInteraction';
 import { ANIMATION_CONFIG } from '../../config/sceneConfig';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { setSceneEmissionIntensity } from '../../utils/materialOptimizer';
+import { Stats } from '../../utils/Stats';
+import { logger } from '../../utils/logger';
 
 /**
  * Scene 컴포넌트의 props 인터페이스
@@ -405,6 +406,73 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
     config: ANIMATION_CONFIG.SPRING
   });
 
+  // Stats 인스턴스를 위한 ref 추가
+  const statsRef = useRef<Stats | null>(null);
+  // WebGL 컨텍스트 접근을 위한 three hook 사용
+  const { gl } = useThree();
+  // 렌더링 플래그
+  const renderingRef = useRef({ isBefore: false, isAfter: false });
+
+  // Stats 인스턴스 초기화
+  useEffect(() => {
+    if (isDev && !statsRef.current) {
+      statsRef.current = new Stats({
+        active: true,
+        maxValue: 100,
+        ignoreMaxed: true,
+        logLevel: 'detailed'
+      });
+
+      // WebGL 컨텍스트 설정
+      const context = gl.getContext();
+      if (context instanceof WebGL2RenderingContext) {
+        statsRef.current.setRenderContext(context);
+      }
+
+      // 성능 이슈 감지 리스너 추가
+      statsRef.current.on('metricUpdated', ({ type, value }) => {
+        if (type === 'fps' && value < 30) {
+          logger.warn(`낮은 FPS 감지: ${value.toFixed(1)}`);
+        } else if (type === 'memory' && value > 80) {
+          logger.warn(`높은 메모리 사용량: ${value.toFixed(1)}%`);
+        }
+      });
+    }
+
+    return () => {
+      if (statsRef.current) {
+        statsRef.current.dispose();
+        statsRef.current = null;
+      }
+    };
+  }, [isDev, gl]);
+
+  // 렌더링 전/후 및 업데이트 시 Stats 메서드 호출
+  // useFrame은 React Three Fiber의 렌더 루프에서 실행됨
+  useFrame((_state, _delta) => {
+    if (statsRef.current) {
+      // 각 프레임의 시작 부분에서 beforeRender 호출
+      if (!renderingRef.current.isBefore) {
+        statsRef.current.beforeRender();
+        renderingRef.current.isBefore = true;
+        renderingRef.current.isAfter = false;
+      }
+      
+      // 프레임의 나머지 부분을 렌더링한 후 afterRender 호출
+      else if (!renderingRef.current.isAfter) {
+        statsRef.current.afterRender();
+        renderingRef.current.isAfter = true;
+        // 일반 업데이트도 수행
+        statsRef.current.update();
+      }
+      // 다음 프레임을 위해 리셋
+      else {
+        renderingRef.current.isBefore = false;
+        renderingRef.current.isAfter = false;
+      }
+    }
+  });
+
   // 컨트롤 리셋
   useEffect(() => {
     if (!isExpanded && controlsRef?.current) {
@@ -500,7 +568,6 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
           );
         })}
       </animated.group>
-      {process.env.NODE_ENV === 'development' && <Stats />}
     </group>
   );
 }, (prevProps, nextProps) => {

@@ -129,6 +129,22 @@ export function analyzeModelMemoryUsage(scene: THREE.Group) {
   };
 }
 
+// 이미 표시된 경고를 추적하는 객체
+const displayedWarnings = {
+  ktx2Compression: false,
+  largeTextureResolution: false,
+  memoryLeakage: false
+};
+
+/**
+ * 경고 표시 상태 초기화 함수
+ */
+export function resetDisplayedWarnings() {
+  displayedWarnings.ktx2Compression = false;
+  displayedWarnings.largeTextureResolution = false;
+  displayedWarnings.memoryLeakage = false;
+}
+
 /**
  * 모델 최적화 제안을 생성하는 함수
  * @param analysis - 메모리 사용량 분석 결과
@@ -149,21 +165,17 @@ export function generateOptimizationSuggestions(analysis: any): string[] {
   // 압축 텍스처 관련 제안
   if (analysis.ktx2TextureCount === 0 && analysis.compressedTextureCount === 0) {
     suggestions.push(`압축 텍스처가 사용되지 않고 있습니다. KTX2 또는 다른 GPU 압축 형식을 사용하여 텍스처 메모리 사용량을 줄이세요.`);
-  } else if (analysis.ktx2TextureCount < analysis.textureCount * 0.5) { // 50% 미만의 텍스처가 KTX2
+  } else if (!displayedWarnings.ktx2Compression && analysis.ktx2TextureCount < analysis.textureCount * 0.5) { // 50% 미만의 텍스처가 KTX2
     suggestions.push(`${analysis.ktx2TextureCount}/${analysis.textureCount} 텍스처만 KTX2 압축 형식을 사용 중입니다. 모든 텍스처에 KTX2를 적용하여 메모리를 절약하세요.`);
+    displayedWarnings.ktx2Compression = true;
   }
   
-  if (analysis.largeTextures.length > 0) {
+  // 대형 텍스처 경고 (이미 경고가 표시된 경우 중복해서 표시하지 않음)
+  if (!displayedWarnings.largeTextureResolution && analysis.largeTextures && analysis.largeTextures.length > 0) {
     const largestTexture = analysis.largeTextures.sort((a: {size: number}, b: {size: number}) => b.size - a.size)[0];
-    suggestions.push(`가장 큰 텍스처(${largestTexture.type})는 ${formatBytes(largestTexture.size)}를 사용합니다. 이 텍스처의 해상도를 줄이는 것을 고려하세요.`);
-    
-    // 비압축 대형 텍스처가 있는 경우 특별 제안
-    const largeNonCompressedTextures = analysis.largeTextures.filter(
-      (t: {type: string}) => t.type !== 'KTX2' && t.type !== 'ASTC' && t.type !== 'ETC2' && t.type !== 'S3TC' && t.type !== 'PVRTC'
-    );
-    
-    if (largeNonCompressedTextures.length > 0) {
-      suggestions.push(`${largeNonCompressedTextures.length}개의 대형 비압축 텍스처가 발견되었습니다. 이러한 텍스처를 KTX2로 변환하여 메모리를 절약하세요.`);
+    if (largestTexture.size > 4 * 1024 * 1024) { // 4MB 이상
+      suggestions.push(`가장 큰 텍스처(${largestTexture.type})는 ${formatBytes(largestTexture.size)}를 사용합니다. 이 텍스처의 해상도를 줄이는 것을 고려하세요.`);
+      displayedWarnings.largeTextureResolution = true;
     }
   }
   
@@ -270,9 +282,10 @@ export function checkMemoryUsageAndSuggestOptimizations(
 ) {
   const isDev = true; // 이 함수는 개발 모드에서만 호출되므로 항상 true
   
-  // 비정상적인 메모리 사용 패턴 감지 및 경고
-  if (stats.totalMemory && stats.totalMemory > 20 * 1024 * 1024) { // 20MB 이상
-    devLog(`[메모리 경고] 모델 '${component}'에서 대량의 메모리(${formatBytes(stats.totalMemory)})가 해제되었습니다. 메모리 누수 가능성을 확인하세요.`, 'warn');
+  // 비정상적인 메모리 사용 패턴 감지 및 경고 (이미 경고가 표시된 경우 중복해서 표시하지 않음)
+  if (!displayedWarnings.memoryLeakage && stats.totalMemory && stats.totalMemory > 40 * 1024 * 1024) { // 40MB 이상으로 임계값 높임
+    devLog(`[메모리 경고] 모델 '${component}'에서 대량의 메모리(${formatBytes(stats.totalMemory)})가 해제되었습니다. 이는 모델 전환 시 정상적인 현상일 수 있습니다.`, 'warn');
+    displayedWarnings.memoryLeakage = true;
     
     // 메모리 사용량 분석 결과가 있으면 추가 정보 제공
     if (analysis) {
@@ -288,28 +301,17 @@ export function checkMemoryUsageAndSuggestOptimizations(
         }
       }
       
+      // 이하 코드는 중복 경고를 표시하지 않도록 수정
       // 텍스처와 지오메트리 비율 계산
-      if (stats.totalMemory > 0) {
+      if (stats.totalMemory > 0 && !displayedWarnings.ktx2Compression) {
         const textureRatio = analysis.totalTextureMemory / stats.totalMemory;
         conditionalLog(`텍스처 비율: ${(textureRatio * 100).toFixed(1)}%`, isDev);
         
         // 텍스처가 대부분의 메모리를 차지하는 경우
         if (textureRatio > 0.7) { // 70% 이상
-          // KTX2 텍스처 비율 확인
-          if (analysis.ktx2TextureCount === 0) {
-            conditionalLog('최적화 제안: KTX2 압축 텍스처를 사용하여 메모리 사용량을 줄이세요.', isDev, 'warn');
-          } else if (analysis.ktx2TextureCount < analysis.textureCount * 0.5) {
-            conditionalLog(`최적화 제안: 더 많은 텍스처를 KTX2로 변환하세요. (현재 ${analysis.ktx2TextureCount}/${analysis.textureCount} 변환됨)`, isDev, 'warn');
-          } else {
-            conditionalLog('최적화 제안: 텍스처 해상도를 줄이는 것을 고려하세요.', isDev, 'warn');
-          }
+          // KTX2 텍스처 비율 확인 - 이미 표시된 경우 중복해서 표시하지 않음
+          displayedWarnings.ktx2Compression = true;
         }
-      }
-      
-      // 대형 텍스처 정보 출력
-      if (analysis.largeTextures && analysis.largeTextures.length > 0) {
-        const largestTexture = analysis.largeTextures.sort((a: {size: number}, b: {size: number}) => b.size - a.size)[0];
-        conditionalLog(`가장 큰 텍스처(${largestTexture.type}): ${formatBytes(largestTexture.size)}`, isDev, 'warn');
       }
     }
   }

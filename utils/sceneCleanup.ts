@@ -1,17 +1,12 @@
 import * as THREE from 'three';
 import { useGLTF } from '@react-three/drei';
+import { EventEmitter } from './EventEmitter';
+import { conditionalLog, devLog, logger, LOG_STYLES, DetailLevel, type LogLevel, Logger } from './logger';
 
 /**
- * 메모리 정리 로그 스타일
+ * 메모리 정리 로그 스타일 (이전 버전과의 호환성을 위해 유지)
  */
-const LOG_STYLES = {
-  title: 'color: #4CAF50; font-weight: bold; font-size: 12px;',
-  normal: 'color: #2196F3;',
-  warning: 'color: #FF9800; font-weight: bold;',
-  error: 'color: #F44336; font-weight: bold;',
-  success: 'color: #4CAF50;',
-  info: 'color: #9C27B0; font-style: italic;'
-};
+// LOG_STYLES는 logger.ts에서 가져오므로 제거
 
 /**
  * 메모리 사용량 통계 인터페이스
@@ -24,6 +19,26 @@ export interface MemoryStats {
   textureMemory?: number; // 추정 메모리 (바이트)
   geometryMemory?: number; // 추정 메모리 (바이트)
   totalMemory?: number; // 추정 총 메모리 (바이트)
+  
+  // 확장된 통계 정보
+  duplicateTextures?: number; // 중복 텍스처 수
+  rawTextureCount?: number; // 중복 포함 텍스처 총 수
+  devicePixelRatio?: number; // 화면 픽셀 비율
+  
+  // ResourceManager 통합
+  resourceManager?: {
+    active: boolean;
+    count: number;
+    inactiveCount?: number;
+    disposedCount?: number;
+  };
+  
+  // Stats 통합
+  performance?: {
+    fps?: number;
+    renderTime?: number;
+    memoryUsage?: number;
+  };
 }
 
 /**
@@ -286,15 +301,22 @@ export function disposeSceneResources(
   object: THREE.Object3D,
   options: {
     logDisposal?: boolean,
-    logLevel?: 'basic' | 'detailed' | 'verbose'
+    logLevel?: DetailLevel,
+    resourceManager?: any,
+    performanceStats?: any
   } = {}
 ): MemoryStats {
   const defaultOptions = {
-    logDisposal: false,
+    logDisposal: process.env.NODE_ENV === 'development',
     logLevel: 'basic' as const
   };
   
   const mergedOptions = { ...defaultOptions, ...options };
+  
+  // 로그 레벨 설정
+  if (mergedOptions.logLevel) {
+    logger.setLogLevel(mergedOptions.logLevel);
+  }
   
   const meshes: THREE.Mesh[] = [];
   const materials: THREE.Material[] = [];
@@ -378,6 +400,9 @@ export function disposeSceneResources(
     }
   });
   
+  // 원본 텍스처 수 (중복 포함)
+  const rawTextureCount = textures.length;
+  
   // 중복 제거
   const uniqueTextures = Array.from(new Set(textures));
   
@@ -410,59 +435,39 @@ export function disposeSceneResources(
     textureCount: uniqueTextures.length,
     textureMemory,
     geometryMemory,
-    totalMemory
+    totalMemory,
+    
+    // 확장된 통계 정보
+    duplicateTextures: rawTextureCount - uniqueTextures.length,
+    rawTextureCount,
+    devicePixelRatio: window.devicePixelRatio
   };
   
+  // ResourceManager 통합
+  if (mergedOptions.resourceManager) {
+    stats.resourceManager = {
+      active: true,
+      count: mergedOptions.resourceManager.getResourceCount?.() || 0,
+      inactiveCount: mergedOptions.resourceManager.getInactiveResourceCount?.() || 0,
+      disposedCount: mergedOptions.resourceManager.getDisposedCount?.() || 0
+    };
+  }
+  
+  // Stats 통합
+  if (mergedOptions.performanceStats) {
+    const metrics = mergedOptions.performanceStats.getMetrics?.();
+    if (metrics) {
+      stats.performance = {
+        fps: metrics.fps?.value,
+        renderTime: metrics.render?.value,
+        memoryUsage: metrics.memory?.value
+      };
+    }
+  }
+  
   // 로깅
-  if (mergedOptions.logDisposal && process.env.NODE_ENV === 'development') {
-    console.group('%c메모리 정리 완료', LOG_STYLES.title);
-    
-    console.log(
-      '%c정리된 리소스:%c %d 메시, %d 재질, %d 지오메트리, %d 텍스처',
-      LOG_STYLES.normal, '',
-      meshes.length, materials.length, geometries.length, uniqueTextures.length
-    );
-    
-    console.log(
-      '%c추정 메모리 해제:%c 텍스처: %s, 지오메트리: %s, 총: %s',
-      LOG_STYLES.success, '',
-      formatBytes(textureMemory),
-      formatBytes(geometryMemory),
-      formatBytes(totalMemory)
-    );
-    
-    if (mergedOptions.logLevel === 'detailed' || mergedOptions.logLevel === 'verbose') {
-      console.log('%c텍스처 메모리 비율:%c %d%', LOG_STYLES.info, '', 
-        totalMemory > 0 ? Math.round((textureMemory / totalMemory) * 100) : 0);
-      
-      if (uniqueTextures.length > 0 && textureMemory > 0) {
-        console.log('%c평균 텍스처 크기:%c %s', LOG_STYLES.info, '', 
-          formatBytes(textureMemory / uniqueTextures.length));
-      }
-      
-      if (geometries.length > 0 && geometryMemory > 0) {
-        console.log('%c평균 지오메트리 크기:%c %s', LOG_STYLES.info, '', 
-          formatBytes(geometryMemory / geometries.length));
-      }
-    }
-    
-    if (mergedOptions.logLevel === 'verbose') {
-      if (totalMemory > 10 * 1024 * 1024) { // 10MB 이상
-        console.log('%c주의: 대용량 메모리 해제 감지!%c 메모리 누수 가능성 확인 필요', LOG_STYLES.warning, '');
-      }
-      
-      if (uniqueTextures.length < textures.length) {
-        console.log(
-          '%c중복 텍스처 감지:%c %d개 중복 제거됨 (총 %d개 중 %d개 고유)',
-          LOG_STYLES.info, '',
-          textures.length - uniqueTextures.length,
-          textures.length,
-          uniqueTextures.length
-        );
-      }
-    }
-    
-    console.groupEnd();
+  if (mergedOptions.logDisposal) {
+    logger.memoryCleanup(stats);
   }
   
   return stats;
@@ -480,7 +485,9 @@ export function cleanupGLTFModel(
   modelPath: string,
   options: {
     logDisposal?: boolean,
-    logLevel?: 'basic' | 'detailed' | 'verbose'
+    logLevel?: 'none' | 'basic' | 'detailed' | 'verbose',
+    resourceManager?: any,
+    performanceStats?: any
   } = {}
 ): MemoryStats {
   // 씬 리소스 정리
@@ -573,6 +580,12 @@ export function calculateTextureCompressionRatio(texture: THREE.Texture): number
   return estimatedSize / uncompressedSize;
 }
 
+// 텍스처 압축 권장 사항 표시 상태 추적 - 전역 객체로 변경하여 모든 모델에 적용
+const compressionAdviceShown = {
+  ktx2: true, // 이미 표시됨으로 설정하여 더 이상 표시되지 않도록 함
+  largeTextures: true // 대용량 텍스처 경고도 표시하지 않도록 설정
+};
+
 /**
  * 씬에서 압축 텍스처 정보를 분석하는 함수
  * @param scene - 분석할 씬
@@ -661,7 +674,7 @@ export function analyzeCompressedTextures(scene: THREE.Object3D): {
   });
   
   // 결과 반환
-  return {
+  const result = {
     totalTextures: textures.length,
     compressedTextures: compressedTextures.length,
     ktx2Textures: ktx2Textures.length,
@@ -669,4 +682,86 @@ export function analyzeCompressedTextures(scene: THREE.Object3D): {
     savedMemory: totalUncompressedSize - totalCompressedSize,
     textureDetails: textureDetails.sort((a, b) => b.size - a.size) // 크기 기준 내림차순 정렬
   };
+  
+  // KTX2 압축 권장 사항 (compressionAdviceShown.ktx2가 false일 때만 표시)
+  if (!compressionAdviceShown.ktx2 && result.totalTextures > 0 && result.ktx2Textures < result.totalTextures / 2) {
+    logger.warn(`${result.ktx2Textures}/${result.totalTextures} 텍스처만 KTX2 압축 형식을 사용 중입니다. 모든 텍스처에 KTX2를 적용하여 메모리를 절약하세요.`);
+    
+    // 압축된 텍스처가 있지만 KTX2가 아닌 경우
+    if (result.compressedTextures > result.ktx2Textures) {
+      logger.warn(`${result.compressedTextures - result.ktx2Textures}개 텍스처가 KTX2가 아닌 다른 압축 형식을 사용 중입니다. KTX2로 변환하면 더 나은 호환성을 얻을 수 있습니다.`);
+    }
+    
+    compressionAdviceShown.ktx2 = true;
+  }
+  
+  return result;
+}
+
+/**
+ * 브라우저 메모리를 최대한 정리하는 전역 함수
+ * 새로고침 및 페이지 언로드 시 사용
+ */
+export function forceGlobalMemoryCleanup(): void {
+  // Three.js 캐시 비우기
+  if (THREE.Cache && typeof THREE.Cache.clear === 'function') {
+    THREE.Cache.clear();
+  }
+  
+  // 텍스처 최적화 캐시 리셋 시도
+  try {
+    // 동적 import를 통해 의존성 순환 방지
+    import('../utils/materialOptimizer').then(({ resetTextureOptimizationCache }) => {
+      if (typeof resetTextureOptimizationCache === 'function') {
+        resetTextureOptimizationCache();
+      }
+    }).catch(() => {
+      // 임포트 실패 시 무시
+    });
+  } catch (e) {
+    // 오류 무시
+  }
+  
+  // useGLTF 캐시 비우기 시도
+  try {
+    // @react-three/drei의 useGLTF 캐시에 접근
+    // @ts-ignore - 글로벌 객체에 접근
+    if (window.__R3F__GLTF__CACHE__) {
+      // @ts-ignore
+      window.__R3F__GLTF__CACHE__ = {};
+    }
+    
+    // prefetch 캐시 비우기
+    // @ts-ignore
+    if (window.__R3F__GLTF__PREFETCH_CACHE__) {
+      // @ts-ignore
+      window.__R3F__GLTF__PREFETCH_CACHE__ = {};
+    }
+  } catch (e) {
+    // 캐시 접근 실패 시 무시
+  }
+  
+  // WebGL 컨텍스트 정리 시도
+  const canvases = document.querySelectorAll('canvas');
+  canvases.forEach(canvas => {
+    const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
+    if (gl) {
+      try {
+        // WebGL 리소스 정리 
+        const ext = gl.getExtension('WEBGL_lose_context');
+        if (ext) ext.loseContext();
+      } catch (e) {
+        // 오류 무시
+      }
+    }
+  });
+  
+  // 브라우저 GC 호출 시도
+  if (window.gc) {
+    try {
+      window.gc();
+    } catch (e) {
+      // GC 함수가 없어도 무시
+    }
+  }
 } 

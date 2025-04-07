@@ -3,6 +3,12 @@ import { useEffect, useState } from 'react';
 
 const LoadingScreen: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // 클라이언트 측에서만 마운트 여부 설정
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isLoading && loadingProgress < 100) {
@@ -19,6 +25,9 @@ const LoadingScreen: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
       return () => clearTimeout(timer);
     }
   }, [isLoading, loadingProgress]);
+
+  // 클라이언트 측에서만 렌더링
+  if (!isMounted) return null;
 
   return (
     <AnimatePresence mode="wait">
@@ -44,6 +53,9 @@ const LoadingScreen: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
               }
             }
           }}
+          style={{
+            userSelect: 'none'
+          }}
         >
           <motion.div 
             className="fixed bottom-3 right-4 mix-blend-difference"
@@ -59,6 +71,9 @@ const LoadingScreen: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
+              style={{
+                userSelect: 'none'
+              }}
             >
               {loadingProgress}
             </motion.div>
