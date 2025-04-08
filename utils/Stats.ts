@@ -156,14 +156,18 @@ export class Stats extends EventEmitter {
     if (queryResultAvailable || !this.renderQuery) {
       this.queryCreated = true;
       this.renderQuery = this.context.createQuery();
-      this.context.beginQuery(this.extension.TIME_ELAPSED_EXT, this.renderQuery);
+      if (this.renderQuery) {
+        this.context.beginQuery(this.extension.TIME_ELAPSED_EXT, this.renderQuery);
+      }
     }
   }
 
   public afterRender(): void {
     if (!this.active || !this.context || !this.extension || !this.queryCreated) return;
 
-    this.context.endQuery(this.extension.TIME_ELAPSED_EXT);
+    if (this.renderQuery) {
+      this.context.endQuery(this.extension.TIME_ELAPSED_EXT);
+    }
   }
 
   private startRAFMeasurement(): void {
