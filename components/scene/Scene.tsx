@@ -421,6 +421,9 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   
   // Stats 초기화
   useEffect(() => {
+    // 개발 환경에서만 Stats 초기화
+    if (process.env.NODE_ENV !== 'development') return;
+    
     // Three.js Stats 생성
     const threeStats = new StatsJS();
     threeStats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -457,6 +460,9 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   
   // 렌더링 루프에 Stats 업데이트 추가
   useFrame(() => {
+    // 개발 환경에서만 Stats 업데이트
+    if (process.env.NODE_ENV !== 'development') return;
+    
     if (threeStatsRef.current) {
       threeStatsRef.current.update();
     }
@@ -467,6 +473,9 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
 
   // Stats 인스턴스를 위한 ref 추가
   useEffect(() => {
+    // 개발 환경에서만 Stats 초기화
+    if (process.env.NODE_ENV !== 'development') return;
+    
     if (isDev && !statsRef.current) {
       statsRef.current = new Stats();
       
@@ -500,6 +509,9 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   // 렌더링 전/후 및 업데이트 시 Stats 메서드 호출
   // useFrame은 React Three Fiber의 렌더 루프에서 실행됨
   useFrame((_state, _delta) => {
+    // 개발 환경에서만 Stats 업데이트
+    if (process.env.NODE_ENV !== 'development') return;
+    
     if (statsRef.current) {
       // 각 프레임의 시작 부분에서 beforeRender 호출
       if (!renderingRef.current.isBefore) {
