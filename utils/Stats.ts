@@ -23,49 +23,47 @@ interface PerformanceMetrics {
 }
 
 export class Stats extends EventEmitter {
-  private active: boolean;
-  private maxValue: number;
-  private ignoreMaxed: boolean;
-  private logLevel: string;
-  private metrics: PerformanceMetrics;
-  private lastTime: number;
-  private frames: number;
-  private renderQuery: WebGLQuery | null;
-  private queryCreated: boolean;
-  private context: WebGL2RenderingContext | null;
-  private extension: any;
-  private domElement: HTMLDivElement = document.createElement('div');
+  private active: boolean = false;
+  private maxValue: number = 1000;
+  private ignoreMaxed: boolean = false;
+  private logLevel: string = 'basic';
+  private metrics: PerformanceMetrics = {
+    fps: { value: 0, maxValue: 60, history: [], historySize: 30 },
+    ms: { value: 0, maxValue: 1000, history: [], historySize: 30 },
+    memory: { value: 0, maxValue: 100, history: [], historySize: 30 },
+    render: { value: 0, maxValue: 1000, history: [], historySize: 30 }
+  };
+  private lastTime: number = performance.now();
+  private frames: number = 0;
+  private renderQuery: WebGLQuery | null = null;
+  private queryCreated: boolean = false;
+  private context: WebGL2RenderingContext | null = null;
+  private extension: any | null = null;
+  private domElement: HTMLElement | null = null;
   private lastRafTime: number = 0;
   private deltaHistory: number[] = [];
   private rafCallbackId: number | null = null;
 
-  constructor(options: StatsOptions = {}) {
+  constructor() {
     super();
-
-    this.active = options.active || false;
-    this.maxValue = options.maxValue || 120;
-    this.ignoreMaxed = options.ignoreMaxed ?? true;
-    this.logLevel = options.logLevel || 'basic';
-
-    this.metrics = {
-      fps: this.createPanelData(this.maxValue),
-      ms: this.createPanelData(200),
-      memory: this.createPanelData(30),
-      render: this.createPanelData(this.maxValue)
-    };
-
-    this.lastTime = performance.now();
-    this.frames = 0;
-    this.renderQuery = null;
-    this.queryCreated = false;
-    this.context = null;
-    this.extension = null;
-    this.lastRafTime = 0;
-    this.rafCallbackId = null;
-
-    this.createPanel();
-
-    if (this.active) {
+    
+    // 개발 환경에서만 Stats를 활성화
+    if (process.env.NODE_ENV === 'development') {
+      this.domElement = document.createElement('div');
+      this.domElement.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: #fff;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 12px;
+        z-index: 9999;
+        pointer-events: none;
+        white-space: pre;
+      `;
+      document.body.appendChild(this.domElement);
       this.activate();
     }
   }
@@ -79,40 +77,16 @@ export class Stats extends EventEmitter {
     };
   }
 
-  private createPanel(): void {
-    this.domElement.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      cursor: pointer;
-      opacity: 0.9;
-      z-index: 10000;
-      background-color: #000;
-      color: #00ff00;
-      padding: 10px;
-      font-family: monospace;
-      font-size: 12px;
-      white-space: pre;
-      line-height: 1.5em;
-    `;
-
-    this.domElement.addEventListener('click', () => {
-      this.active ? this.deactivate() : this.activate();
-    });
-  }
-
   public activate(): void {
+    if (!this.domElement) return;
     this.active = true;
-    document.body.appendChild(this.domElement);
     this.startRAFMeasurement();
     this.emit('activated');
   }
 
   public deactivate(): void {
+    if (!this.domElement) return;
     this.active = false;
-    if (this.domElement.parentNode) {
-      document.body.removeChild(this.domElement);
-    }
     this.stopRAFMeasurement();
     this.emit('deactivated');
   }
@@ -238,7 +212,7 @@ export class Stats extends EventEmitter {
   }
 
   private updatePanel(): void {
-    if (!this.active) return;
+    if (!this.active || !this.domElement) return;
 
     const { fps, ms, memory, render } = this.metrics;
     
