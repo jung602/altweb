@@ -13,6 +13,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { setSceneEmissionIntensity } from '../../utils/materialOptimizer';
 import { Stats } from '../../utils/Stats';
 import { logger } from '../../utils/logger';
+import StatsJS from 'stats.js';
+import { Stats as CustomStats } from '../../utils/Stats';
 
 /**
  * Scene 컴포넌트의 props 인터페이스
@@ -413,15 +415,68 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   // 렌더링 플래그
   const renderingRef = useRef({ isBefore: false, isAfter: false });
 
-  // Stats 인스턴스 초기화
+  // Stats 인스턴스 생성
+  const threeStatsRef = useRef<StatsJS | null>(null);
+  const customStatsRef = useRef<CustomStats | null>(null);
+  
+  // Stats 초기화
+  useEffect(() => {
+    // Three.js Stats 생성
+    const threeStats = new StatsJS();
+    threeStats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+    threeStats.dom.style.cssText = 'position:fixed;top:0;right:0;cursor:pointer;opacity:0.9;z-index:10000;';
+    document.body.appendChild(threeStats.dom);
+    threeStatsRef.current = threeStats;
+    
+    // 커스텀 Stats 생성
+    const customStats = new CustomStats({ active: true, maxValue: 120 });
+    customStatsRef.current = customStats;
+    
+    // 디버깅용 로그 추가
+    console.log('커스텀 Stats maxValue:', customStats.getMetrics().fps.maxValue);
+    
+    // WebGL 렌더러에 접근하여 커스텀 Stats에 설정
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      const gl = canvas.getContext('webgl2');
+      if (gl && customStats) {
+        customStats.setRenderContext(gl as WebGL2RenderingContext);
+      }
+    }
+    
+    return () => {
+      // 정리
+      if (threeStatsRef.current) {
+        document.body.removeChild(threeStatsRef.current.dom);
+      }
+      if (customStatsRef.current) {
+        customStatsRef.current.dispose();
+      }
+    };
+  }, []);
+  
+  // 렌더링 루프에 Stats 업데이트 추가
+  useFrame(() => {
+    if (threeStatsRef.current) {
+      threeStatsRef.current.update();
+    }
+    if (customStatsRef.current) {
+      customStatsRef.current.update();
+    }
+  });
+
+  // Stats 인스턴스를 위한 ref 추가
   useEffect(() => {
     if (isDev && !statsRef.current) {
       statsRef.current = new Stats({
         active: true,
-        maxValue: 100,
+        maxValue: 120,  // 기존 Stats 인스턴스의 maxValue도 120으로 설정
         ignoreMaxed: true,
         logLevel: 'detailed'
       });
+      
+      // 디버깅용 로그 추가
+      console.log('기존 Stats maxValue:', statsRef.current.getMetrics().fps.maxValue);
 
       // WebGL 컨텍스트 설정
       const context = gl.getContext();

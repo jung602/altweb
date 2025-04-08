@@ -35,17 +35,20 @@ export class Stats extends EventEmitter {
   private context: WebGL2RenderingContext | null;
   private extension: any;
   private domElement: HTMLDivElement = document.createElement('div');
+  private lastRafTime: number = 0;
+  private deltaHistory: number[] = [];
+  private rafCallbackId: number | null = null;
 
   constructor(options: StatsOptions = {}) {
     super();
 
     this.active = options.active || false;
-    this.maxValue = options.maxValue || 40;
+    this.maxValue = options.maxValue || 120;
     this.ignoreMaxed = options.ignoreMaxed ?? true;
     this.logLevel = options.logLevel || 'basic';
 
     this.metrics = {
-      fps: this.createPanelData(60),
+      fps: this.createPanelData(this.maxValue),
       ms: this.createPanelData(200),
       memory: this.createPanelData(30),
       render: this.createPanelData(this.maxValue)
@@ -57,6 +60,8 @@ export class Stats extends EventEmitter {
     this.queryCreated = false;
     this.context = null;
     this.extension = null;
+    this.lastRafTime = 0;
+    this.rafCallbackId = null;
 
     this.createPanel();
 
@@ -99,6 +104,7 @@ export class Stats extends EventEmitter {
   public activate(): void {
     this.active = true;
     document.body.appendChild(this.domElement);
+    this.startRAFMeasurement();
     this.emit('activated');
   }
 
@@ -107,6 +113,7 @@ export class Stats extends EventEmitter {
     if (this.domElement.parentNode) {
       document.body.removeChild(this.domElement);
     }
+    this.stopRAFMeasurement();
     this.emit('deactivated');
   }
 
@@ -159,6 +166,41 @@ export class Stats extends EventEmitter {
     this.context.endQuery(this.extension.TIME_ELAPSED_EXT);
   }
 
+  private startRAFMeasurement(): void {
+    if (this.rafCallbackId !== null) return;
+    
+    const rafCallback = (timestamp: number) => {
+      if (this.lastRafTime > 0) {
+        const delta = timestamp - this.lastRafTime;
+        this.deltaHistory.push(delta);
+        if (this.deltaHistory.length > 30) this.deltaHistory.shift();
+        
+        // 실시간 FPS 계산 (직전 프레임에서)
+        const instantFps = 1000 / delta;
+        
+        // 평균 FPS 계산 (최근 30프레임)
+        const avgDelta = this.deltaHistory.reduce((a, b) => a + b, 0) / this.deltaHistory.length;
+        const avgFps = 1000 / avgDelta;
+        
+        // 더 안정적인 값을 위해 평균 FPS 사용
+        this.updateMetrics('fps', Math.min(avgFps, this.maxValue));
+        this.updateMetrics('ms', delta);
+      }
+      
+      this.lastRafTime = timestamp;
+      this.rafCallbackId = requestAnimationFrame(rafCallback);
+    };
+    
+    this.rafCallbackId = requestAnimationFrame(rafCallback);
+  }
+  
+  private stopRAFMeasurement(): void {
+    if (this.rafCallbackId !== null) {
+      cancelAnimationFrame(this.rafCallbackId);
+      this.rafCallbackId = null;
+    }
+  }
+
   public update(): void {
     if (!this.active) return;
 
@@ -166,12 +208,7 @@ export class Stats extends EventEmitter {
     this.frames++;
 
     if (time >= this.lastTime + 1000) {
-      const fps = (this.frames * 1000) / (time - this.lastTime);
-      const ms = (time - this.lastTime) / this.frames;
-
-      this.updateMetrics('fps', fps);
-      this.updateMetrics('ms', ms);
-
+      // 메모리 통계만 이 메서드에서 업데이트
       if (window.performance && (performance as any).memory) {
         const memory = (performance as any).memory;
         const memoryUsage = memory.usedJSHeapSize / memory.jsHeapSizeLimit;
@@ -202,7 +239,7 @@ export class Stats extends EventEmitter {
     const { fps, ms, memory, render } = this.metrics;
     
     this.domElement.textContent = `
-FPS: ${fps.value.toFixed(1)} (${this.getMinMax(fps.history)})
+FPS: ${fps.value.toFixed(1)}/${fps.maxValue} (${this.getMinMax(fps.history)})
 Frame Time: ${ms.value.toFixed(1)}ms (${this.getMinMax(ms.history)})
 Memory: ${memory.value.toFixed(1)}% (${this.getMinMax(memory.history)})
 Render Time: ${render.value.toFixed(1)}ms (${this.getMinMax(render.history)})
@@ -222,6 +259,7 @@ Render Time: ${render.value.toFixed(1)}ms (${this.getMinMax(render.history)})
 
   public dispose(): void {
     this.deactivate();
+    this.stopRAFMeasurement();
     this.removeAllListeners();
     if (this.renderQuery && this.context) {
       this.context.deleteQuery(this.renderQuery);
