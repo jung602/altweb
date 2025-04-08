@@ -86,8 +86,8 @@ const Model = memo(({
     rotationY: sceneConfig.model.rotation[1],
     config: {
       ...ANIMATION_CONFIG.SPRING,
-      friction: 35,  // 부드러운 회전을 위한 마찰 설정
-      tension: 80    // 자연스러운 움직임을 위한 장력 설정
+      friction: 1,  // 부드러운 회전을 위한 마찰 설정
+      tension: 1    // 자연스러운 움직임을 위한 장력 설정
     }
   }));
 
@@ -104,7 +104,7 @@ const Model = memo(({
   const applyInertia = useCallback(() => {
     if (!isDragging.current && Math.abs(rotationVelocity.current) > 0.0001) {
       // 관성 효과 - 천천히 속도 감소
-      rotationVelocity.current *= 0.95;
+      rotationVelocity.current *= 0.99;
       
       rotationApi.start({
         rotationY: rotationSpring.rotationY.get() + rotationVelocity.current,
