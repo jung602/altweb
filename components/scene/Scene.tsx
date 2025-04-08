@@ -429,7 +429,7 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
     threeStatsRef.current = threeStats;
     
     // 커스텀 Stats 생성
-    const customStats = new CustomStats({ active: true, maxValue: 120 });
+    const customStats = new CustomStats();
     customStatsRef.current = customStats;
     
     // 디버깅용 로그 추가
@@ -468,12 +468,7 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   // Stats 인스턴스를 위한 ref 추가
   useEffect(() => {
     if (isDev && !statsRef.current) {
-      statsRef.current = new Stats({
-        active: true,
-        maxValue: 120,  // 기존 Stats 인스턴스의 maxValue도 120으로 설정
-        ignoreMaxed: true,
-        logLevel: 'detailed'
-      });
+      statsRef.current = new Stats();
       
       // 디버깅용 로그 추가
       console.log('기존 Stats maxValue:', statsRef.current.getMetrics().fps.maxValue);
