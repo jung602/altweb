@@ -28,7 +28,7 @@ export class Stats extends EventEmitter {
   private ignoreMaxed: boolean = false;
   private logLevel: string = 'basic';
   private metrics: PerformanceMetrics = {
-    fps: { value: 0, maxValue: 60, history: [], historySize: 30 },
+    fps: { value: 0, maxValue: 120, history: [], historySize: 30 },
     ms: { value: 0, maxValue: 1000, history: [], historySize: 30 },
     memory: { value: 0, maxValue: 100, history: [], historySize: 30 },
     render: { value: 0, maxValue: 1000, history: [], historySize: 30 }

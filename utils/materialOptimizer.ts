@@ -8,17 +8,100 @@ import {
 } from './sceneCleanup';
 import { logger } from './logger';
 
-// 이미 최적화된 텍스처를 추적하는 Set (UUID 기반)
-const optimizedTextures = new Set<string>();
+// 텍스처 및 씬 최적화 상태 관리를 위한 클래스
+class OptimizationTracker {
+  private optimizedTextures: Set<string> = new Set<string>();
+  private loggedTextures: Set<string> = new Set<string>();
+  private optimizedScenes: Set<string> = new Set<string>();
+  private debugMode: boolean = process.env.NODE_ENV === 'development';
 
-// 이미 로깅된 텍스처를 추적하는 Set (UUID 기반)
-const loggedTextures = new Set<string>();
+  // 텍스처 최적화 여부 확인
+  public isTextureOptimized(textureId: string): boolean {
+    return this.optimizedTextures.has(textureId);
+  }
 
-// 이미 최적화된 씬을 추적하는 Set (UUID 기반)
-const optimizedScenes = new Set<string>();
+  // 텍스처 최적화 상태 설정
+  public setTextureOptimized(textureId: string): void {
+    this.optimizedTextures.add(textureId);
+  }
 
-// 텍스처 중복 최적화 디버깅
-const logOptimizationAttempts = process.env.NODE_ENV === 'development';
+  // 텍스처 로깅 여부 확인
+  public isTextureLogged(textureId: string): boolean {
+    return this.loggedTextures.has(textureId);
+  }
+
+  // 텍스처 로깅 상태 설정
+  public setTextureLogged(textureId: string): void {
+    this.loggedTextures.add(textureId);
+  }
+
+  // 씬 최적화 여부 확인
+  public isSceneOptimized(sceneId: string): boolean {
+    return this.optimizedScenes.has(sceneId);
+  }
+
+  // 씬 최적화 상태 설정
+  public setSceneOptimized(sceneId: string): void {
+    this.optimizedScenes.add(sceneId);
+  }
+
+  // 모든 캐시 초기화
+  public resetCache(): void {
+    this.optimizedTextures.clear();
+    this.loggedTextures.clear();
+    this.optimizedScenes.clear();
+    if (this.debugMode) {
+      logger.log('텍스처 최적화 캐시 리셋됨', 'debug');
+    }
+  }
+
+  // 텍스처 참조 정리
+  public clearTextureReferences(count: number = 0): number {
+    const previousSize = this.optimizedTextures.size;
+    if (count > 0 && count < previousSize) {
+      // 부분 정리
+      let clearedCount = 0;
+      const texturesToKeep = new Set<string>();
+      
+      // 최근 count개 텍스처만 유지
+      const textureIds = Array.from(this.optimizedTextures);
+      const keepStartIndex = Math.max(0, textureIds.length - count);
+      
+      for (let i = keepStartIndex; i < textureIds.length; i++) {
+        texturesToKeep.add(textureIds[i]);
+      }
+      
+      clearedCount = previousSize - texturesToKeep.size;
+      this.optimizedTextures = texturesToKeep;
+      
+      if (this.debugMode) {
+        logger.log(`텍스처 참조 정리: ${clearedCount}개 제거됨, 남은 최적화된 텍스처: ${this.optimizedTextures.size}개`, 'debug');
+      }
+      
+      return clearedCount;
+    } else if (count === 0) {
+      // 전체 정리
+      this.optimizedTextures.clear();
+      this.loggedTextures.clear();
+      
+      if (this.debugMode) {
+        logger.log(`텍스처 참조 정리: ${previousSize}개 제거됨, 남은 최적화된 텍스처: 0개`, 'debug');
+      }
+      
+      return previousSize;
+    }
+    
+    return 0;
+  }
+
+  // 최적화 텍스처 개수 반환
+  public getOptimizedTextureCount(): number {
+    return this.optimizedTextures.size;
+  }
+}
+
+// 전역 최적화 트래커 인스턴스
+const optimizationTracker = new OptimizationTracker();
 
 /**
  * 텍스처 최적화 옵션 인터페이스
@@ -64,15 +147,15 @@ export function updateTexture(
   
   // 이미 최적화된 텍스처는 건너뛰기 (UUID 기반 확인)
   const textureId = texture.uuid;
-  if (optimizedTextures.has(textureId)) {
-    if (logOptimizationAttempts) {
+  if (optimizationTracker.isTextureOptimized(textureId)) {
+    if (process.env.NODE_ENV === 'development') {
       logger.log(`텍스처 중복 최적화 방지 (UUID: ${textureId.substring(0, 8)}...)`, 'debug');
     }
     return;
   }
   
   // 최적화 전에 Set에 추가하여 중복 방지
-  optimizedTextures.add(textureId);
+  optimizationTracker.setTextureOptimized(textureId);
   
   // 기본 옵션 설정
   const defaultOptions: TextureOptions = {
@@ -114,7 +197,7 @@ export function updateTexture(
       // KTX2 텍스처는 이미 압축되어 있으므로 메모리 최적화를 위한 추가 설정
       texture.flipY = false; // 텍스처 뒤집기 비활성화
       
-      if (mergedOptions.logInfo && !loggedTextures.has(textureId)) {
+      if (mergedOptions.logInfo && !optimizationTracker.isTextureLogged(textureId)) {
         const type = getTextureType(texture);
         const size = estimateTextureMemory(texture);
         const width = texture.image?.width || 0;
@@ -130,19 +213,24 @@ export function updateTexture(
         }
         
         // 로깅된 텍스처 추적
-        loggedTextures.add(textureId);
+        optimizationTracker.setTextureLogged(textureId);
       }
     }
   }
   
   // 텍스처 정보 로깅
-  if (mergedOptions.logInfo && texture.source?.data?.src && !loggedTextures.has(textureId)) {
+  if (mergedOptions.logInfo && texture.source?.data?.src && !optimizationTracker.isTextureLogged(textureId)) {
     console.log('텍스처 URL:', texture.source.data.src);
-    loggedTextures.add(textureId);
+    optimizationTracker.setTextureLogged(textureId);
   }
   
   // 텍스처 업데이트 플래그 설정
   texture.needsUpdate = true;
+  
+  // 외부 텍스처 로드 콜백 호출
+  if (mergedOptions.onTextureLoad) {
+    mergedOptions.onTextureLoad(texture);
+  }
 }
 
 /**
@@ -183,6 +271,29 @@ export function updateMaterialTextures(
         if (!material.roughnessMap) material.roughness = 0.5;
       }
     }
+  } else if (material instanceof THREE.MeshPhysicalMaterial) {
+    textures.push(
+      material.map,
+      material.normalMap,
+      material.roughnessMap,
+      material.metalnessMap,
+      material.aoMap,
+      material.emissiveMap,
+      material.displacementMap,
+      material.alphaMap,
+      material.bumpMap,
+      material.clearcoatMap,
+      material.clearcoatNormalMap,
+      material.clearcoatRoughnessMap,
+      material.envMap,
+      material.lightMap,
+      material.sheenColorMap,
+      material.sheenRoughnessMap,
+      material.specularIntensityMap,
+      material.specularColorMap,
+      material.thicknessMap,
+      material.transmissionMap
+    );
   } else if (material instanceof THREE.MeshBasicMaterial ||
              material instanceof THREE.MeshPhongMaterial) {
     textures.push(
@@ -200,76 +311,58 @@ export function updateMaterialTextures(
     );
   }
   
-  // 모든 텍스처에 대해 업데이트 적용
+  // 수집된 모든 텍스처 업데이트
   textures.forEach(texture => {
     if (texture) {
       updateTexture(texture, options);
-      
-      // 텍스처 로드 완료 시 콜백 호출 (리소스 관리자에 등록)
-      if (options.onTextureLoad && texture.source?.data) {
-        options.onTextureLoad(texture);
-      }
     }
   });
-  
-  // 재질 업데이트 플래그 설정
-  material.needsUpdate = true;
 }
 
 /**
- * 재질을 최적화하는 통합 함수
- * @param material - 최적화할 Three.js 재질
+ * 재질 최적화 함수
+ * @param material - 최적화할 재질
  * @param options - 최적화 옵션
  */
 export function optimizeMaterial(
   material: THREE.Material, 
   options: MaterialOptions = {}
 ): void {
-  // 기본 옵션 설정
-  const defaultOptions: MaterialOptions = {
-    defaultColor: new THREE.Color(0xCCCCCC),
-    checkTextureLoaded: false,
-    isMobile: false
-  };
+  // 재질의 모든 텍스처 업데이트
+  updateMaterialTextures(material, options);
   
-  const mergedOptions = { ...defaultOptions, ...options };
+  // 기본 재질 속성 최적화
+  material.side = THREE.FrontSide; // 전면만 렌더링 (성능 최적화)
   
-  // 모든 재질에 대해 톤매핑 적용
-  material.toneMapped = true;
-  
-  // 모든 텍스처 업데이트
-  updateMaterialTextures(material, mergedOptions);
-  
-  // 표준 재질에 대한 추가 최적화
-  if (material instanceof THREE.MeshStandardMaterial) {
-    // 텍스처 로드 확인 옵션이 활성화된 경우
-    if (mergedOptions.checkTextureLoaded && material.map && !material.map.image) {
-      console.warn('텍스처 이미지가 로드되지 않음:', material.name);
-      if (mergedOptions.defaultColor) {
-        material.color = mergedOptions.defaultColor;
-      }
-    }
+  // 모바일에서는 불필요한 효과 비활성화
+  if (options.isMobile) {
+    material.precision = 'lowp'; // 낮은 정밀도 설정
     
-    // 재질이 검은색인 경우 수정
-    if (material.color.r === 0 && material.color.g === 0 && material.color.b === 0) {
-      console.log('검은색 메테리얼 발견, 복구:', material.name);
-      if (mergedOptions.defaultColor) {
-        material.color.set(mergedOptions.defaultColor);
-      }
-    }
-    
-    // 환경 맵이 있는 경우에만 강도 설정
-    if (material.envMap) {
-      material.envMapIntensity = 1.0;
+    // 추가적인 모바일 최적화 - 쉐이더 복잡도 감소
+    if (material instanceof THREE.MeshStandardMaterial) {
+      material.metalness = material.metalnessMap ? material.metalness : 0;
+      material.roughness = material.roughnessMap ? material.roughness : 1;
+      material.aoMapIntensity = material.aoMap ? material.aoMapIntensity : 0;
+    } else if (material instanceof THREE.MeshPhongMaterial) {
+      material.shininess = 0; // 광택 비활성화
+      material.reflectivity = 0; // 반사 비활성화
     }
   }
   
-  // 모든 재질에 대해 needsUpdate 설정
-  material.needsUpdate = true;
+  // 기본 색상 설정 (텍스처가 없을 때)
+  if (options.defaultColor) {
+    if (material instanceof THREE.MeshStandardMaterial ||
+        material instanceof THREE.MeshPhongMaterial ||
+        material instanceof THREE.MeshBasicMaterial) {
+      if (!material.map) {
+        material.color = options.defaultColor;
+      }
+    }
+  }
 }
 
 /**
- * 씬의 모든 메시와 재질을 최적화하는 통합 함수
+ * 씬 최적화 함수
  * @param scene - 최적화할 씬
  * @param options - 최적화 옵션
  */
@@ -277,291 +370,237 @@ export function optimizeScene(
   scene: THREE.Object3D,
   options: SceneOptions = {}
 ): void {
-  // 씬 중복 최적화 방지
-  const sceneId = scene.uuid;
-  const sceneKey = `optimized_scene_${sceneId}`;
+  if (!scene) return;
   
-  if (optimizedScenes.has(sceneKey)) {
-    if (logOptimizationAttempts) {
+  // 이미 최적화된 씬은 건너뛰기
+  const sceneId = scene.uuid;
+  if (optimizationTracker.isSceneOptimized(sceneId)) {
+    if (process.env.NODE_ENV === 'development') {
       logger.log(`씬 중복 최적화 방지 (UUID: ${sceneId.substring(0, 8)}...)`, 'debug');
     }
     return;
   }
   
-  // 최적화 전에 씬을 추적 Set에 추가
-  optimizedScenes.add(sceneKey);
+  // 최적화 상태 설정
+  optimizationTracker.setSceneOptimized(sceneId);
   
-  // 특별 디버깅용 로깅
-  if (logOptimizationAttempts && process.env.NODE_ENV === 'development') {
-    logger.log(`씬 최적화 시작 - 이미 최적화된 텍스처: ${optimizedTextures.size}개`, 'debug');
+  if (process.env.NODE_ENV === 'development') {
+    logger.log(`씬 최적화 시작 - 이미 최적화된 텍스처: ${optimizationTracker.getOptimizedTextureCount()}개`, 'debug');
   }
   
-  const defaultOptions: SceneOptions = {
-    defaultColor: new THREE.Color(0xCCCCCC),
-    checkTextureLoaded: false,
-    setShadows: !options.isMobile,
-    disableShadows: options.isMobile,
-    isMobile: false,
-    supportKTX2: true, // KTX2 지원 기본 활성화
-    detectKTX2: true   // KTX2 자동 감지 활성화
-  };
-  
-  const mergedOptions = { ...defaultOptions, ...options };
-  
-  // KTX2 자동 감지 및 로깅
-  let hasKTX2Textures = false;
-  
-  scene.traverse((child: any) => {
-    if (child.isMesh) {
-      // 그림자 설정
-      if (mergedOptions.setShadows && !mergedOptions.disableShadows) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      } else if (mergedOptions.disableShadows) {
-        child.castShadow = false;
-        child.receiveShadow = false;
+  // 씬을 순회하면서 모든 재질 최적화
+  scene.traverse(object => {
+    // 메시 처리
+    if (object instanceof THREE.Mesh) {
+      // 단일 재질
+      if (object.material instanceof THREE.Material) {
+        optimizeMaterial(object.material, options);
       }
-      
-      // KTX2 텍스처 감지 
-      if (mergedOptions.detectKTX2) {
-        const checkMaterial = (mat: THREE.Material) => {
-          if (mat instanceof THREE.MeshStandardMaterial || 
-              mat instanceof THREE.MeshPhongMaterial || 
-              mat instanceof THREE.MeshBasicMaterial) {
-            // 모든 텍스처 속성 중 CompressedTexture 형식 확인
-            const textures = [
-              mat.map, 
-              (mat as any).normalMap, 
-              (mat as any).roughnessMap,
-              (mat as any).metalnessMap
-            ];
-            
-            for (const tex of textures) {
-              if (tex instanceof THREE.CompressedTexture) {
-                hasKTX2Textures = true;
-                break;
-              }
-            }
-          }
-        };
-        
-        if (Array.isArray(child.material)) {
-          child.material.forEach(checkMaterial);
-        } else if (child.material) {
-          checkMaterial(child.material);
-        }
-      }
-      
-      // 재질 최적화
-      if (Array.isArray(child.material)) {
-        child.material.forEach((mat: THREE.Material) => {
-          optimizeMaterial(mat, mergedOptions);
+      // 다중 재질 (배열)
+      else if (Array.isArray(object.material)) {
+        object.material.forEach(mat => {
+          if (mat) optimizeMaterial(mat, options);
         });
-      } else if (child.material) {
-        optimizeMaterial(child.material, mergedOptions);
+      }
+      
+      // 그림자 설정
+      if (options.setShadows) {
+        object.castShadow = true;
+        object.receiveShadow = true;
+      } else if (options.disableShadows) {
+        object.castShadow = false;
+        object.receiveShadow = false;
       }
     }
   });
-  
-  // KTX2 텍스처 감지 시 로깅
-  if (hasKTX2Textures && mergedOptions.logInfo) {
-    console.log('KTX2/압축 텍스처가 씬에서 감지되었습니다. 최적화 적용 완료.');
-    
-    // 텍스처 메모리 분석
-    if (mergedOptions.logInfo) {
-      const textureAnalysis = analyzeCompressedTextures(scene);
-      
-      console.group('텍스처 메모리 분석');
-      console.log(`총 텍스처: ${textureAnalysis.totalTextures}개`);
-      console.log(`압축 텍스처: ${textureAnalysis.compressedTextures}개 (KTX2: ${textureAnalysis.ktx2Textures}개)`);
-      console.log(`압축률: ${Math.round((1 - textureAnalysis.compressionRatio) * 100)}% 절약`);
-      console.log(`절약된 메모리: ${formatBytes(textureAnalysis.savedMemory)}`);
-      
-      // 상위 5개 텍스처 정보 출력
-      if (textureAnalysis.textureDetails.length > 0) {
-        console.log('\n가장 큰 텍스처 (상위 5개):');
-        textureAnalysis.textureDetails.slice(0, 5).forEach((detail, index) => {
-          console.log(`${index + 1}. ${detail.name} (${detail.type}): ${formatBytes(detail.size)}, ${detail.dimensions}, 압축률: ${Math.round((1 - detail.compressionRatio) * 100)}%`);
-        });
-      }
-      
-      console.groupEnd();
-    }
-  }
 }
 
 /**
- * 재질의 emission 텍스처 밝기를 설정하는 함수
- * @param material - 설정할 재질
- * @param intensity - 설정할 emission 강도 (0.0 ~ 1.0)
- * @param options - 추가 옵션
+ * 발광 텍스처 밝기를 조절하는 함수
+ * @param material - 조절할 재질
+ * @param intensity - 밝기 (0.0 ~ 1.0)
+ * @param options - 옵션
  */
 export function setEmissionIntensity(
   material: THREE.Material,
   intensity: number = 0.5,
   options: { logInfo?: boolean } = {}
 ): void {
+  if (!material) return;
+  
+  // MeshStandardMaterial과 MeshPhysicalMaterial만 처리
   if (material instanceof THREE.MeshStandardMaterial) {
-    // Emission 텍스처가 있을 때만 강도 설정
+    // 발광 맵이 있는 경우만 처리
     if (material.emissiveMap) {
+      // 발광 색상 유지하면서 강도만 조절
+      const emissiveColor = material.emissive;
+      material.emissive.setRGB(emissiveColor.r, emissiveColor.g, emissiveColor.b);
       material.emissiveIntensity = intensity;
       
-      if (options.logInfo) {
-        console.log(`Emission 강도 설정: ${intensity} (${material.name || 'unnamed'})`);
+      if (options.logInfo && process.env.NODE_ENV === 'development') {
+        logger.log(`발광 강도 ${intensity.toFixed(2)}로 조절됨`, 'debug');
       }
-      
-      material.needsUpdate = true;
     }
   }
 }
 
 /**
- * 씬의 모든 재질에 대해 emission 텍스처 밝기를 설정하는 함수
- * @param scene - 설정할 씬
- * @param intensity - 설정할 emission 강도 (0.0 ~ 1.0)
- * @param options - 추가 옵션
+ * 씬 내의 모든 발광 텍스처 밝기를 조절하는 함수
+ * @param scene - 조절할 씬
+ * @param intensity - 밝기 (0.0 ~ 1.0)
+ * @param options - 옵션
  */
 export function setSceneEmissionIntensity(
   scene: THREE.Object3D,
   intensity: number = 0.5,
   options: { logInfo?: boolean } = {}
 ): void {
-  scene.traverse((child: any) => {
-    if (child.isMesh && child.material) {
-      if (Array.isArray(child.material)) {
-        child.material.forEach((mat: THREE.Material) => {
-          setEmissionIntensity(mat, intensity, options);
+  if (!scene) return;
+  
+  scene.traverse(object => {
+    if (object instanceof THREE.Mesh) {
+      // 단일 재질
+      if (object.material instanceof THREE.Material) {
+        setEmissionIntensity(object.material, intensity, options);
+      }
+      // 다중 재질 (배열)
+      else if (Array.isArray(object.material)) {
+        object.material.forEach(mat => {
+          if (mat) setEmissionIntensity(mat, intensity, options);
         });
-      } else {
-        setEmissionIntensity(child.material, intensity, options);
       }
     }
   });
 }
 
 /**
- * 미사용 텍스처 참조를 정리하는 함수
+ * 텍스처 참조 정리 함수
  * @param scene - 정리할 씬
+ * @param keepLatest - 유지할 최근 텍스처 수 (기본값: 0, 전체 정리)
+ * @returns 제거된 텍스처 수
  */
-export function clearTextureReferences(scene: THREE.Object3D): void {
-  // 현재 사용 중인 텍스처 참조 수집
-  const usedTextures = new Set<THREE.Texture>();
-  
-  // 씬에서 사용 중인 모든 텍스처 수집
-  scene.traverse((child: any) => {
-    if (child.isMesh && child.material) {
-      const materials = Array.isArray(child.material) ? child.material : [child.material];
-      
-      materials.forEach((material: THREE.Material) => {
-        if (material instanceof THREE.MeshStandardMaterial ||
-            material instanceof THREE.MeshPhongMaterial ||
-            material instanceof THREE.MeshBasicMaterial) {
-          
-          // 모든 가능한 텍스처 맵 속성 검사
-          const textureProps = [
-            'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 
-            'emissiveMap', 'displacementMap', 'alphaMap', 'bumpMap',
-            'envMap', 'lightMap', 'specularMap'
-          ];
-          
-          textureProps.forEach(prop => {
-            const texture = (material as any)[prop];
-            if (texture) {
-              usedTextures.add(texture);
-            }
-          });
-        }
-      });
-    }
-  });
-  
-  // 최적화 여부 추적 Set에서 사용하지 않는 텍스처 참조 제거
-  let removedCount = 0;
-  for (const textureId of optimizedTextures) {
-    let found = false;
-    usedTextures.forEach(texture => {
-      if (texture.uuid === textureId) {
-        found = true;
-      }
-    });
-    
-    if (!found) {
-      optimizedTextures.delete(textureId);
-      removedCount++;
-    }
-  }
-  
-  // 디버깅용 로깅
-  if (logOptimizationAttempts && process.env.NODE_ENV === 'development' && removedCount > 0) {
-    logger.log(`텍스처 참조 정리: ${removedCount}개 제거됨, 남은 최적화된 텍스처: ${optimizedTextures.size}개`, 'debug');
-  }
+export function clearTextureReferences(scene: THREE.Object3D, keepLatest: number = 0): number {
+  return optimizationTracker.clearTextureReferences(keepLatest);
 }
 
-// 기존 함수들에 clearTextureReferences 호출 추가
+/**
+ * 씬 재질 최적화 함수 (래퍼)
+ */
 export const optimizeSceneMaterials = (scene: THREE.Object3D, options: SceneOptions = {}) => {
-  const result = optimizeScene(scene, options);
-  clearTextureReferences(scene); // 참조 정리 추가
-  return result;
+  optimizeScene(scene, options);
 };
 
+/**
+ * 씬 텍스처 업데이트 함수 (래퍼)
+ */
 export const updateSceneTextures = (scene: THREE.Object3D, options: TextureOptions = {}) => {
-  // 동일 장면에 대한 중복 최적화 방지를 위해 씬 객체 자체를 식별자로 활용
-  const sceneId = scene.uuid;
-  const optimizationKey = `scene_${sceneId}`;
+  if (!scene) return;
   
-  // 씬이 이미 최적화 캐시에 있는지 확인
-  if (optimizedScenes.has(`optimized_scene_${sceneId}`)) {
-    if (logOptimizationAttempts) {
+  // 이미 최적화된 씬은 건너뛰기 (중복 최적화 방지)
+  const sceneId = scene.uuid;
+  const optimizationKey = `${sceneId}_updateSceneTextures`;
+  
+  if (!optimizationTracker.isTextureOptimized(optimizationKey)) {
+    optimizationTracker.setTextureOptimized(optimizationKey);
+    
+    if (process.env.NODE_ENV === 'development') {
       logger.log(`씬 중복 최적화 방지 (updateSceneTextures 호출) (UUID: ${sceneId.substring(0, 8)}...)`, 'debug');
     }
-    return;
-  }
-  
-  if (!optimizedTextures.has(optimizationKey)) {
-    optimizedTextures.add(optimizationKey);
-    optimizeScene(scene, options);
-  } else if (logOptimizationAttempts && process.env.NODE_ENV === 'development') {
-    logger.log(`씬 중복 최적화 방지 (UUID: ${sceneId.substring(0, 8)}...)`, 'debug');
+    
+    scene.traverse(object => {
+      if (object instanceof THREE.Mesh) {
+        if (object.material instanceof THREE.Material) {
+          updateMaterialTextures(object.material, options);
+        } else if (Array.isArray(object.material)) {
+          object.material.forEach(mat => {
+            if (mat) updateMaterialTextures(mat, options);
+          });
+        }
+      }
+    });
   }
 };
 
+/**
+ * 모바일용 씬 최적화 함수 (래퍼)
+ */
 export const optimizeSceneForMobile = (scene: THREE.Object3D, options: SceneOptions = {}) => {
   optimizeScene(scene, { ...options, isMobile: true });
 };
 
+/**
+ * 씬 재질 문제 확인 및 수정 함수
+ */
 export const checkAndFixSceneMaterials = (scene: THREE.Object3D): boolean => {
-  let hasFixedMaterial = false;
-  scene.traverse((child: any) => {
-    if (child.isMesh && child.material) {
-      if (Array.isArray(child.material)) {
-        child.material.forEach((mat: THREE.Material) => {
-          if (mat instanceof THREE.MeshStandardMaterial && 
-              mat.color.r === 0 && mat.color.g === 0 && mat.color.b === 0) {
-            mat.color.set(0xCCCCCC);
-            mat.needsUpdate = true;
-            hasFixedMaterial = true;
+  if (!scene) return false;
+  
+  // 이미 최적화된 씬은 건너뛰기
+  const sceneId = scene.uuid;
+  if (optimizationTracker.isSceneOptimized(`${sceneId}_fix`)) {
+    if (process.env.NODE_ENV === 'development') {
+      logger.log(`씬 중복 최적화 방지 (UUID: ${sceneId.substring(0, 8)}...)`, 'debug');
+    }
+    return false;
+  }
+  
+  optimizationTracker.setSceneOptimized(`${sceneId}_fix`);
+  
+  let hasFixedMaterials = false;
+  
+  // 씬을 순회하면서 재질 문제 확인 및 수정
+  scene.traverse(object => {
+    if (object instanceof THREE.Mesh) {
+      // 단일 재질
+      if (object.material instanceof THREE.Material) {
+        if (fixMaterialIssues(object.material)) {
+          hasFixedMaterials = true;
+        }
+      }
+      // 다중 재질 (배열)
+      else if (Array.isArray(object.material)) {
+        object.material.forEach(mat => {
+          if (mat && fixMaterialIssues(mat)) {
+            hasFixedMaterials = true;
           }
         });
-      } else if (child.material instanceof THREE.MeshStandardMaterial &&
-                 child.material.color.r === 0 && child.material.color.g === 0 && child.material.color.b === 0) {
-        child.material.color.set(0xCCCCCC);
-        child.material.needsUpdate = true;
-        hasFixedMaterial = true;
       }
     }
   });
-  return hasFixedMaterial;
+  
+  return hasFixedMaterials;
 };
 
 /**
- * 전체 캐시 및 관련 컬렉션 초기화
+ * 재질 문제 확인 및 수정 함수
+ */
+function fixMaterialIssues(material: THREE.Material): boolean {
+  let hasFixed = false;
+  
+  // MeshStandardMaterial에서 에러 가능성이 있는 설정 확인 및 수정
+  if (material instanceof THREE.MeshStandardMaterial) {
+    // 텍스처 누락 시 관련 값 조정
+    if (material.metalnessMap === null && material.metalness > 0) {
+      material.metalness = 0;
+      hasFixed = true;
+    }
+    
+    if (material.roughnessMap === null && material.roughness < 1) {
+      material.roughness = 1;
+      hasFixed = true;
+    }
+    
+    if (material.emissiveMap === null && material.emissive.getHex() !== 0) {
+      material.emissive.set(0x000000);
+      hasFixed = true;
+    }
+  }
+  
+  return hasFixed;
+}
+
+/**
+ * 최적화 캐시 초기화 함수
  */
 export function resetTextureOptimizationCache(): void {
-  optimizedTextures.clear();
-  loggedTextures.clear();
-  optimizedScenes.clear();
-  
-  if (logOptimizationAttempts) {
-    logger.log('텍스처 최적화 캐시 리셋됨', 'debug');
-  }
+  optimizationTracker.resetCache();
 } 

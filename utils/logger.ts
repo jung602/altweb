@@ -198,87 +198,42 @@ export class Logger extends EventEmitter {
         `추정 메모리 해제: 텍스처: ${stats.textureMemory}, ` +
         `지오메트리: ${stats.geometryMemory}, ` +
         `총: ${stats.totalMemory}`,
-        'success'
+        'memory'
       );
+    }
+    
+    if (stats.resourceManager) {
+      const { active, count, inactiveCount, disposedCount } = stats.resourceManager;
       
-      if (this.detailLevel === 'detailed' || this.detailLevel === 'verbose') {
-        const textureRatio = stats.totalMemory > 0 
-          ? Math.round((stats.textureMemory / stats.totalMemory) * 100) 
-          : 0;
-          
-        this.log(`텍스처 메모리 비율: ${textureRatio}%`, 'info');
-        
-        if (stats.textureCount > 0 && stats.textureMemory > 0) {
-          this.log(
-            `평균 텍스처 크기: ${stats.textureMemory / stats.textureCount}`, 
-            'info'
-          );
-        }
-        
-        if (stats.geometryCount > 0 && stats.geometryMemory > 0) {
-          this.log(
-            `평균 지오메트리 크기: ${stats.geometryMemory / stats.geometryCount}`, 
-            'info'
-          );
-        }
-      }
+      this.log(
+        `리소스 관리: ${active ? '활성화' : '비활성화'}, 관리 리소스 ${count}개` +
+        (inactiveCount !== undefined ? `, 비활성 ${inactiveCount}개` : '') +
+        (disposedCount !== undefined ? `, 정리됨 ${disposedCount}개` : ''),
+        'resource'
+      );
+    }
+    
+    if (stats.duplicateTextures !== undefined && stats.rawTextureCount !== undefined) {
+      const uniqueTextureCount = stats.rawTextureCount - stats.duplicateTextures;
       
-      if (this.detailLevel === 'verbose') {
-        if (stats.totalMemory > 20 * 1024 * 1024) { // 20MB 이상
-          this.warn(`대용량 메모리 해제 (${(stats.totalMemory / (1024 * 1024)).toFixed(2)}MB) - 모델 전환 시 정상적인 현상입니다.`);
-        }
-        
-        if (stats.devicePixelRatio) {
-          this.log(
-            `화면 픽셀 비율: ${stats.devicePixelRatio.toFixed(2)}x`, 
-            'viewport'
-          );
-        }
-        
-        if (stats.duplicateTextures && stats.duplicateTextures > 0) {
-          this.log(
-            `중복 텍스처 감지: ${stats.duplicateTextures}개 중복 제거됨 ` +
-            `(총 ${stats.rawTextureCount || stats.textureCount + stats.duplicateTextures}개 중 ` +
-            `${stats.textureCount}개 고유)`,
-            'info'
-          );
-        }
-        
-        if (stats.resourceManager) {
-          this.log(
-            `리소스 관리자 상태: ${stats.resourceManager.active ? '활성' : '비활성'}, ` +
-            `관리 중인 리소스: ${stats.resourceManager.count}개`,
-            'resource'
-          );
-        }
-        
-        if (stats.performance) {
-          this.log(
-            `성능 측정: FPS ${stats.performance.fps?.toFixed(1) || 'N/A'}, ` +
-            `렌더링 시간 ${stats.performance.renderTime?.toFixed(2) || 'N/A'}ms, ` +
-            `메모리 사용률 ${stats.performance.memoryUsage?.toFixed(1) || 'N/A'}%`,
-            'performance'
-          );
-        }
-      }
+      this.log(
+        `텍스처 중복 정보: ${uniqueTextureCount}개 고유 (중복 ${stats.duplicateTextures}개 제외됨)`,
+        'resource'
+      );
     }
     
     this.groupEnd();
-    
-    // 이벤트 발생
     this.emit('memoryCleanup', stats);
   }
 }
 
-// 로거 인스턴스 초기화
+/**
+ * 로거 싱글톤 인스턴스
+ */
 export const logger = Logger.getInstance();
 
-// 호환성을 위한 함수들 (기존 API 유지)
 /**
- * 조건부 로깅 함수
- * @param message - 로그 메시지
- * @param condition - 로깅 조건 (기본값: 개발 모드)
- * @param level - 로그 레벨 (기본값: 'info')
+ * 조건부 로그 출력 함수 (래퍼)
  */
 export function conditionalLog(
   message: string,
@@ -289,53 +244,42 @@ export function conditionalLog(
 }
 
 /**
- * 개발 모드에서만 로깅하는 함수
- * @param message - 로그 메시지
- * @param level - 로그 레벨 (기본값: 'info')
+ * 개발 모드 로그 출력 함수 (래퍼)
  */
 export function devLog(message: string, level: LogLevel = 'info'): void {
   logger.devLog(message, level);
 }
 
 /**
- * 성공 메시지 로깅 함수
- * @param message - 로그 메시지
- * @param condition - 로깅 조건 (기본값: 개발 모드)
+ * 성공 로그 출력 함수 (래퍼)
  */
 export function successLog(message: string, condition: boolean = isDev): void {
   logger.success(message, condition);
 }
 
 /**
- * 그룹화된 로그 시작
- * @param title - 그룹 제목
- * @param condition - 로깅 조건 (기본값: 개발 모드)
+ * 로그 그룹 시작 함수 (래퍼)
  */
 export function startGroup(title: string, condition: boolean = isDev): void {
   logger.group(title, false, condition);
 }
 
 /**
- * 그룹화된 로그 종료
- * @param condition - 로깅 조건 (기본값: 개발 모드)
+ * 로그 그룹 종료 함수 (래퍼)
  */
 export function endGroup(condition: boolean = isDev): void {
   logger.groupEnd(condition);
 }
 
 /**
- * 성능 측정 시작
- * @param label - 성능 측정 라벨
- * @param condition - 측정 조건 (기본값: 개발 모드)
+ * 성능 측정 시작 함수 (래퍼)
  */
 export function startPerformance(label: string, condition: boolean = isDev): void {
   logger.startPerformance(label, condition);
 }
 
 /**
- * 성능 측정 종료
- * @param label - 성능 측정 라벨
- * @param condition - 측정 조건 (기본값: 개발 모드)
+ * 성능 측정 종료 함수 (래퍼)
  */
 export function endPerformance(label: string, condition: boolean = isDev): void {
   logger.endPerformance(label, condition);
