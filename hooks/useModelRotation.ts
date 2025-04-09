@@ -55,7 +55,7 @@ export function useModelRotation({
   
   // 드래그로 Y축 회전 처리하는 함수
   const handleModelPointerMove = useCallback((e: any) => {
-    if (isDragging.current && isCurrentModel) {
+    if (isDragging.current && isCurrentModel && !isExpanded) {
       const deltaX = e.clientX - lastMouseX.current;
       
       // 회전 계수 계산
@@ -69,41 +69,49 @@ export function useModelRotation({
       
       lastMouseX.current = e.clientX;
     }
-  }, [isCurrentModel, applyRotation]);
+  }, [isCurrentModel, isExpanded, applyRotation]);
   
   // 드래그 시작 처리
   const handleModelPointerDown = useCallback((e: any) => {
     if (isCurrentModel) {
       e.stopPropagation();
-      lastMouseX.current = e.clientX;
-      isDragging.current = true;
       
-      // 관성 애니메이션 중지
-      if (inertiaAnimationRef.current) {
-        cancelAnimationFrame(inertiaAnimationRef.current);
-        inertiaAnimationRef.current = null;
+      // isExpanded가 아닐 때만 회전 인터랙션 활성화
+      if (!isExpanded) {
+        lastMouseX.current = e.clientX;
+        isDragging.current = true;
+        
+        // 관성 애니메이션 중지
+        if (inertiaAnimationRef.current) {
+          cancelAnimationFrame(inertiaAnimationRef.current);
+          inertiaAnimationRef.current = null;
+        }
       }
       
-      // 기존 이벤트 핸들러 호출
+      // 기존 이벤트 핸들러 호출 (onClick 이벤트 유지)
       handlePointerDown(e);
     }
-  }, [isCurrentModel, handlePointerDown]);
+  }, [isCurrentModel, isExpanded, handlePointerDown]);
   
   // 드래그 종료 처리
   const handleModelPointerUp = useCallback((e: any) => {
-    if (isCurrentModel && isDragging.current) {
+    if (isCurrentModel) {
       e.stopPropagation();
-      isDragging.current = false;
       
-      // 관성 애니메이션 시작
-      if (Math.abs(rotationVelocity.current) > 0.0001) {
-        inertiaAnimationRef.current = requestAnimationFrame(applyInertia);
+      // isExpanded가 아닐 때만 회전 인터랙션 관련 처리
+      if (!isExpanded && isDragging.current) {
+        isDragging.current = false;
+        
+        // 관성 애니메이션 시작
+        if (Math.abs(rotationVelocity.current) > 0.0001) {
+          inertiaAnimationRef.current = requestAnimationFrame(applyInertia);
+        }
       }
       
-      // 기존 이벤트 핸들러 호출
+      // 기존 이벤트 핸들러 호출 (onClick 이벤트 유지)
       handlePointerUp(e);
     }
-  }, [isCurrentModel, handlePointerUp, applyInertia]);
+  }, [isCurrentModel, isExpanded, handlePointerUp, applyInertia]);
   
   // 초기 회전 상태로 돌아가는 함수
   const resetRotation = useCallback(() => {
@@ -207,7 +215,7 @@ export function useModelRotation({
     };
   }, []);
 
-  // 자동 회전 처리 - 드래그나 관성 중이 아닐 때만
+  // 자동 회전 처리 - 드래그나 관성 중이 아닐 때만, 확장되었을 때는 자동 회전하지 않음
   useFrame(() => {
     if (
       modelRef.current && 
