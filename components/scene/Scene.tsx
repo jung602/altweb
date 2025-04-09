@@ -89,7 +89,7 @@ const Model = memo(({
   const lastMouseX = useRef(0);
   const rotationVelocity = useRef(0);
   const inertiaAnimationRef = useRef<number | null>(null);
-  const dampingFactor = 0.99;
+  const dampingFactor = 0.95;
 
   // 회전 효과를 적용하는 함수
   const applyRotation = useCallback((newRotation: number) => {
@@ -126,7 +126,7 @@ const Model = memo(({
       const rotationFactor = (deltaX / window.innerWidth) * Math.PI * 0.8;
       
       // 관성 효과를 위한 속도 계산
-      rotationVelocity.current = rotationFactor * 0.2;
+      rotationVelocity.current = rotationFactor * 0.3;
       
       // 직접 rotation 값 업데이트
       applyRotation(rotationRef.current + rotationFactor);
@@ -233,6 +233,112 @@ const Model = memo(({
       }
     }
   }, [isCurrentModel]);
+
+  // 초기 회전 상태로 돌아가는 함수
+  const resetRotation = useCallback(() => {
+    if (modelRef.current) {
+      const initialRotation = sceneConfig.model.rotation[1];
+      
+      // 관성 애니메이션 중지
+      if (inertiaAnimationRef.current) {
+        cancelAnimationFrame(inertiaAnimationRef.current);
+        inertiaAnimationRef.current = null;
+      }
+      rotationVelocity.current = 0;
+      
+      // 자연스러운 애니메이션으로 초기 회전 상태로 되돌리기
+      const startRotation = rotationRef.current;
+      const startTime = performance.now();
+      const duration = 800; // 애니메이션 지속 시간 (밀리초)
+      
+      const animateReset = () => {
+        const currentTime = performance.now();
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // 이징 함수 적용 (ease-out-cubic)
+        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+        
+        // 현재 회전에서 목표 회전까지 보간
+        const newRotation = startRotation + (initialRotation - startRotation) * easeOutCubic;
+        
+        // 회전 적용
+        rotationRef.current = newRotation;
+        if (modelRef.current) {
+          modelRef.current.rotation.y = newRotation;
+        }
+        
+        // 애니메이션이 완료되지 않았으면 계속 진행
+        if (progress < 1) {
+          inertiaAnimationRef.current = requestAnimationFrame(animateReset);
+        } else {
+          // 애니메이션 완료 - 정확히 목표 값으로 설정
+          rotationRef.current = initialRotation;
+          if (modelRef.current) {
+            modelRef.current.rotation.y = initialRotation;
+          }
+          inertiaAnimationRef.current = null;
+        }
+      };
+      
+      // 애니메이션 시작
+      inertiaAnimationRef.current = requestAnimationFrame(animateReset);
+      
+      // 강제로 다시 렌더링하도록 상태 갱신
+      if (isDragging.current) {
+        isDragging.current = false;
+      }
+    }
+  }, [sceneConfig.model.rotation]);
+
+  // 현재 모델 여부가 변경될 때마다 처리
+  useEffect(() => {
+    // 현재 모델이 아니게 되었을 때 초기 회전 상태로 즉시 리셋
+    if (!isCurrentModel) {
+      resetRotation();
+    }
+  }, [isCurrentModel, resetRotation]);
+
+  // 자동 회전 처리 - 드래그나 관성 중이 아닐 때만
+  useFrame(() => {
+    if (
+      modelRef.current && 
+      isCurrentModel && 
+      !isExpanded && 
+      !isDragging.current && 
+      Math.abs(rotationVelocity.current) < 0.0001 &&
+      !inertiaAnimationRef.current
+    ) {
+      // 스프링 애니메이션으로 부드러운 회전
+      rotationRef.current = rotationRef.current + 0.0003;
+      modelRef.current.rotation.y = rotationRef.current;
+    }
+  });
+
+  // 스크롤 이벤트 핸들러
+  const handleScroll = useCallback(() => {
+    if (isCurrentModel) {
+      resetRotation();
+    }
+  }, [isCurrentModel, resetRotation]);
+
+  // 스크롤 이벤트 리스너 등록 - 'scroll'과 'wheel' 이벤트 모두 처리
+  useEffect(() => {
+    const scrollListener = () => {
+      if (isCurrentModel) {
+        resetRotation();
+      }
+    };
+    
+    // 두 가지 이벤트 모두 등록
+    window.addEventListener('scroll', scrollListener);
+    window.addEventListener('wheel', scrollListener);
+    
+    return () => {
+      window.removeEventListener('scroll', scrollListener);
+      window.removeEventListener('wheel', scrollListener);
+    };
+  }, [isCurrentModel, resetRotation]);
 
   return (
     <animated.group
