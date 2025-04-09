@@ -53,10 +53,13 @@ const Model = memo(({
 }) => {
   const { getResponsiveScale, getResponsivePosition, width } = useResponsiveDevice();
   
+  // 스크롤에 의한 스케일 조정을 위한 상태 추가
+  const [scrollScale, setScrollScale] = useState(1.0);
+  
   // 기본 위치 및 스케일 계산
   const baseScale = sceneConfig.model.scale;
   const responsiveScale = getResponsiveScale(baseScale);
-  const scaleFactor = isExpanded ? 1.0 : 0.9;
+  const scaleFactor = isExpanded ? scrollScale : 0.9;
   const finalScale = responsiveScale * scaleFactor;
   
   // 위치 계산
@@ -315,30 +318,66 @@ const Model = memo(({
     }
   });
 
-  // 스크롤 이벤트 핸들러
-  const handleScroll = useCallback(() => {
+  // 스크롤 이벤트 핸들러 수정
+  const handleScroll = useCallback((e: WheelEvent) => {
     if (isCurrentModel) {
-      resetRotation();
-    }
-  }, [isCurrentModel, resetRotation]);
-
-  // 스크롤 이벤트 리스너 등록 - 'scroll'과 'wheel' 이벤트 모두 처리
-  useEffect(() => {
-    const scrollListener = () => {
-      if (isCurrentModel) {
+      if (isExpanded) {
+        // 확장 모드에서는 스크롤로 크기 조절
+        e.preventDefault();
+        // 스크롤 방향에 따라 크기 증감 (deltaY가 양수면 축소, 음수면 확대)
+        const scrollDirection = e.deltaY > 0 ? -1 : 1;
+        // 스크롤 감도 조절 (값이 작을수록 더 세밀하게 조절)
+        const scrollSensitivity = 0.05;
+        
+        setScrollScale(prevScale => {
+          // 새 스케일 계산 (0.8 ~ 1.3 범위로 제한)
+          const newScale = Math.max(0.8, Math.min(1.3, prevScale + scrollDirection * scrollSensitivity));
+          return newScale;
+        });
+      } else {
+        // 확장 모드가 아닐 때는 기존 동작 유지
         resetRotation();
       }
-    };
-    
-    // 두 가지 이벤트 모두 등록
-    window.addEventListener('scroll', scrollListener);
-    window.addEventListener('wheel', scrollListener);
-    
-    return () => {
-      window.removeEventListener('scroll', scrollListener);
-      window.removeEventListener('wheel', scrollListener);
-    };
-  }, [isCurrentModel, resetRotation]);
+    }
+  }, [isCurrentModel, resetRotation, isExpanded]);
+
+  // isExpanded 상태가 변경될 때 스크롤 스케일 초기화
+  useEffect(() => {
+    if (!isExpanded) {
+      setScrollScale(1.0);
+      // 확장 모드에서 일반 모드로 돌아갈 때 회전도 초기화
+      resetRotation();
+    }
+  }, [isExpanded, resetRotation]);
+
+  // 스크롤 이벤트 리스너 등록 - wheel 이벤트 처리 방식 수정
+  useEffect(() => {
+    if (isCurrentModel) {
+      // wheel 이벤트 리스너 등록
+      const wheelListener = (e: WheelEvent) => {
+        if (isExpanded) {
+          e.preventDefault(); // 확장 모드에서는 기본 스크롤 동작 방지
+        }
+        handleScroll(e);
+      };
+      
+      // scroll 이벤트는 동일하게 유지
+      const scrollListener = () => {
+        if (!isExpanded) {
+          resetRotation();
+        }
+      };
+      
+      // wheel 이벤트는 passive: false로 설정하여 preventDefault 가능하게 함
+      window.addEventListener('wheel', wheelListener, { passive: false });
+      window.addEventListener('scroll', scrollListener);
+      
+      return () => {
+        window.removeEventListener('wheel', wheelListener);
+        window.removeEventListener('scroll', scrollListener);
+      };
+    }
+  }, [isCurrentModel, resetRotation, handleScroll, isExpanded]);
 
   return (
     <animated.group
