@@ -66,10 +66,11 @@ export default function UnifiedScene() {
         )}
 
         {/* 상단 그라디언트 */}
-        <div className="absolute top-0 left-0 right-0 h-[20vh] bg-gradient-to-b from-black/50 via-black/25 to-transparent pointer-events-none z-10" />
+        <div className="absolute top-0 left-0 right-0 h-[10vh] bg-gradient-to-b from-black/50 via-black/25 to-transparent pointer-events-none z-10" />
         
         {/* 하단 그라디언트 */}
-        <div className="absolute bottom-0 left-0 right-0 h-[20vh] bg-gradient-to-t from-black/50 via-black/25 to-transparent pointer-events-none z-10" />
+        <div className="absolute bottom-0 left-0 right-0 h-[10vh] bg-gradient-to-t from-black/50 via-black/25 to-transparent pointer-events-none z-10" />
+
 
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative w-screen h-screen">

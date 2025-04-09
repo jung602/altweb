@@ -561,12 +561,12 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
 
     // 인덱스가 변경되었거나 isExpanded가 false로 변경된 경우 
     if (currentIndex !== prevIndex || visibleModels.length === 1) {
-      // 현재, 이전, 다음 모델을 즉시 설정
+      // 현재 모델, 이전 모델, 다음 모델 순서로 배열 구성 (현재 모델이 1순위)
       const newVisibleModels = [
-        Math.max(0, currentIndex - 1), 
-        currentIndex, 
-        Math.min(allConfigs.length - 1, currentIndex + 1)
-      ].filter((idx, i, arr) => arr.indexOf(idx) === i);
+        currentIndex, // 현재 모델 먼저 로드 (1순위)
+        Math.max(0, currentIndex - 1), // 이전 모델
+        Math.min(allConfigs.length - 1, currentIndex + 1) // 다음 모델
+      ].filter((idx, i, arr) => arr.indexOf(idx) === i); // 중복 제거
       
       setVisibleModels(newVisibleModels);
       setPrevIndex(currentIndex);
@@ -584,26 +584,6 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   return (
     <group>
       <color attach="background" args={['black']} />
-      <hemisphereLight intensity={0.5} groundColor="black" />
-
-      <spotLight 
-        decay={0} 
-        position={[-10, 20, -10]} 
-        angle={0.12} 
-        penumbra={1} 
-        intensity={.1} 
-        castShadow 
-        shadow-mapSize={1024} 
-      />
-      <spotLight 
-        decay={0} 
-        position={[10, 20, 10]} 
-        angle={0.12} 
-        penumbra={1} 
-        intensity={.1} 
-        castShadow 
-        shadow-mapSize={1024} 
-      />
       
       {/* 각 모델을 y축으로 -6 간격으로 배치하는 그룹 전체를 애니메이션으로 이동 */}
       <animated.group position-y={modelsPositionY.y}>
@@ -612,7 +592,6 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
           if (!modelControlsRefs.current[index]) {
             modelControlsRefs.current[index] = React.createRef();
           }
-          
           // 현재 모델이 로드되어 있는지 확인
           return visibleModels.includes(index) && (
             <Model
