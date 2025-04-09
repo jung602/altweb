@@ -4,7 +4,6 @@ import { animated, useSpring } from '@react-spring/three';
 import { useSceneStore } from '../../store/sceneStore';
 import type { SceneConfig } from '../../types/scene';
 import { ModelLoader } from './ModelLoader';
-import { Controls } from './Controls';
 import { Reflector } from './Reflector';
 import { useResponsiveDevice } from '../../hooks/useResponsiveDevice';
 import { useInteraction } from '../../hooks/useInteraction';
@@ -81,35 +80,32 @@ const Model = memo(({
     }
   });
 
-  // 모델 회전을 위한 상태 관리
-  const [rotationSpring, rotationApi] = useSpring(() => ({
-    rotationY: sceneConfig.model.rotation[1],
-    config: {
-      ...ANIMATION_CONFIG.SPRING,
-      friction: 1,  // 부드러운 회전을 위한 마찰 설정
-      tension: 1    // 자연스러운 움직임을 위한 장력 설정
-    }
-  }));
-
+  // 현재 rotation 값을 직접 저장
+  const rotationRef = useRef(sceneConfig.model.rotation[1]);
+  
   const isCurrentModel = index === currentIndex;
   const modelRef = useRef<THREE.Group>(null);
   const isDragging = useRef(false);
   const lastMouseX = useRef(0);
-  const lastTime = useRef(0);
   const rotationVelocity = useRef(0);
-  const previouslyCurrentRef = useRef(isCurrentModel);
   const inertiaAnimationRef = useRef<number | null>(null);
+  const dampingFactor = 0.99;
+
+  // 회전 효과를 적용하는 함수
+  const applyRotation = useCallback((newRotation: number) => {
+    if (modelRef.current) {
+      modelRef.current.rotation.y = newRotation;
+      rotationRef.current = newRotation;
+    }
+  }, []);
   
   // 관성 애니메이션 처리
   const applyInertia = useCallback(() => {
-    if (!isDragging.current && Math.abs(rotationVelocity.current) > 0.0001) {
-      // 관성 효과 - 천천히 속도 감소
-      rotationVelocity.current *= 0.99;
+    if (!isDragging.current && Math.abs(rotationVelocity.current) > 0.00002) {
+      rotationVelocity.current *= dampingFactor;
       
-      rotationApi.start({
-        rotationY: rotationSpring.rotationY.get() + rotationVelocity.current,
-        immediate: true
-      });
+      // 직접 rotation 값 업데이트
+      applyRotation(rotationRef.current + rotationVelocity.current);
       
       inertiaAnimationRef.current = requestAnimationFrame(applyInertia);
     } else {
@@ -119,76 +115,80 @@ const Model = memo(({
         inertiaAnimationRef.current = null;
       }
     }
-  }, [rotationApi, rotationSpring.rotationY]);
+  }, [applyRotation]);
   
-  // 모델별 사용자 상호작용 처리
-  const handleModelPointerDown = (e: any) => {
-    // 기존 이벤트 핸들러 호출
-    handlePointerDown(e);
-    
-    // 드래그 시작 지점 기록
-    lastMouseX.current = e.clientX;
-    lastTime.current = performance.now();
-    isDragging.current = true;
-    
-    // 관성 애니메이션 중지
-    if (inertiaAnimationRef.current) {
-      cancelAnimationFrame(inertiaAnimationRef.current);
-      inertiaAnimationRef.current = null;
-    }
-    rotationVelocity.current = 0;
-  };
-  
-  const handleModelPointerUp = (e: any) => {
-    // 기존 이벤트 핸들러 호출
-    handlePointerUp(e);
-    
-    // 드래그 종료 및 관성 시작
-    isDragging.current = false;
-    
-    // 관성 애니메이션 시작
-    if (Math.abs(rotationVelocity.current) > 0.0001) {
-      inertiaAnimationRef.current = requestAnimationFrame(applyInertia);
-    }
-  };
-
-  // 포인터 이동 처리
-  const handleModelPointerMove = (e: any) => {
-    if (isDragging.current && !isExpanded && isCurrentModel) {
-      const currentTime = performance.now();
-      const deltaTime = currentTime - lastTime.current;
+  // 드래그로 Y축 회전 처리하는 함수
+  const handleModelPointerMove = useCallback((e: any) => {
+    if (isDragging.current && isCurrentModel) {
       const deltaX = e.clientX - lastMouseX.current;
       
-      // 회전 계수 계산 - 화면 너비에 비례
-      const rotationFactor = (deltaX / window.innerWidth) * Math.PI * 1.2;
+      // 회전 계수 계산
+      const rotationFactor = (deltaX / window.innerWidth) * Math.PI * 0.8;
       
-      // 속도 계산 (시간 기반)
-      if (deltaTime > 0) {
-        rotationVelocity.current = rotationFactor / deltaTime * 16; // 60fps 기준 정규화
-      }
+      // 관성 효과를 위한 속도 계산
+      rotationVelocity.current = rotationFactor * 0.2;
       
-      // 회전 애니메이션 적용 - 마찰이 낮아 더 쉽게 움직이고 관성이 있음
-      rotationApi.start({
-        rotationY: rotationSpring.rotationY.get() + rotationFactor,
-        config: {
-          ...ANIMATION_CONFIG.SPRING,
-          friction: 12,  // 더 낮은 마찰력으로 부드러운 회전
-          tension: 60    // 적절한 장력으로 반응성 유지
-        }
-      });
+      // 직접 rotation 값 업데이트
+      applyRotation(rotationRef.current + rotationFactor);
       
       lastMouseX.current = e.clientX;
-      lastTime.current = currentTime;
     }
-  };
-
+  }, [isCurrentModel, applyRotation]);
+  
+  // 드래그 시작 처리
+  const handleModelPointerDown = useCallback((e: any) => {
+    if (isCurrentModel) {
+      e.stopPropagation();
+      lastMouseX.current = e.clientX;
+      isDragging.current = true;
+      
+      // 관성 애니메이션 중지
+      if (inertiaAnimationRef.current) {
+        cancelAnimationFrame(inertiaAnimationRef.current);
+        inertiaAnimationRef.current = null;
+      }
+      
+      // 기존 이벤트 핸들러 호출
+      handlePointerDown(e);
+    }
+  }, [isCurrentModel, handlePointerDown]);
+  
+  // 드래그 종료 처리
+  const handleModelPointerUp = useCallback((e: any) => {
+    if (isCurrentModel && isDragging.current) {
+      e.stopPropagation();
+      isDragging.current = false;
+      
+      // 관성 애니메이션 시작
+      if (Math.abs(rotationVelocity.current) > 0.0001) {
+        inertiaAnimationRef.current = requestAnimationFrame(applyInertia);
+      }
+      
+      // 기존 이벤트 핸들러 호출
+      handlePointerUp(e);
+    }
+  }, [isCurrentModel, handlePointerUp, applyInertia]);
+  
   // 전역 이벤트 리스너 등록
   useEffect(() => {
-    if (isCurrentModel && !isExpanded) {
+    if (isCurrentModel) {
       window.addEventListener('pointermove', handleModelPointerMove);
+      
+      // 창 밖으로 나가도 드래그가 해제되도록 window에 pointerup 이벤트 추가
+      const handleGlobalPointerUp = (e: any) => {
+        if (isDragging.current) {
+          handleModelPointerUp(e);
+        }
+      };
+      
+      window.addEventListener('pointerup', handleGlobalPointerUp);
+      window.addEventListener('pointercancel', handleGlobalPointerUp);
       
       return () => {
         window.removeEventListener('pointermove', handleModelPointerMove);
+        window.removeEventListener('pointerup', handleGlobalPointerUp);
+        window.removeEventListener('pointercancel', handleGlobalPointerUp);
+        
         // 클린업 시 관성 애니메이션 취소
         if (inertiaAnimationRef.current) {
           cancelAnimationFrame(inertiaAnimationRef.current);
@@ -196,62 +196,22 @@ const Model = memo(({
         }
       };
     }
-  }, [isCurrentModel, isExpanded, handleModelPointerMove]);
-
-  // 자동 회전 처리 - 드래그나 관성 중이 아닐 때만
-  useFrame(() => {
-    if (
-      modelRef.current && 
-      isCurrentModel && 
-      !isExpanded && 
-      !isDragging.current && 
-      Math.abs(rotationVelocity.current) < 0.0001 &&
-      !inertiaAnimationRef.current
-    ) {
-      // 스프링 애니메이션으로 부드러운 회전
-      rotationApi.start({
-        rotationY: rotationSpring.rotationY.get() + 0.0003, // 약간 더 느리게
-        config: {
-          ...ANIMATION_CONFIG.SPRING,
-          friction: 200, // 높은 마찰력으로 부드러운 회전
-          tension: 40   // 더 낮은 장력으로 부드러운 회전
-        }
-      });
-    }
-  });
-
-  // 현재 모델이 변경되었을 때 초기 상태로 회전 애니메이션 적용
+  }, [isCurrentModel, handleModelPointerMove, handleModelPointerUp]);
+  
+  // 컴포넌트 마운트 시 초기 회전 설정
   useEffect(() => {
-    if (previouslyCurrentRef.current && !isCurrentModel) {
-      // 이전에 현재 모델이었다가 다른 모델로 넘어간 경우
-      // 부드러운 애니메이션으로 초기 회전 상태로 돌아가기
-      
-      // 관성 애니메이션 중지
-      if (inertiaAnimationRef.current) {
-        cancelAnimationFrame(inertiaAnimationRef.current);
-        inertiaAnimationRef.current = null;
-      }
-      rotationVelocity.current = 0;
-      
-      rotationApi.start({
-        rotationY: sceneConfig.model.rotation[1],
-        config: {
-          ...ANIMATION_CONFIG.SPRING,
-          friction: 35,
-          tension: 80
-        }
-      });
+    if (modelRef.current) {
+      modelRef.current.rotation.y = sceneConfig.model.rotation[1];
+      rotationRef.current = sceneConfig.model.rotation[1];
     }
-    
-    // 현재 상태 기록
-    previouslyCurrentRef.current = isCurrentModel;
-  }, [isCurrentModel, sceneConfig.model.rotation, rotationApi, applyInertia]);
-
+  }, [sceneConfig.model.rotation]);
+  
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
     return () => {
       if (inertiaAnimationRef.current) {
         cancelAnimationFrame(inertiaAnimationRef.current);
+        inertiaAnimationRef.current = null;
       }
     };
   }, []);
@@ -284,7 +244,7 @@ const Model = memo(({
       scale-y={spring.scale}
       scale-z={spring.scale}
       rotation-x={sceneConfig.model.rotation[0]}
-      rotation-y={rotationSpring.rotationY}
+      // rotation-y를 props로 전달하지 않고 직접 업데이트
       rotation-z={sceneConfig.model.rotation[2]}
       onPointerEnter={(e) => {
         if (isCurrentModel) {
@@ -298,18 +258,8 @@ const Model = memo(({
           setModelHovered(false);
         }
       }}
-      onPointerDown={(e) => {
-        if (isCurrentModel) {
-          e.stopPropagation();
-          handleModelPointerDown(e);
-        }
-      }}
-      onPointerUp={(e) => {
-        if (isCurrentModel) {
-          e.stopPropagation();
-          handleModelPointerUp(e);
-        }
-      }}
+      onPointerDown={handleModelPointerDown}
+      onPointerUp={handleModelPointerUp}
     >
       <React.Suspense fallback={null}>
         <ModelLoader 
@@ -321,26 +271,6 @@ const Model = memo(({
       
       {/* Reflector 항상 표시 */}
       <Reflector config={sceneConfig.reflector} isCurrentModel={isCurrentModel} />
-      
-      {/* 확장된 상태에서만 Controls 표시 */}
-      {isExpanded && isCurrentModel && (
-        <Controls
-          ref={controlsRef}
-          isExpanded={isExpanded}
-          isActive={isCurrentModel}
-          isCenter={isCurrentModel}
-          currentIndex={currentIndex}
-          onStart={() => {
-            // 인터랙션 시작 시 추가 로직이 필요한 경우 여기에 작성
-          }}
-          onEnd={() => {
-            // OrbitControls 회전 종료 시 블러 효과 제거
-            if (setBlurred) {
-              setBlurred(false);
-            }
-          }}
-        />
-      )}
     </animated.group>
   );
 });
@@ -371,13 +301,6 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   // 언로드 타이머
   const unloadTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 모델별 회전 상태 관리를 위한 로직
-  const [rotationSpring, rotationApi] = useSpring(() => ({
-    rotationX: 0,
-    rotationY: 0,
-    config: ANIMATION_CONFIG.SPRING
-  }));
-
   // 기본 인터랙션 설정
   const {
     handlePointerDown,
@@ -388,11 +311,8 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
     isExpanded,
     toggleExpanded,
     setBlurred,
-    // 회전 관련 설정 제거 (개별 모델에서 처리하도록 변경)
-    // rotationApi,
-    // rotationY: rotationSpring.rotationY,
     debug: isDev,
-    enableRotation: false, // 전역 회전 비활성화
+    enableRotation: false,
     enableMouseTracking: true
   });
 
