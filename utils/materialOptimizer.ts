@@ -197,6 +197,13 @@ export function updateTexture(
       // KTX2 텍스처는 이미 압축되어 있으므로 메모리 최적화를 위한 추가 설정
       texture.flipY = false; // 텍스처 뒤집기 비활성화
       
+      // 압축 텍스처 처리 실패를 로그 기록 (웹 콘솔에서 오류를 확인할 수 있습니다)
+      if (process.env.NODE_ENV === 'development') {
+        // 압축 텍스처 사용 시 발생하는 오류는 콘솔에 자동으로 기록됩니다
+        // 여기서는 압축 텍스처 정보만 로깅합니다
+        logger.log(`압축 텍스처 사용 중: ${texture.name || 'unnamed'} (포맷: ${(texture as any).format?.toString(16) || '알 수 없음'})`, 'resource');
+      }
+      
       if (mergedOptions.logInfo && !optimizationTracker.isTextureLogged(textureId)) {
         const type = getTextureType(texture);
         const size = estimateTextureMemory(texture);

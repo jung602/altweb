@@ -221,6 +221,21 @@ export function useModel({
       const ktx2Loader = globalKTX2Loader.initialize(renderer);
       loader.setKTX2Loader(ktx2Loader);
       
+      // 압축 텍스처 지원 여부 확인
+      const capabilities = renderer.capabilities;
+      const extensions = renderer.extensions;
+      const isCompressedTexturesSupported = 
+        capabilities.isWebGL2 && 
+        (extensions.get('WEBGL_compressed_texture_astc') || 
+         extensions.get('WEBGL_compressed_texture_etc') || 
+         extensions.get('WEBGL_compressed_texture_etc1') ||
+         extensions.get('WEBGL_compressed_texture_s3tc') ||
+         extensions.get('WEBGL_compressed_texture_pvrtc'));
+      
+      if (!isCompressedTexturesSupported && isDev) {
+        devLog('현재 브라우저는 압축 텍스처를 완전히 지원하지 않습니다. 압축되지 않은 텍스처가 대신 사용될 수 있습니다.', 'warn');
+      }
+      
       // 세션별 한 번만 로그 출력 (첫 초기화 또는 재사용 시)
       if (globalKTX2Loader.loggedThisSession) {
         if (isDev) devLog('KTX2 텍스처 로더가 활성화되었습니다.', 'info');

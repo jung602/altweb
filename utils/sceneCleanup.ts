@@ -592,110 +592,133 @@ const compressionAdviceShown = {
  * @returns 압축 텍스처 분석 결과
  */
 export function analyzeCompressedTextures(scene: THREE.Object3D): {
-  totalTextures: number;
-  compressedTextures: number;
   ktx2Textures: number;
+  compressedTextures: number;
   compressionRatio: number;
   savedMemory: number;
-  textureDetails: Array<{
-    name: string;
-    type: string;
-    size: number;
-    dimensions: string;
-    compressionRatio: number;
-  }>;
 } {
-  const textures: THREE.Texture[] = [];
   const compressedTextures: THREE.CompressedTexture[] = [];
   const ktx2Textures: THREE.CompressedTexture[] = [];
-  const textureDetails: Array<{
-    name: string;
-    type: string;
-    size: number;
-    dimensions: string;
-    compressionRatio: number;
-  }> = [];
-  
+  const materials: THREE.Material[] = [];
+  let totalTextureSize = 0;
   let totalUncompressedSize = 0;
   let totalCompressedSize = 0;
   
-  // 씬에서 모든 텍스처 수집
-  scene.traverse((child: any) => {
-    if (child.isMesh && child.material) {
-      const materials = Array.isArray(child.material) ? child.material : [child.material];
-      
-      materials.forEach((material: THREE.Material) => {
-        // 모든 가능한 텍스처 속성 검사
-        const textureProps = [
-          'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 
-          'emissiveMap', 'displacementMap', 'alphaMap', 'bumpMap',
-          'envMap', 'lightMap'
-        ] as const;
-        
-        textureProps.forEach(prop => {
-          const texture = (material as any)[prop] as THREE.Texture;
-          if (texture && !textures.includes(texture)) {
-            textures.push(texture);
-            
-            // 비압축 RGBA 사이즈 계산
-            const width = texture.image?.width || 0;
-            const height = texture.image?.height || 0;
-            if (width > 0 && height > 0) {
-              totalUncompressedSize += width * height * 4;
-            }
-            
-            // 실제 메모리 사용량 계산
-            const size = estimateTextureMemory(texture);
-            totalCompressedSize += size;
-            
-            // 압축 텍스처 분류
-            if (texture instanceof THREE.CompressedTexture) {
-              compressedTextures.push(texture);
-              
-              // KTX2 텍스처 확인
-              const type = getTextureType(texture);
-              if (type === 'KTX2') {
-                ktx2Textures.push(texture);
-              }
-            }
-            
-            // 텍스처 상세 정보 저장
-            textureDetails.push({
-              name: texture.name || child.name || '이름 없음',
-              type: getTextureType(texture),
-              size: size,
-              dimensions: `${width}×${height}`,
-              compressionRatio: calculateTextureCompressionRatio(texture)
-            });
-          }
-        });
-      });
+  // 씬의 모든 재질을 수집
+  scene.traverse((object) => {
+    if ((object as THREE.Mesh).material) {
+      const objectMaterials = (object as THREE.Mesh).material;
+      if (Array.isArray(objectMaterials)) {
+        materials.push(...objectMaterials);
+      } else if (objectMaterials) {
+        materials.push(objectMaterials);
+      }
     }
   });
   
-  // 결과 반환
-  const result = {
-    totalTextures: textures.length,
+  // 재질 배열에서 중복 제거
+  const uniqueMaterials = Array.from(new Set(materials));
+  
+  // 압축 텍스처 확인
+  uniqueMaterials.forEach((material) => {
+    function checkTexture(texture: THREE.Texture | null) {
+      if (!texture) return;
+      
+      const width = texture.image?.width || 0;
+      const height = texture.image?.height || 0;
+      
+      if (width > 0 && height > 0) {
+        // 압축되지 않은 텍스처의 이론적 크기 계산 (RGBA)
+        totalUncompressedSize += width * height * 4;
+        
+        // 압축 텍스처 처리
+        if (texture instanceof THREE.CompressedTexture) {
+          const size = estimateTextureMemory(texture);
+          totalCompressedSize += size;
+          
+          // KTX2 텍스처인지 확인
+          if (texture.source?.data?.src?.toLowerCase().endsWith('.ktx2')) {
+            ktx2Textures.push(texture);
+          } else {
+            compressedTextures.push(texture);
+          }
+        } else {
+          // 일반 텍스처는 압축되지 않았으므로 동일한 크기 적용
+          totalTextureSize += width * height * 4;
+        }
+      }
+    }
+    
+    // 각 재질의 텍스처 확인
+    if (material instanceof THREE.MeshStandardMaterial) {
+      checkTexture(material.map);
+      checkTexture(material.aoMap);
+      checkTexture(material.emissiveMap);
+      checkTexture(material.bumpMap);
+      checkTexture(material.normalMap);
+      checkTexture(material.displacementMap);
+      checkTexture(material.roughnessMap);
+      checkTexture(material.metalnessMap);
+      checkTexture(material.alphaMap);
+      checkTexture(material.envMap);
+      checkTexture(material.lightMap);
+    } else if (material instanceof THREE.MeshPhongMaterial) {
+      checkTexture(material.map);
+      checkTexture(material.specularMap);
+      checkTexture(material.emissiveMap);
+      checkTexture(material.bumpMap);
+      checkTexture(material.normalMap);
+      checkTexture(material.displacementMap);
+      checkTexture(material.alphaMap);
+      checkTexture(material.envMap);
+      checkTexture(material.lightMap);
+    } else if (material instanceof THREE.MeshLambertMaterial) {
+      checkTexture(material.map);
+      checkTexture(material.emissiveMap);
+      checkTexture(material.specularMap);
+      checkTexture(material.alphaMap);
+      checkTexture(material.envMap);
+      checkTexture(material.lightMap);
+    } else if (material instanceof THREE.MeshBasicMaterial) {
+      checkTexture(material.map);
+      checkTexture(material.aoMap);
+      checkTexture(material.specularMap);
+      checkTexture(material.alphaMap);
+      checkTexture(material.envMap);
+      checkTexture(material.lightMap);
+    }
+  });
+
+  // 브라우저 지원 여부 확인 및 경고 표시
+  if (compressedTextures.length > 0 || ktx2Textures.length > 0) {
+    // WebGL 컨텍스트 가져오기 (임시)
+    const testCanvas = document.createElement('canvas');
+    const gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl');
+    
+    if (gl) {
+      const isWebGL2 = !!(gl as WebGLRenderingContext).getParameter((gl as WebGLRenderingContext).VERSION).includes('WebGL 2.0');
+      const hasASTC = !!gl.getExtension('WEBGL_compressed_texture_astc');
+      const hasETC = !!gl.getExtension('WEBGL_compressed_texture_etc');
+      const hasS3TC = !!gl.getExtension('WEBGL_compressed_texture_s3tc');
+      
+      // 경고 메시지 표시
+      if (!isWebGL2) {
+        logger.warn('WebGL 2.0이 지원되지 않습니다. 일부 압축 텍스처 형식이 작동하지 않을 수 있습니다.');
+      }
+      
+      if (!hasASTC || !hasETC || !hasS3TC) {
+        logger.warn('일부 압축 텍스처 형식이 지원되지 않습니다. 텍스처 로딩 오류가 발생할 수 있습니다.');
+        logger.log(`압축 텍스처 지원: ASTC=${hasASTC}, ETC=${hasETC}, S3TC=${hasS3TC}`, 'debug');
+      }
+    }
+  }
+  
+  return {
     compressedTextures: compressedTextures.length,
     ktx2Textures: ktx2Textures.length,
     compressionRatio: totalUncompressedSize > 0 ? totalCompressedSize / totalUncompressedSize : 1.0,
     savedMemory: totalUncompressedSize - totalCompressedSize,
-    textureDetails: textureDetails.sort((a, b) => b.size - a.size) // 크기 기준 내림차순 정렬
   };
-  
-  // KTX2 압축 권장 사항 (compressionAdviceShown.ktx2가 false일 때만 표시)
-  if (!compressionAdviceShown.ktx2 && result.totalTextures > 0 && result.ktx2Textures < result.totalTextures / 2) {
-    logger.warn(`${result.ktx2Textures}/${result.totalTextures} 텍스처만 KTX2 압축 형식을 사용 중입니다. 모든 텍스처에 KTX2를 적용하여 메모리를 절약하세요.`);
-    
-    // 압축된 텍스처가 있지만 KTX2가 아닌 경우
-    if (result.compressedTextures > result.ktx2Textures) {
-      logger.warn(`${result.compressedTextures - result.ktx2Textures}개 텍스처가 KTX2가 아닌 다른 압축 형식을 사용 중입니다. KTX2로 변환하면 더 나은 호환성을 얻을 수 있습니다.`);
-    }
-    
-    compressionAdviceShown.ktx2 = true;
-  }
-  
-  return result;
 }
 
 /**
