@@ -1,6 +1,7 @@
 import React, { memo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { animated } from '@react-spring/three';
+import { OrbitControls } from '@react-three/drei';
 import { ModelLoader } from './ModelLoader';
 import { Reflector } from './Reflector';
 import { useResponsiveDevice } from '../../hooks/useResponsiveDevice';
@@ -10,6 +11,8 @@ import { useModelScale } from '../../hooks/useModelScale';
 import { useModelPosition } from '../../hooks/useModelPosition';
 import { useModelEmission } from '../../hooks/useModelEmission';
 import { useScrollEvents } from '../../hooks/useScrollEvents';
+import { useModelOrbitControl } from '../../hooks/useModelOrbitControl';
+import { ORBIT_CONTROLS_CONFIG } from '../../config/cameraConfig';
 
 interface ModelProps {
   sceneConfig: SceneConfig;
@@ -40,7 +43,8 @@ export const Model = memo(({
   const { getResponsiveScale, getResponsivePosition, width } = useResponsiveDevice();
   const isCurrentModel = index === currentIndex;
   const modelRef = useRef<THREE.Group>(null);
-
+  const orbitControlsRef = useRef<any>(null);
+  
   // 회전 로직 커스텀 훅으로 분리
   const { 
     rotationY,
@@ -90,13 +94,35 @@ export const Model = memo(({
     handleScroll
   });
 
+  // OrbitControls 관리 로직 커스텀 훅으로 분리
+  const { resetOrbitControls } = useModelOrbitControl({
+    modelRef,
+    controlsRef: orbitControlsRef,
+    isCurrentModel,
+    isExpanded,
+    enabled: true
+  });
+
+  // OrbitControls가 마운트되면 외부 controlsRef가 있을 경우 해당 정보를 외부 컴포넌트에 전달
+  const handleOrbitControlsRef = (node: any) => {
+    orbitControlsRef.current = node;
+    if (node && controlsRef) {
+      // 외부 컴포넌트의 ref 객체에 현재 OrbitControls 인스턴스 할당
+      Object.defineProperty(controlsRef, 'current', {
+        value: node,
+        writable: true
+      });
+    }
+  };
+
   // 현재 모델 여부가 변경될 때마다 처리
   useEffect(() => {
     // 현재 모델이 아니게 되었을 때 초기 회전 상태로 즉시 리셋
     if (!isCurrentModel) {
       resetRotation();
+      resetOrbitControls();
     }
-  }, [isCurrentModel, resetRotation]);
+  }, [isCurrentModel, resetRotation, resetOrbitControls]);
 
   return (
     <animated.group
@@ -135,6 +161,22 @@ export const Model = memo(({
       
       {/* Reflector 항상 표시 */}
       <Reflector config={sceneConfig.reflector} isCurrentModel={isCurrentModel} />
+
+      {/* OrbitControls - 확장 모드이고 현재 모델인 경우에만 표시 */}
+      {isExpanded && isCurrentModel && (
+        <OrbitControls
+          ref={handleOrbitControlsRef}
+          minPolarAngle={ORBIT_CONTROLS_CONFIG.MIN_POLAR_ANGLE}
+          maxPolarAngle={ORBIT_CONTROLS_CONFIG.MAX_POLAR_ANGLE}
+          minAzimuthAngle={ORBIT_CONTROLS_CONFIG.MIN_AZIMUTH_ANGLE}
+          maxAzimuthAngle={ORBIT_CONTROLS_CONFIG.MAX_AZIMUTH_ANGLE}
+          minDistance={ORBIT_CONTROLS_CONFIG.MIN_DISTANCE}
+          maxDistance={ORBIT_CONTROLS_CONFIG.MAX_DISTANCE}
+          enableDamping={true}
+          dampingFactor={0.1}
+          enabled={isExpanded && isCurrentModel}
+        />
+      )}
     </animated.group>
   );
 });
