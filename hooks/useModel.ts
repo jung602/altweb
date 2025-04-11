@@ -77,6 +77,37 @@ const globalKTX2Loader = {
   }
 };
 
+// 최적의 텍스처 압축 포맷을 결정하는 함수
+function getOptimalTextureFormat(renderer: THREE.WebGLRenderer): string {
+  const capabilities = renderer.capabilities;
+  const extensions = renderer.extensions;
+  
+  // macOS (Apple Silicon)
+  if (navigator.platform.includes('Mac') && /arm/i.test(navigator.userAgent)) {
+    if (extensions.get('WEBGL_compressed_texture_astc')) {
+      return 'ASTC';
+    }
+  }
+  
+  // Windows/Linux
+  if (extensions.get('WEBGL_compressed_texture_s3tc')) {
+    return 'S3TC';
+  }
+  
+  // Android
+  if (extensions.get('WEBGL_compressed_texture_etc')) {
+    return 'ETC2';
+  }
+  
+  // iOS
+  if (extensions.get('WEBGL_compressed_texture_pvrtc')) {
+    return 'PVRTC';
+  }
+  
+  // 기본값으로 KTX2 반환 (압축되지 않은 텍스처로 폴백)
+  return 'KTX2';
+}
+
 /**
  * 3D 모델의 로드, 최적화, 정리를 통합적으로 관리하는 훅
  * @param options - 모델 관리 옵션
@@ -217,6 +248,9 @@ export function useModel({
 
     // KTX2 로더 설정 - 싱글톤 패턴 적용
     if (renderer) {
+      // 최적의 텍스처 포맷 결정
+      const optimalFormat = getOptimalTextureFormat(renderer);
+      
       // 기존 KTX2Loader 인스턴스 재사용
       const ktx2Loader = globalKTX2Loader.initialize(renderer);
       loader.setKTX2Loader(ktx2Loader);
@@ -233,7 +267,9 @@ export function useModel({
          extensions.get('WEBGL_compressed_texture_pvrtc'));
       
       if (!isCompressedTexturesSupported && isDev) {
-        devLog('현재 브라우저는 압축 텍스처를 완전히 지원하지 않습니다. 압축되지 않은 텍스처가 대신 사용될 수 있습니다.', 'warn');
+        devLog(`현재 브라우저는 ${optimalFormat} 압축 텍스처를 지원하지 않습니다. 압축되지 않은 텍스처가 대신 사용될 수 있습니다.`, 'warn');
+      } else if (isDev) {
+        devLog(`최적의 텍스처 압축 포맷: ${optimalFormat}`, 'info');
       }
       
       // 세션별 한 번만 로그 출력 (첫 초기화 또는 재사용 시)

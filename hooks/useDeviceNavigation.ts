@@ -96,7 +96,7 @@ export function useDeviceNavigation({
     const usingTrackpad = isTrackpad(e);
     
     // 시간 간격 체크 (디바이스에 따라 다른 간격 적용)
-    const timeThreshold = usingTrackpad ? 500 : 300; // 트랙패드는 더 긴 시간 간격 적용
+    const timeThreshold = usingTrackpad ? 1200 : 1000; // 트랙패드는 더 긴 시간 간격 적용
     if (now - lastScrollTime.current < timeThreshold) return;
     
     // 누적 델타값 계산 및 체크 (디바이스에 따라 다른 임계값 적용)
@@ -122,7 +122,7 @@ export function useDeviceNavigation({
         setTimeout(() => {
           isScrolling.current = false;
           onBlurChange(false);
-        }, usingTrackpad ? 600 : 400); // 트랙패드는 더 긴 시간 적용
+        }, usingTrackpad ? 1300 : 1100); // 트랙패드는 더 긴 시간 적용
       } else {
         isScrolling.current = false;
         onBlurChange(false);
@@ -144,7 +144,7 @@ export function useDeviceNavigation({
     if (isExpanded) return;
     
     const now = Date.now();
-    if (now - lastScrollTime.current < 400) return;
+    if (now - lastScrollTime.current < 1100) return;
     
     const currentY = e.touches[0].clientY;
     const currentX = e.touches[0].clientX;

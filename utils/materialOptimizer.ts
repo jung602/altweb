@@ -269,6 +269,34 @@ export function updateMaterialTextures(
       material.lightMap
     );
     
+    // 텍스처 최적화 설정
+    textures.forEach(texture => {
+      if (texture && texture instanceof THREE.CompressedTexture) {
+        // 플랫폼별 최적화 설정
+        if (navigator.platform.includes('Mac') && /arm/i.test(navigator.userAgent)) {
+          // Apple Silicon Mac: ASTC 최적화
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.minFilter = THREE.LinearMipmapLinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+        } else if (navigator.platform.includes('Win')) {
+          // Windows: S3TC 최적화
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.minFilter = THREE.LinearMipmapLinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+        } else if (/Android/i.test(navigator.userAgent)) {
+          // Android: ETC2 최적화
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.minFilter = THREE.LinearMipmapLinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+        } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+          // iOS: PVRTC 최적화
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.minFilter = THREE.LinearMipmapLinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+        }
+      }
+    });
+    
     // KTX2 텍스처 사용 시 메탈릭/러프니스 최적화
     if (ktx2Enabled) {
       // 메탈릭 러프니스 맵을 사용하는 경우 관련 설정 최적화
