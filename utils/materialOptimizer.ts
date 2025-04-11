@@ -269,33 +269,8 @@ export function updateMaterialTextures(
       material.lightMap
     );
     
-    // 텍스처 최적화 설정
-    textures.forEach(texture => {
-      if (texture && texture instanceof THREE.CompressedTexture) {
-        // 플랫폼별 최적화 설정
-        if (navigator.platform.includes('Mac') && /arm/i.test(navigator.userAgent)) {
-          // Apple Silicon Mac: ASTC 최적화
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.minFilter = THREE.LinearMipmapLinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-        } else if (navigator.platform.includes('Win')) {
-          // Windows: S3TC 최적화
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.minFilter = THREE.LinearMipmapLinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-        } else if (/Android/i.test(navigator.userAgent)) {
-          // Android: ETC2 최적화
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.minFilter = THREE.LinearMipmapLinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-        } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-          // iOS: PVRTC 최적화
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.minFilter = THREE.LinearMipmapLinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-        }
-      }
-    });
+    // 플랫폼별 최적 압축 포맷은 감지하되, 컬러맵과 필터는 원래대로 유지
+    // 그냥 텍스처 최적화 코드는 삭제하고 원래 코드를 유지
     
     // KTX2 텍스처 사용 시 메탈릭/러프니스 최적화
     if (ktx2Enabled) {
