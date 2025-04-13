@@ -28,6 +28,8 @@ export interface ReflectorItemConfig {
   radius?: number;
   smoothness?: number;
   clipBias?: number;
+  overlayOpacity?: number;
+  overlayOffset?: [number, number, number];
 }
 
 export interface ReflectorConfig {

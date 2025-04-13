@@ -33,13 +33,17 @@ export const scenesData: SceneConfig[] = [
           rotation: [-Math.PI / 1, 0, 0],
           args: [1.74, 1.96],
           color: "#a0a0a0",
+          overlayOpacity: 0.5,
+          overlayOffset: [0, 0, -0.01]
         },
         {
           position: [-1.15, 0.6, 1.65],
           rotation: [-Math.PI / 1.02, 0, 0],
           args: [.25, 1.11],
           clipBias: 0,
-          color: "#aaaaaa"
+          color: "#aaaaaa",
+          overlayOpacity: 0,
+          overlayOffset: [0, 0, -0.01]
         }
       ]
     }
@@ -104,7 +108,9 @@ export const scenesData: SceneConfig[] = [
           position: [-2.11, 1, 0],
           rotation: [0, 1.57, 0],
           args: [2.85, 2],
-          color: "#a0a0a0"
+          color: "#a0a0a0",
+          overlayOpacity: 0.6,
+          overlayOffset: [0.01, 0, 0]
         }
       ]
     }
@@ -117,8 +123,8 @@ export const scenesData: SceneConfig[] = [
     description: "Joguhaus Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt4",
-      scale: .82,
-      position: [.08, -.82, 0],
+      scale: .85,
+      position: [.05, -.82, 0],
       rotation: [0, 1.6, 0],
     },
     labels: [
@@ -140,7 +146,9 @@ export const scenesData: SceneConfig[] = [
           position: [-1.95, 1, 0],
           rotation: [0, 1.57, 0],
           args: [3.5, 2.5],
-          color: "#a0a0a0"
+          color: "#a0a0a0",
+          overlayOpacity: 0.6,
+          overlayOffset: [0.02, 0, 0]
         },
       ]
     }
@@ -153,8 +161,8 @@ export const scenesData: SceneConfig[] = [
     description: "Joguhaus Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt5",
-      scale: .75,
-      position: [-0.05, -.82, 0],
+      scale: .8,
+      position: [-0.2, -.82, 0],
       rotation: [0, 0, 0],
     },
     labels: [
@@ -183,7 +191,7 @@ export const scenesData: SceneConfig[] = [
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt6",
-      scale: .7,
+      scale: .85,
       position: [0, -.82, 0],
       rotation: [0, 0, 0],
     },
@@ -208,7 +216,9 @@ export const scenesData: SceneConfig[] = [
         args: [0.4, 3],
         color: "#aaaaaa",
         radius: .01,
-        clipBias: 0
+        clipBias: 0,
+        overlayOpacity: 0,
+        overlayOffset: [0, 0, -0.01]
       }
       ]
     }
@@ -221,7 +231,7 @@ export const scenesData: SceneConfig[] = [
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt7",
-      scale: .85,
+      scale: .9,
       position: [0.05, -.95, 0],
       rotation: [0, 0, 0],
     },
@@ -245,7 +255,9 @@ export const scenesData: SceneConfig[] = [
           rotation: [0, 1.57, 0],
           args: [1.73, 1.43],
           color: "#a0a0a0",
-          clipBias: 0
+          clipBias: 0,
+          overlayOpacity: 0.3,
+          overlayOffset: [0.01, 0, 0]
         },
       ]
     }
@@ -258,7 +270,7 @@ export const scenesData: SceneConfig[] = [
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt8",
-      scale: .73,
+      scale: .8,
       position: [.1, -.82, 0],
       rotation: [0, 0, 0],
     },
@@ -284,7 +296,9 @@ export const scenesData: SceneConfig[] = [
           resolution: 2048,
           color: "#eeeeee",
           radius: .05,
-          clipBias: 0
+          clipBias: 0,
+          overlayOpacity: 0,
+          overlayOffset: [0, 0, -0.015]
         },
       ]
     }
@@ -297,7 +311,7 @@ export const scenesData: SceneConfig[] = [
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt9",
-      scale: .8,
+      scale: .85,
       position: [-.05, -.82, 0],
       rotation: [0, 0, 0],
     },

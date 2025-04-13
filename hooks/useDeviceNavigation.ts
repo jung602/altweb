@@ -122,7 +122,7 @@ export function useDeviceNavigation({
         setTimeout(() => {
           isScrolling.current = false;
           onBlurChange(false);
-        }, usingTrackpad ? 1300 : 1100); // 트랙패드는 더 긴 시간 적용
+        }, usingTrackpad ? 700 : 500); // 트랙패드는 더 긴 시간 적용
       } else {
         isScrolling.current = false;
         onBlurChange(false);
