@@ -60,7 +60,7 @@ export default function Home() {
 
       <Navigation />
       
-      <div className="w-full h-screen absolute inset-0">
+      <div className="w-full h-screen absolute inset-0 bg-black">
         <UnifiedScene />
       </div>
     </main>

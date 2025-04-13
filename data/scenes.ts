@@ -118,7 +118,7 @@ export const scenesData: SceneConfig[] = [
     model: {
       component: "Alt4",
       scale: .82,
-      position: [0, -.82, 0],
+      position: [.08, -.82, 0],
       rotation: [0, 1.6, 0],
     },
     labels: [
@@ -153,8 +153,8 @@ export const scenesData: SceneConfig[] = [
     description: "Joguhaus Room is a cozy and modern space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt5",
-      scale: .8,
-      position: [-0.15, -.82, 0],
+      scale: .75,
+      position: [-0.05, -.82, 0],
       rotation: [0, 0, 0],
     },
     labels: [
@@ -183,7 +183,7 @@ export const scenesData: SceneConfig[] = [
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt6",
-      scale: .8,
+      scale: .7,
       position: [0, -.82, 0],
       rotation: [0, 0, 0],
     },
@@ -221,8 +221,8 @@ export const scenesData: SceneConfig[] = [
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt7",
-      scale: .9,
-      position: [0, -.95, 0],
+      scale: .85,
+      position: [0.05, -.95, 0],
       rotation: [0, 0, 0],
     },
     labels: [
@@ -258,7 +258,7 @@ export const scenesData: SceneConfig[] = [
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt8",
-      scale: .8,
+      scale: .73,
       position: [.1, -.82, 0],
       rotation: [0, 0, 0],
     },
@@ -297,8 +297,8 @@ export const scenesData: SceneConfig[] = [
     description: "Fabian Room is a modern and minimalist space that combines functionality with style. The room showcases a perfect balance between work and relaxation areas, featuring contemporary furniture and smart storage solutions.",
     model: {
       component: "Alt9",
-      scale: .9,
-      position: [-.15, -.82, 0],
+      scale: .8,
+      position: [-.05, -.82, 0],
       rotation: [0, 0, 0],
     },
     labels: [

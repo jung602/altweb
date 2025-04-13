@@ -72,7 +72,7 @@ export default function UnifiedScene() {
         <div className="absolute bottom-0 left-0 right-0 h-[10vh] bg-gradient-to-t from-black/50 via-black/25 to-transparent pointer-events-none z-10" />
 
 
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
           <div className="relative w-screen h-screen">
             <div className="absolute inset-0">
               <Canvas
