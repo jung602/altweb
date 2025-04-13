@@ -38,6 +38,24 @@ export function useModelOrbitControl({
       if (typeof controlsRef.current.update === 'function') {
         controlsRef.current.update();
       }
+      
+      // 마우스 인터랙션 후 블러 해제를 위한 이벤트 리스너 설정
+      const handleInteractionEnd = () => {
+        if (typeof controlsRef.current.autoBlur === 'boolean') {
+          controlsRef.current.autoBlur = true;
+        }
+        controlsRef.current.update();
+      };
+      
+      // 각 인터랙션 종료 이벤트에 리스너 추가
+      controlsRef.current.addEventListener('end', handleInteractionEnd);
+      
+      // 컴포넌트 언마운트 시 이벤트 리스너 제거
+      return () => {
+        if (controlsRef.current) {
+          controlsRef.current.removeEventListener('end', handleInteractionEnd);
+        }
+      };
     }
   }, [modelRef, isCurrentModel, isExpanded, enabled, controlsRef]);
 
