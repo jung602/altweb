@@ -158,55 +158,58 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
       // 그룹에 추가
       groupRef.current?.add(reflector);
       
-      // 검은색 면 메쉬 생성 (리플렉터와 동일한 지오메트리 사용)
-      const clonedGeometry = geometry.clone();
-      
-      // 검은색 재질 생성
-      const overlayMaterial = new THREE.MeshBasicMaterial({
-        color: 0x000000,
-        transparent: true,
-        opacity: item.overlayOpacity ?? 0.5, // 기본 불투명도, 설정값이 있으면 해당 값 사용
-        side: FrontSide
-      });
-      
-      // 오버레이 메쉬 생성
-      const overlay = new THREE.Mesh(clonedGeometry, overlayMaterial);
-      
-      // 오버레이 위치 설정 - 리플렉터와 동일하게 또는 오프셋 적용
-      const overlayOffsetX = item.overlayOffset?.[0] ?? 0;
-      const overlayOffsetY = item.overlayOffset?.[1] ?? 0;
-      const overlayOffsetZ = item.overlayOffset?.[2] ?? 0;
-      
-      // offset 값 로그 출력
-      console.log(`오버레이 ${item.key} 오프셋:`, overlayOffsetX, overlayOffsetY, overlayOffsetZ);
-      
-      // 위치 설정 시 오프셋 적용
-      const posX = item.position[0] + overlayOffsetX;
-      const posY = item.position[1] + overlayOffsetY;
-      const posZ = item.position[2] + overlayOffsetZ;
-      
-      console.log(`오버레이 ${item.key} 위치:`, posX, posY, posZ);
-      
-      overlay.position.set(posX, posY, posZ);
-      
-      overlay.rotation.set(
-        item.rotation[0],
-        item.rotation[1],
-        item.rotation[2]
-      );
-      
-      if (item.scale) {
-        overlay.scale.set(item.scale[0], item.scale[1], item.scale[2]);
+      // overlayOpacity가 0인 경우 오버레이 매쉬를 생성하지 않음
+      if (item.overlayOpacity !== 0) {
+        // 검은색 면 메쉬 생성 (리플렉터와 동일한 지오메트리 사용)
+        const clonedGeometry = geometry.clone();
+        
+        // 검은색 재질 생성
+        const overlayMaterial = new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          transparent: true,
+          opacity: item.overlayOpacity ?? 0.5, // 기본 불투명도, 설정값이 있으면 해당 값 사용
+          side: FrontSide
+        });
+        
+        // 오버레이 메쉬 생성
+        const overlay = new THREE.Mesh(clonedGeometry, overlayMaterial);
+        
+        // 오버레이 위치 설정 - 리플렉터와 동일하게 또는 오프셋 적용
+        const overlayOffsetX = item.overlayOffset?.[0] ?? 0;
+        const overlayOffsetY = item.overlayOffset?.[1] ?? 0;
+        const overlayOffsetZ = item.overlayOffset?.[2] ?? 0;
+        
+        // offset 값 로그 출력
+        console.log(`오버레이 ${item.key} 오프셋:`, overlayOffsetX, overlayOffsetY, overlayOffsetZ);
+        
+        // 위치 설정 시 오프셋 적용
+        const posX = item.position[0] + overlayOffsetX;
+        const posY = item.position[1] + overlayOffsetY;
+        const posZ = item.position[2] + overlayOffsetZ;
+        
+        console.log(`오버레이 ${item.key} 위치:`, posX, posY, posZ);
+        
+        overlay.position.set(posX, posY, posZ);
+        
+        overlay.rotation.set(
+          item.rotation[0],
+          item.rotation[1],
+          item.rotation[2]
+        );
+        
+        if (item.scale) {
+          overlay.scale.set(item.scale[0], item.scale[1], item.scale[2]);
+        }
+        
+        overlay.userData.isReflectorOverlay = true;
+        
+        // 오버레이의 그림자 비활성화
+        overlay.castShadow = false;
+        overlay.receiveShadow = false;
+        
+        // 그룹에 추가
+        groupRef.current?.add(overlay);
       }
-      
-      overlay.userData.isReflectorOverlay = true;
-      
-      // 오버레이의 그림자 비활성화
-      overlay.castShadow = false;
-      overlay.receiveShadow = false;
-      
-      // 그룹에 추가
-      groupRef.current?.add(overlay);
     });
     
     console.log('리플렉터 항목 다시 생성됨:', reflectorItems.length);
