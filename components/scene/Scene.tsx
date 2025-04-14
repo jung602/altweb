@@ -1,3 +1,10 @@
+// components/scene/Scene.tsx
+// @deprecated 이 파일은 이전 버전과의 호환성을 위해 유지됩니다.
+// 새로운 코드에서는 다음 컴포넌트들을 사용하세요:
+// - SceneGroup: 씬 그룹 관리
+// - ModelAnimatedGroup: 애니메이션 처리
+// - Model: 개별 모델 렌더링
+
 import React, { memo, useRef } from 'react';
 import * as THREE from 'three';
 import { animated, useSpring } from '@react-spring/three';
@@ -10,11 +17,12 @@ import { Model } from './Model';
 import { usePerformanceMonitoring } from '../../hooks/usePerformanceMonitoring';
 import { useModelVisibility } from '../../hooks/useModelVisibility';
 import { useModelControls } from '../../hooks/useModelControls';
-import { ANIMATION_CONFIG } from '../../config/sceneConfig';
+import { ANIMATION_CONFIG } from '../../config/animation';
 
 /**
  * Scene 컴포넌트의 props 인터페이스
  * @interface SceneProps
+ * @deprecated 새 코드에서는 renderer/SceneGroup을 사용하세요.
  */
 interface SceneProps {
   /** 씬 설정 객체 */
@@ -28,6 +36,7 @@ interface SceneProps {
 
 /**
  * 3D 씬과 모델을 관리하는 컴포넌트
+ * @deprecated 새 코드에서는 renderer/SceneGroup을 사용하세요.
  */
 export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: SceneProps) => {
   const isExpanded = useSceneStore((state) => state.isExpanded);
@@ -64,7 +73,7 @@ export const Scene = memo(({ config, allConfigs, currentIndex, controlsRef }: Sc
   // 전체 모델 그룹의 y축 위치 애니메이션 - 원본과 동일한 설정으로 복원
   const modelsPositionY = useSpring({
     y: currentIndex * ySpacing,
-    config: ANIMATION_CONFIG.SPRING // 원래 값 사용 (별도 오버라이드 없음)
+    config: ANIMATION_CONFIG.SPRING
   });
   
   // WebGL 컨텍스트 접근을 위한 three hook 사용

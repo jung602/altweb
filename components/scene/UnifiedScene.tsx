@@ -1,108 +1,50 @@
-import React, { useCallback, useMemo, useEffect, useRef } from 'react';
-import { Scene } from './Scene';
-import { VerticalTitles } from '../ui/Titles';
-import { useSceneScroll } from '../../hooks/useSceneScroll';
+import React, { useCallback } from 'react';
 import { useSceneStore } from '../../store/sceneStore';
-import { X } from 'lucide-react';
+import { VerticalTitles } from '../ui/Titles';
 import { LabelNavigation } from '../layout/LabelNav';
 import { IndexView } from '../ui/IndexView';
-import { Canvas } from '@react-three/fiber';
-import Label from '../ui/Label';
-import { CANVAS_CONFIG } from '../../config/sceneConfig';
-import { getCameraConfig, setupRenderer } from '../../config/cameraConfig';
+import SceneController from './controller/SceneController';
+import GradientOverlay from './ui/GradientOverlay';
+import CloseButton from './ui/CloseButton';
 
 /**
  * 통합 씬 컴포넌트
  * 여러 3D 씬을 관리하고 표시하는 컴포넌트
  */
 export default function UnifiedScene() {
-  const {
-    containerRef,
-    scenes,
-    currentIndex,
-    handleTouch
-  } = useSceneScroll();
-
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const isIndexView = useSceneStore((state) => state.isIndexView);
-  const isBlurred = useSceneStore((state) => state.isBlurred);
-
-  const handleTouchEvents = useMemo(() => ({
-    onTouchStart: handleTouch.start,
-    onTouchMove: handleTouch.move,
-    onTouchEnd: handleTouch.end
-  }), [handleTouch]);
 
   const handleExpandToggle = useCallback(() => {
     toggleExpanded();
   }, [toggleExpanded]);
 
-  // 확장 상태에 따라 적절한 카메라 설정을 가져옴
-  const cameraConfig = getCameraConfig(isExpanded);
-  const controlsRef = useRef(null);
-
+  // 인덱스 뷰인 경우 인덱스 컴포넌트를 표시
   if (isIndexView) {
     return <IndexView />;
   }
 
   return (
     <>
-      <div 
-        ref={containerRef} 
-        className="fixed inset-0 overflow-hidden"
-        {...handleTouchEvents}
-      >
+      <div className="fixed inset-0 overflow-hidden">
+        {/* 확장 모드 UI */}
         {isExpanded && (
           <>
-            <button
-              onClick={handleExpandToggle}
-              className="fixed top-4 right-4 z-50 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5 text-white hover:text-white/70" />
-            </button>
+            <CloseButton onClick={handleExpandToggle} />
             <LabelNavigation />
           </>
         )}
 
-        {/* 상단 그라디언트 */}
-        <div className="absolute top-0 left-0 right-0 h-[10vh] bg-gradient-to-b from-black/50 via-black/25 to-transparent pointer-events-none z-10" />
-        
-        {/* 하단 그라디언트 */}
-        <div className="absolute bottom-0 left-0 right-0 h-[10vh] bg-gradient-to-t from-black/50 via-black/25 to-transparent pointer-events-none z-10" />
+        {/* 상단/하단 그라디언트 */}
+        <GradientOverlay position="top" />
+        <GradientOverlay position="bottom" />
 
-
-        <div className="absolute inset-0 flex items-center justify-center bg-black">
-          <div className="relative w-screen h-screen">
-            <div className="absolute inset-0">
-              <Canvas
-                style={{ width: '100%', height: '100%' }}
-                camera={cameraConfig}
-                gl={CANVAS_CONFIG.gl}
-                onCreated={({ gl }) => {
-                  // 분리된 설정 함수 사용
-                  setupRenderer(gl);
-                }}
-                shadows
-              >
-                <Scene
-                  config={scenes[currentIndex]}
-                  allConfigs={scenes}
-                  currentIndex={currentIndex}
-                  controlsRef={controlsRef}
-                />
-              </Canvas>
-              <div 
-                className={`absolute inset-0 pointer-events-none backdrop-blur-sm transition-opacity duration-300 ${
-                  isBlurred ? 'opacity-100' : 'opacity-0'
-                }`}
-                id="blur-layer" 
-              />
-            </div>
-          </div>
-        </div>
+        {/* 씬 컨트롤러 */}
+        <SceneController />
       </div>
 
+      {/* 세로 타이틀 */}
       <VerticalTitles />
     </>
   );
