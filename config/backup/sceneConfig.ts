@@ -1,20 +1,7 @@
-// @deprecated 이 파일은 이전 버전과의 호환성을 위해 유지됩니다.
-// 새로운 코드에서는 다음 경로를 직접 import 하세요:
-// - 'config/scene': 씬 관련 설정
-// - 'config/model': 모델 관련 설정
-// - 'config/animation': 애니메이션 관련 설정
-// - 'config': 통합 설정 파일
-
-/**
- * @deprecated 새 코드에서는 'config/model'에서 import하세요.
- */
 import { ModelComponentType } from '../types/scene';
 import * as THREE from 'three';
 
 // 모델 프리로드 상태 관리
-/**
- * @deprecated 새 코드에서는 'config/model'에서 MODEL_PRELOAD_MAP을 import하세요.
- */
 export const MODEL_PRELOAD_MAP: Record<ModelComponentType, boolean> = {
   Alt1: false,
   Alt2: false,
@@ -28,9 +15,6 @@ export const MODEL_PRELOAD_MAP: Record<ModelComponentType, boolean> = {
 };
 
 // 씬 렌더링 설정
-/**
- * @deprecated 새 코드에서는 'config/scene'에서 SCENE_RENDER_CONFIG를 import하세요.
- */
 export const SCENE_RENDER_CONFIG = {
   RENDER_DISTANCE: 2, // 현재 인덱스로부터 몇 개의 씬을 렌더링할지
   LOAD_DELAY_MULTIPLIER: 100, // 로딩 딜레이 계수
@@ -41,9 +25,6 @@ export const SCENE_RENDER_CONFIG = {
 };
 
 // 캔버스 설정
-/**
- * @deprecated 새 코드에서는 'config/scene'에서 CANVAS_CONFIG를 import하세요.
- */
 export const CANVAS_CONFIG = {
   gl: {
     antialias: true,
@@ -58,9 +39,6 @@ export const CANVAS_CONFIG = {
 };
 
 // 애니메이션 설정
-/**
- * @deprecated 새 코드에서는 'config/animation'에서 ANIMATION_CONFIG를 import하세요.
- */
 export const ANIMATION_CONFIG = {
   SPRING: {
     mass: 1,

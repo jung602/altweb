@@ -1,16 +1,7 @@
-// @deprecated 이 파일은 이전 버전과의 호환성을 위해 유지됩니다.
-// 새로운 코드에서는 다음 경로를 직접 import 하세요:
-// - 'config/camera': 카메라 관련 설정
-// - 'config': 통합 설정 파일
-
-/**
- * @deprecated 새 코드에서는 'config/camera'에서 import하세요.
- */
 import * as THREE from 'three';
 
 /**
  * 기본 카메라 설정
- * @deprecated 새 코드에서는 'config/camera'에서 DEFAULT_CAMERA_CONFIG를 import하세요.
  */
 export const DEFAULT_CAMERA_CONFIG = {
   position: [5 * 29, 6.5 * 29, -10 * 29] as [number, number, number],
@@ -22,7 +13,6 @@ export const DEFAULT_CAMERA_CONFIG = {
 
 /**
  * 확장 모드 카메라 설정
- * @deprecated 새 코드에서는 'config/camera'에서 EXPANDED_CAMERA_CONFIG를 import하세요.
  */
 export const EXPANDED_CAMERA_CONFIG = {
   ...DEFAULT_CAMERA_CONFIG,
@@ -33,7 +23,6 @@ export const EXPANDED_CAMERA_CONFIG = {
  * 카메라 설정을 가져오는 함수
  * @param isExpanded - 확장 모드 여부
  * @returns 적절한 카메라 설정
- * @deprecated 새 코드에서는 'config/camera'에서 getCameraConfig를 import하세요.
  */
 export const getCameraConfig = (isExpanded: boolean) => {
   return isExpanded ? EXPANDED_CAMERA_CONFIG : DEFAULT_CAMERA_CONFIG;
@@ -41,7 +30,6 @@ export const getCameraConfig = (isExpanded: boolean) => {
 
 /**
  * OrbitControls 기본 설정
- * @deprecated 새 코드에서는 'config/camera'에서 ORBIT_CONTROLS_CONFIG를 import하세요.
  */
 export const ORBIT_CONTROLS_CONFIG = {
   MIN_POLAR_ANGLE: Math.PI / 3,
@@ -58,7 +46,6 @@ export const ORBIT_CONTROLS_CONFIG = {
 
 /**
  * 렌더러 설정
- * @deprecated 새 코드에서는 'config/renderer'에서 RENDERER_CONFIG를 import하세요.
  */
 export const RENDERER_CONFIG = {
   toneMapping: THREE.ACESFilmicToneMapping,
@@ -68,7 +55,6 @@ export const RENDERER_CONFIG = {
 /**
  * 렌더러를 설정하는 함수
  * @param gl - WebGLRenderer 인스턴스
- * @deprecated 새 코드에서는 'config/renderer'에서 setupRenderer를 import하세요.
  */
 export const setupRenderer = (gl: THREE.WebGLRenderer) => {
   gl.toneMapping = RENDERER_CONFIG.toneMapping;
