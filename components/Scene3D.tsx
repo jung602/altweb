@@ -22,16 +22,9 @@ function Lights() {
   return (
     <directionalLight 
       ref={lightRef}
-      position={[-5, 3, 7]} 
-      intensity={1.5}
+      position={[-5, 3, -7]} 
+      intensity={0}
       castShadow
-      shadow-mapSize={[2048, 2048]} // 그림자 해상도 낮춤
-      shadow-bias={-0.001}
-      shadow-camera-left={-10}
-      shadow-camera-right={10}
-      shadow-camera-top={10}
-      shadow-camera-bottom={-10}
-      shadow-opacity={0.2} // 그림자 투명도 설정
     />
   )
 }
@@ -108,6 +101,16 @@ const Scene3D = () => {
             position={[-1, 0, -1]}
           />
           <Lights />
+          <directionalLight 
+            position={[-5, 3, -7]} 
+            intensity={1}
+            castShadow
+          />
+                    <directionalLight 
+            position={[-5, 3, 7]} 
+            intensity={1}
+            castShadow
+          />
           <RarerowModel />
           <CameraRotation onRotationChange={setRotation} />
         </Canvas>
