@@ -1,9 +1,8 @@
 import React from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
-import { CanvasConfig } from '../../../config/types';
-import { CameraConfig } from '../../../config/types';
-import { setupRenderer } from '../../../config/renderer';
+import { CanvasConfig, CameraConfig } from '../../../config/types';
+import { setupRenderer } from '../../../config/renderer/index';
 
 interface SceneCanvasProps {
   children: React.ReactNode;
