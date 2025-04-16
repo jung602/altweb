@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { PerformanceMonitor } from '../utils/PerformanceMonitor';
+import { PerformanceMonitor } from '../../utils/PerformanceMonitor';
 
 export function usePerformanceMonitoring(gl: THREE.WebGLRenderer) {
   // 렌더링 플래그

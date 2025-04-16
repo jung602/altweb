@@ -1,6 +1,6 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { useSceneStore } from '../../../store/sceneStore';
-import { useSceneScroll } from '../../../hooks/useSceneScroll';
+import { useSceneScroll } from '../../../hooks/scene';
 import { getCameraConfig } from '../../../config/camera';
 import { CANVAS_CONFIG } from '../../../config/scene';
 import SceneCanvas from '../renderer/SceneCanvas';
@@ -20,12 +20,30 @@ export const SceneController: React.FC = () => {
 
   const isExpanded = useSceneStore((state) => state.isExpanded);
   const isBlurred = useSceneStore((state) => state.isBlurred);
+  const setBlurred = useSceneStore((state) => state.setBlurred);
   
   const handleTouchEvents = useMemo(() => ({
     onTouchStart: handleTouch.start,
     onTouchMove: handleTouch.move,
     onTouchEnd: handleTouch.end
   }), [handleTouch]);
+
+  // 포인터업 이벤트 처리를 위한 전역 이벤트 리스너 등록
+  useEffect(() => {
+    const handleGlobalPointerUp = () => {
+      // 마우스를 떼면 항상 blur 해제
+      setBlurred(false);
+    };
+
+    // 전역 포인터업 이벤트에 리스너 등록
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+    window.addEventListener('touchend', handleGlobalPointerUp);
+    
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+      window.removeEventListener('touchend', handleGlobalPointerUp);
+    };
+  }, [setBlurred]);
 
   // 확장 상태에 따라 적절한 카메라 설정을 가져옴
   const cameraConfig = getCameraConfig(isExpanded);

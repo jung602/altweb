@@ -4,7 +4,7 @@ import { useThree } from '@react-three/fiber'
 import { ModelComponentType } from "../../types/scene"
 import { ThreeEvent } from '@react-three/fiber'
 import { stopThreePropagation, setThreeCursor } from '../../utils/eventUtils'
-import { useModel } from '../../hooks/useModel'
+import { useModel } from '../../hooks/model'
 import { setSceneEmissionIntensity } from '../../utils/materialOptimizer'
 
 interface ModelLoaderProps {

@@ -200,7 +200,10 @@ export function useResponsiveDevice(debounceTime = 100): ResponsiveInfo {
   // 통합된 반응형 정보 반환
   return {
     ...windowSize,
-    ...deviceInfo.current,
+    isMobile: deviceInfo.current.isMobile,
+    isTablet: deviceInfo.current.isTablet,
+    isDesktop: deviceInfo.current.isDesktop,
+    userAgent: deviceInfo.current.userAgent,
     getPositionYOffset,
     getScaleFactor,
     getBaseSize,

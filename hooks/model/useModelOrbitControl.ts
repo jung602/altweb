@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
-import { ORBIT_CONTROLS_CONFIG } from '../config/cameraConfig';
+import { ORBIT_CONTROLS_CONFIG } from '../../config/camera';
 
 interface UseModelOrbitControlProps {
   modelRef: React.RefObject<THREE.Group>;

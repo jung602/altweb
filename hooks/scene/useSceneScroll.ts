@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useSceneStore } from '../store/sceneStore';
-import { useResponsiveDevice } from './useResponsiveDevice';
-import { useDeviceNavigation } from './useDeviceNavigation';
+import { useSceneStore } from '../../store/sceneStore';
+import { useResponsiveDevice } from '../device/useResponsiveDevice';
+import { useDeviceNavigation } from '../device/useDeviceNavigation';
 
 /**
  * 씬 스크롤 및 네비게이션을 처리하는 훅
@@ -45,4 +45,4 @@ export const useSceneScroll = () => {
     isInitialized,
     handleTouch
   };
-};
+}; 

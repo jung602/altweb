@@ -1,8 +1,8 @@
 import { useSpring, SpringValue } from '@react-spring/three';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useCallback, useState } from 'react';
 import { debounce } from 'lodash';
-import { ANIMATION_CONFIG } from '../config/sceneConfig';
-import { useResponsiveDevice } from './useResponsiveDevice';
+import { ANIMATION_CONFIG } from '../../config/animation';
+import { useResponsiveDevice } from '../device/useResponsiveDevice';
 
 interface UseSceneAnimationOptions {
   isExpanded: boolean;

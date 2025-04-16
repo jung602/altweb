@@ -1,5 +1,6 @@
 import { useSpring } from '@react-spring/three';
-import { ANIMATION_CONFIG } from '../config/sceneConfig';
+import * as THREE from 'three';
+import { ANIMATION_CONFIG } from '../../config/animation';
 
 interface UseModelPositionProps {
   basePosition: [number, number, number];

@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { devLog } from '../utils/logger';
+import { devLog } from '../../utils/logger';
 
 interface PointerPosition {
   x: number;

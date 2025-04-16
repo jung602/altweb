@@ -4,7 +4,7 @@ import { FrontSide, Shape, BufferGeometry, Group, Mesh, Material } from 'three';
 import * as THREE from 'three';
 import { Reflector as ThreeReflector } from 'three/examples/jsm/objects/Reflector.js';
 import { optimizeMaterial } from '../../utils/materialOptimizer';
-import { useResponsiveDevice } from '../../hooks/useResponsiveDevice';
+import { useResponsiveDevice } from '../../hooks/device';
 
 interface ReflectorProps {
   config: SceneConfig['reflector'];

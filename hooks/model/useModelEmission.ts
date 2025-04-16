@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import * as THREE from 'three';
-import { setSceneEmissionIntensity } from '../utils/materialOptimizer';
+import { setSceneEmissionIntensity } from '../../utils/materialOptimizer';
 
 interface UseModelEmissionProps {
   modelRef: React.RefObject<THREE.Group>;

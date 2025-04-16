@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { devLog } from '../utils/logger';
-import { ANIMATION_CONFIG } from '../config/sceneConfig';
-import { useEventHandlers } from './useEventHandlers';
+import { useCallback, useEffect, useState, useRef } from 'react';
+import { devLog } from '../../utils/logger';
+import { ANIMATION_CONFIG } from '../../config/animation';
+import { useEventHandlers } from '../interaction/useEventHandlers';
+import { useSpring } from '@react-spring/three';
 
 interface PointerPosition {
   x: number;

@@ -2,9 +2,9 @@ import { useGLTF } from '@react-three/drei';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
 import { DRACOLoader, KTX2Loader } from 'three-stdlib';
-import { ModelComponentType, MODEL_COMPONENTS } from '../types/scene';
-import { MODEL_PRELOAD_MAP } from '../config/sceneConfig';
-import { devLog, startGroup, endGroup, conditionalLog } from '../utils/logger';
+import { ModelComponentType, MODEL_COMPONENTS } from '../../types/scene';
+import { MODEL_PRELOAD_MAP } from '../../config/model';
+import { devLog, startGroup, endGroup, conditionalLog } from '../../utils/logger';
 import { 
   optimizeSceneMaterials, 
   checkAndFixSceneMaterials,
@@ -13,20 +13,20 @@ import {
   TextureOptions,
   SceneOptions,
   resetTextureOptimizationCache
-} from '../utils/materialOptimizer';
+} from '../../utils/materialOptimizer';
 import { 
   cleanupGLTFModel, 
   disposeSceneResources, 
   forceGlobalMemoryCleanup,
   MemoryStats
-} from '../utils/sceneCleanup';
+} from '../../utils/sceneCleanup';
 import { 
   analyzeAndLogModelInfo,
   checkMemoryUsageAndSuggestOptimizations,
   resetDisplayedWarnings
-} from '../utils/modelAnalyzer';
-import { useResponsiveDevice } from './useResponsiveDevice';
-import { ResourceManager } from '../utils/ResourceManager';
+} from '../../utils/modelAnalyzer';
+import { useResponsiveDevice } from '../device/useResponsiveDevice';
+import { ResourceManager } from '../../utils/ResourceManager';
 
 interface UseModelOptions {
   component: ModelComponentType;
