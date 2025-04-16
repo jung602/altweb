@@ -1,14 +1,15 @@
 import { useCallback, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
+import { ThreeEvent } from '@react-three/fiber';
 
 interface UseModelRotationProps {
   modelRef: React.RefObject<THREE.Group>;
   isCurrentModel: boolean;
   isExpanded: boolean;
   initialRotation: number;
-  handlePointerDown: (e: any) => void;
-  handlePointerUp: (e: any) => void;
+  handlePointerDown: (e: ThreeEvent<PointerEvent>) => void;
+  handlePointerUp: (e: ThreeEvent<PointerEvent>) => void;
 }
 
 export function useModelRotation({
@@ -54,7 +55,7 @@ export function useModelRotation({
   }, [applyRotation]);
   
   // 드래그로 Y축 회전 처리하는 함수
-  const handleModelPointerMove = useCallback((e: any) => {
+  const handleModelPointerMove = useCallback((e: PointerEvent) => {
     if (isDragging.current && isCurrentModel && !isExpanded) {
       const deltaX = e.clientX - lastMouseX.current;
       
@@ -72,7 +73,7 @@ export function useModelRotation({
   }, [isCurrentModel, isExpanded, applyRotation]);
   
   // 드래그 시작 처리
-  const handleModelPointerDown = useCallback((e: any) => {
+  const handleModelPointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
     if (isCurrentModel) {
       e.stopPropagation();
       
@@ -94,7 +95,7 @@ export function useModelRotation({
   }, [isCurrentModel, isExpanded, handlePointerDown]);
   
   // 드래그 종료 처리
-  const handleModelPointerUp = useCallback((e: any) => {
+  const handleModelPointerUp = useCallback((e: ThreeEvent<PointerEvent>) => {
     if (isCurrentModel) {
       e.stopPropagation();
       
@@ -182,9 +183,15 @@ export function useModelRotation({
       window.addEventListener('pointermove', handleModelPointerMove);
       
       // 창 밖으로 나가도 드래그가 해제되도록 window에 pointerup 이벤트 추가
-      const handleGlobalPointerUp = (e: any) => {
+      const handleGlobalPointerUp = (e: PointerEvent) => {
         if (isDragging.current) {
-          handleModelPointerUp(e);
+          // 드래그 상태 초기화
+          isDragging.current = false;
+          
+          // 관성 애니메이션 시작
+          if (Math.abs(rotationVelocity.current) > 0.0001) {
+            inertiaAnimationRef.current = requestAnimationFrame(applyInertia);
+          }
         }
       };
       
@@ -203,7 +210,7 @@ export function useModelRotation({
         }
       };
     }
-  }, [isCurrentModel, handleModelPointerMove, handleModelPointerUp]);
+  }, [isCurrentModel, handleModelPointerMove, applyInertia]);
 
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {

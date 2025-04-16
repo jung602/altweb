@@ -6,16 +6,16 @@ import { usePerformanceMonitoring } from '../../../hooks/device';
 import { useModelVisibility, useModelControls } from '../../../hooks/model';
 import { useInteraction } from '../../../hooks/interaction';
 import { SceneConfig } from '../../../types/scene';
+import { OrbitControlsType, OrbitControlsInterface } from '../../../types/controls/orbitControls';
 import ModelAnimatedGroup from './ModelAnimatedGroup';
 
-// OrbitControls의 인스턴스 타입을 any로 지정
-type OrbitControlsType = any;
+// OrbitControls 타입 정의는 types/controls/orbitControls.ts로 이동
 
 interface SceneGroupProps {
   scenes: SceneConfig[];
   currentIndex: number;
   isExpanded: boolean;
-  controlsRef?: React.RefObject<OrbitControlsType>;
+  controlsRef?: React.RefObject<OrbitControlsInterface | null>;
 }
 
 /**

@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { ORBIT_CONTROLS_CONFIG } from '../../config/camera';
+import { OrbitControlsType, OrbitControlsInterface } from '../../types/controls/orbitControls';
 
 interface UseModelOrbitControlProps {
   modelRef: React.RefObject<THREE.Group>;
-  controlsRef: React.RefObject<any>;
+  controlsRef: React.RefObject<OrbitControlsType | null>;
   isCurrentModel: boolean;
   isExpanded: boolean;
   enabled: boolean;
@@ -30,21 +31,18 @@ export function useModelOrbitControl({
       box.getCenter(center);
       
       // OrbitControls가 있으면 타겟 설정
-      if (controlsRef.current.target) {
-        controlsRef.current.target.copy(center);
-      }
+      controlsRef.current.target.copy(center);
       
       // OrbitControls 세부 설정
-      if (typeof controlsRef.current.update === 'function') {
-        controlsRef.current.update();
-      }
+      controlsRef.current.update();
       
       // 마우스 인터랙션 후 블러 해제를 위한 이벤트 리스너 설정
       const handleInteractionEnd = () => {
-        if (typeof controlsRef.current.autoBlur === 'boolean') {
-          controlsRef.current.autoBlur = true;
+        // autoBlur 속성은 사용자 정의 확장 속성일 수 있으므로 any로 타입 단언하여 접근
+        if (typeof (controlsRef.current as any)?.autoBlur === 'boolean') {
+          (controlsRef.current as any).autoBlur = true;
         }
-        controlsRef.current.update();
+        controlsRef.current?.update();
       };
       
       // 각 인터랙션 종료 이벤트에 리스너 추가
@@ -60,11 +58,11 @@ export function useModelOrbitControl({
   }, [modelRef, isCurrentModel, isExpanded, enabled, controlsRef]);
 
   // 리셋 함수 제공
-  const resetOrbitControls = () => {
-    if (controlsRef?.current && typeof controlsRef.current.reset === 'function') {
+  const resetOrbitControls = useCallback(() => {
+    if (controlsRef?.current) {
       controlsRef.current.reset();
     }
-  };
+  }, [controlsRef]);
 
   // OrbitControls 리셋 함수 반환
   return {

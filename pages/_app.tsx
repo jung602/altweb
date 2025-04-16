@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { Router } from 'next/router';
 import Head from 'next/head';
-import { forceGlobalMemoryCleanup } from '@/utils/sceneCleanup';
+import { forceGlobalMemoryCleanup } from '@/utils/memory/ResourceDisposal';
 import { useSceneStore } from '@/store/sceneStore';
 
 export default function App({ Component, pageProps }: AppProps) {

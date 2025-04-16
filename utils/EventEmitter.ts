@@ -1,9 +1,22 @@
+/**
+ * 이벤트 콜백 함수 타입 정의
+ * 이벤트 발생 시 호출되는 함수의 타입
+ */
 type EventCallback = (...args: any[]) => void;
 
+/**
+ * 이벤트 맵 인터페이스
+ * 이벤트 이름을 키로, 콜백 함수 배열을 값으로 가지는 맵
+ */
 interface EventMap {
   [key: string]: EventCallback[];
 }
 
+/**
+ * 이벤트 에미터 클래스
+ * 커스텀 이벤트 시스템을 구현한 기본 클래스
+ * 다른 클래스가 이벤트를 발생시키고 처리할 수 있도록 확장 가능
+ */
 export class EventEmitter {
   private events: EventMap = {};
 

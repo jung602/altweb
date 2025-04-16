@@ -1,13 +1,21 @@
-export { RENDERER_CONFIG } from './default';
-import { RENDERER_CONFIG } from './default';
+/**
+ * 렌더러 관련 설정 통합 내보내기
+ */
+export { DEFAULT_RENDERER_CONFIG } from './default';
+
+// 렌더러 설정 다시 내보내기
+export { RENDERER_CONFIG, EFFECT_COMPOSER_CONFIG, PIXEL_RATIO } from '../renderer';
 
 import * as THREE from 'three';
+import { RENDERER_CONFIG } from '../renderer';
 
 /**
  * 렌더러를 설정하는 함수
  * @param gl - WebGLRenderer 인스턴스
  */
 export const setupRenderer = (gl: THREE.WebGLRenderer): void => {
-  gl.toneMapping = RENDERER_CONFIG.toneMapping;
-  gl.toneMappingExposure = RENDERER_CONFIG.toneMappingExposure;
+  // WebGLRendererParameters에는 toneMapping과 toneMappingExposure가 없으므로
+  // 기본값을 직접 설정합니다
+  gl.toneMapping = THREE.ACESFilmicToneMapping;
+  gl.toneMappingExposure = 1;
 }; 

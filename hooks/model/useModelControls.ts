@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { RefObject } from 'react';
+import { OrbitControlsType, OrbitControlsInterface } from '../../types/controls/orbitControls';
 
 interface UseModelControlsProps {
   isExpanded: boolean;
-  controlsRef?: RefObject<any>;
-  modelControlsRefs: {[key: number]: RefObject<any>};
+  controlsRef?: RefObject<OrbitControlsInterface | null>;
+  modelControlsRefs: {[key: number]: RefObject<OrbitControlsType | null>};
 }
 
 export function useModelControls({

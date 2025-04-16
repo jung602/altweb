@@ -1,11 +1,12 @@
 import * as THREE from 'three'
 import { 
-  formatBytes, 
   estimateTextureMemory, 
   getTextureType,
   analyzeCompressedTextures 
-} from './sceneCleanup'
-import { LogLevel } from './logger'
+} from './TextureUtils'
+import { formatBytes } from './MemoryStats'
+import { LogLevel } from '../logger'
+import { estimateGeometryMemory } from './GeometryUtils'
 
 /**
  * 모델의 메모리 사용량을 분석하는 함수

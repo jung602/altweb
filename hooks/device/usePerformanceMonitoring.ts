@@ -1,14 +1,14 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { PerformanceMonitor } from '../../utils/PerformanceMonitor';
+import { PerformanceStats, performanceStats } from '../../utils/performance';
 
 export function usePerformanceMonitoring(gl: THREE.WebGLRenderer) {
   // 렌더링 플래그
   const renderingRef = useRef({ isBefore: false, isAfter: false });
   
-  // 통합된 성능 모니터 인스턴스
-  const performanceMonitorRef = useRef<PerformanceMonitor | null>(null);
+  // 통합된 성능 모니터 인스턴스 (싱글톤으로 변경)
+  const performanceMonitorRef = useRef(performanceStats);
 
   // 개발 모드에서만 성능 모니터링 활성화
   const isDev = process.env.NODE_ENV === 'development';
@@ -17,15 +17,14 @@ export function usePerformanceMonitoring(gl: THREE.WebGLRenderer) {
   useEffect(() => {
     if (!isDev) return;
     
-    if (!performanceMonitorRef.current) {
-      performanceMonitorRef.current = new PerformanceMonitor(true);
+    if (!performanceMonitorRef.current.isActive()) {
       performanceMonitorRef.current.initialize(gl);
+      performanceMonitorRef.current.activate();
     }
     
     return () => {
-      if (performanceMonitorRef.current) {
+      if (performanceMonitorRef.current.isActive()) {
         performanceMonitorRef.current.dispose();
-        performanceMonitorRef.current = null;
       }
     };
   }, [gl, isDev]);

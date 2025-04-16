@@ -1,10 +1,11 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import { useRef, useMemo, useEffect } from 'react'
+import { useThree, useFrame, extend } from '@react-three/fiber'
+import * as THREE from 'three'
+import { Reflector as ThreeReflector } from 'three/examples/jsm/objects/Reflector.js'
+import { optimizeMaterial } from '../../utils/memory'
+import { useResponsiveDevice } from '../../hooks/device'
 import { SceneConfig } from '../../types/scene';
 import { FrontSide, Shape, BufferGeometry, Group, Mesh, Material } from 'three';
-import * as THREE from 'three';
-import { Reflector as ThreeReflector } from 'three/examples/jsm/objects/Reflector.js';
-import { optimizeMaterial } from '../../utils/materialOptimizer';
-import { useResponsiveDevice } from '../../hooks/device';
 
 interface ReflectorProps {
   config: SceneConfig['reflector'];

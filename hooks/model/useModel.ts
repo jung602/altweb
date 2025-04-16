@@ -6,26 +6,27 @@ import { ModelComponentType, MODEL_COMPONENTS } from '../../types/scene';
 import { MODEL_PRELOAD_MAP } from '../../config/model';
 import { devLog, startGroup, endGroup, conditionalLog } from '../../utils/logger';
 import { 
-  optimizeSceneMaterials, 
-  checkAndFixSceneMaterials,
-  optimizeSceneForMobile,
-  updateSceneTextures,
-  TextureOptions,
+  optimizeScene,
+  optimizeMaterial,
+  TextureOptimizationOptions,
+  MaterialOptions,
   SceneOptions,
-  resetTextureOptimizationCache
-} from '../../utils/materialOptimizer';
+  cleanupTextureReferences
+} from '../../utils/memory';
 import { 
   cleanupGLTFModel, 
   disposeSceneResources, 
-  forceGlobalMemoryCleanup,
-  MemoryStats
-} from '../../utils/sceneCleanup';
+  forceGlobalMemoryCleanup
+} from '../../utils/memory/ResourceDisposal';
+import type { MemoryStats } from '../../utils/memory/MemoryStats';
 import { 
+  analyzeModelMemoryUsage,
+  generateOptimizationSuggestions,
   analyzeAndLogModelInfo,
   checkMemoryUsageAndSuggestOptimizations,
   resetDisplayedWarnings
-} from '../../utils/modelAnalyzer';
-import { useResponsiveDevice } from '../device/useResponsiveDevice';
+} from '../../utils/memory';
+import { useResponsiveDevice } from '../device';
 import { ResourceManager } from '../../utils/ResourceManager';
 
 interface UseModelOptions {
@@ -47,8 +48,9 @@ interface UseModelResult {
 }
 
 // 확장된 TextureOptions 인터페이스
-interface ExtendedTextureOptions extends TextureOptions {
+interface ExtendedTextureOptions extends TextureOptimizationOptions {
   onTextureLoad?: (texture: THREE.Texture) => void;
+  logInfo?: boolean;
 }
 
 // KTX2Loader 싱글톤 관리를 위한 변수 추가
@@ -149,6 +151,9 @@ export function useModel({
     lastOptimizedUUID: '',
   });
   
+  // 최적화된 씬 ID 추적
+  const optimizedSceneIds = useRef(new Set<string>());
+  
   // ResourceManager 인스턴스 생성
   const resourceManagerRef = useRef<ResourceManager | null>(null);
 
@@ -196,7 +201,7 @@ export function useModel({
         }
         
         // 텍스처 최적화 캐시 리셋
-        resetTextureOptimizationCache();
+        cleanupTextureReferences();
         
         // 경고 표시 상태 초기화
         resetDisplayedWarnings();
@@ -303,36 +308,37 @@ export function useModel({
     currentScene.rotation.set(0, 0, 0);
     
     // 각 메시 초기화 및 최적화
-    currentScene.traverse((child: any) => {
-      if (child.isMesh) {
+    currentScene.traverse((child: THREE.Object3D) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
         // 각 메시의 회전 초기화
-        child.rotation.set(0, 0, 0);
+        mesh.rotation.set(0, 0, 0);
         
         // 지오메트리 계산 및 등록
-        if (child.geometry) {
-          child.geometry.computeBoundingSphere();
-          child.geometry.computeBoundingBox();
+        if (mesh.geometry) {
+          mesh.geometry.computeBoundingSphere();
+          mesh.geometry.computeBoundingBox();
           resourceManager.registerResource(
-            `${component}_${child.name}_geometry`,
-            child.geometry,
+            `${component}_${mesh.name}_geometry`,
+            mesh.geometry,
             'geometry'
           );
         }
 
         // 재질 등록
-        if (child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach((material: THREE.Material, index: number) => {
+        if (mesh.material) {
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((material: THREE.Material, index: number) => {
               resourceManager.registerResource(
-                `${component}_${child.name}_material_${index}`,
+                `${component}_${mesh.name}_material_${index}`,
                 material,
                 'material'
               );
             });
           } else {
             resourceManager.registerResource(
-              `${component}_${child.name}_material`,
-              child.material,
+              `${component}_${mesh.name}_material`,
+              mesh.material,
               'material'
             );
           }
@@ -347,7 +353,7 @@ export function useModel({
       'scene'
     );
     
-    // 텍스처 업데이트 - 한 번만 최적화되도록 updateSceneTextures 사용
+    // 텍스처 최적화 설정
     const textureOptions: ExtendedTextureOptions = {
       logInfo: isDev,
       onTextureLoad: (texture: THREE.Texture) => {
@@ -369,7 +375,7 @@ export function useModel({
     };
     
     // 하나의 통합된 최적화 호출로 대체
-    optimizeSceneMaterials(currentScene, sceneOptions);
+    optimizeScene(currentScene, sceneOptions);
   }, [component, isMobile, isDev, defaultColor]);
 
   // 씬 초기화 및 최적화
@@ -387,10 +393,17 @@ export function useModel({
     // 최적화 중 플래그 설정
     optimizationState.isOptimizingScene = true;
     
-    // 최적화 전 텍스처 캐시 초기화 - 동일한 UUID의 텍스처가 있을 경우 올바르게 처리하기 위함
-    resetTextureOptimizationCache();
-    
-    optimizeCurrentScene(scene);
+    // 최적화 전 이전 씬 ID 캐시 체크
+    if (optimizedSceneIds.current.has(scene.uuid)) {
+      if (isDev) devLog(`이미 최적화된 씬 ID (UUID: ${scene.uuid.substring(0, 8)}...)`, 'debug');
+    } else {
+      // 텍스처 최적화 캐시 정리 - 동일한 UUID의 텍스처가 있을 경우 올바르게 처리하기 위함
+      cleanupTextureReferences();
+      
+      // 최적화 진행
+      optimizeCurrentScene(scene);
+      optimizedSceneIds.current.add(scene.uuid);
+    }
     
     // 최적화 완료 상태 업데이트
     optimizationState.isOptimizingScene = false;
@@ -413,11 +426,26 @@ export function useModel({
       
       isCheckingMaterials = true;
       
-      // 메테리얼 확인만 수행하고, 씬 최적화는 하지 않음
-      const hasFixedMaterial = checkAndFixSceneMaterials(scene);
+      // 메테리얼 확인 - 간단한 로드 상태 체크로 대체
+      let hasMissingTextures = false;
       
-      if (hasFixedMaterial && isDev) {
-        devLog('일부 메테리얼이 수정되었습니다.', 'info');
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh && object.material) {
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          
+          materials.forEach(material => {
+            if (material instanceof THREE.MeshStandardMaterial) {
+              // 텍스처 로드 상태 확인
+              if (material.map && !material.map.image) {
+                hasMissingTextures = true;
+              }
+            }
+          });
+        }
+      });
+      
+      if (hasMissingTextures && isDev) {
+        devLog('일부 텍스처가 아직 로드되지 않았습니다.', 'info');
       }
       
       isCheckingMaterials = false;
@@ -445,7 +473,8 @@ export function useModel({
         resourceManagerRef.current.cleanup(); // cleanupUnusedResources 대신 public cleanup 메서드 사용
         
         // 텍스처 최적화 캐시 리셋 - 모델이 변경될 때 캐시를 초기화하여 새로운 모델에 대한 최적화 보장
-        resetTextureOptimizationCache();
+        cleanupTextureReferences();
+        optimizedSceneIds.current.clear();
         
         // 경고 표시 상태 초기화 - 모델이 변경될 때마다 경고를 다시 표시할 수 있도록
         resetDisplayedWarnings();
@@ -464,9 +493,9 @@ export function useModel({
         }
         
         // 가비지 컬렉션 힌트
-        if (window.gc) {
+        if ('gc' in window) {
           try {
-            window.gc();
+            (window as unknown as { gc: () => void }).gc();
           } catch (e) {
             // gc 함수가 없거나 호출할 수 없는 경우 무시
           }

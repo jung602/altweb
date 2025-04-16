@@ -1,17 +1,22 @@
-import { memo, useEffect } from 'react'
+import { memo, useEffect, ComponentProps } from 'react'
 import * as THREE from 'three'
 import { useThree } from '@react-three/fiber'
 import { ModelComponentType } from "../../types/scene"
 import { ThreeEvent } from '@react-three/fiber'
-import { stopThreePropagation, setThreeCursor } from '../../utils/eventUtils'
+import { stopPropagation, setCursor } from '../../utils/eventUtils'
 import { useModel } from '../../hooks/model'
-import { setSceneEmissionIntensity } from '../../utils/materialOptimizer'
+import { setSceneEmissionIntensity } from '../../utils/memory'
+import { OrbitControlsInterface } from '../../types/controls/orbitControls'
 
-interface ModelLoaderProps {
+/**
+ * ModelLoader 컴포넌트의 props 인터페이스
+ */
+interface ModelLoaderProps extends Omit<ComponentProps<'primitive'>, 'object'> {
   component: ModelComponentType
-  controlsRef?: React.RefObject<any>
+  controlsRef?: React.MutableRefObject<OrbitControlsInterface | null>
   isCurrentModel?: boolean
-  [key: string]: any
+  onPointerEnter?: (e: ThreeEvent<PointerEvent>) => void
+  onPointerLeave?: (e: ThreeEvent<PointerEvent>) => void
 }
 
 export const ModelLoader = memo(({ component, controlsRef, isCurrentModel = true, ...props }: ModelLoaderProps) => {
@@ -52,15 +57,15 @@ export const ModelLoader = memo(({ component, controlsRef, isCurrentModel = true
     }
   }, [scene, isCurrentModel, isDev]);
 
-  // Three.js 이벤트에 특화된 유틸리티 함수를 사용한 이벤트 핸들러
-  const pointerEnterHandler = stopThreePropagation<ThreeEvent<PointerEvent>>(
-    setThreeCursor('pointer', (e: ThreeEvent<PointerEvent>) => {
+  // 이벤트 핸들러
+  const pointerEnterHandler = stopPropagation<ThreeEvent<PointerEvent>>(
+    setCursor('pointer', (e: ThreeEvent<PointerEvent>) => {
       if (props.onPointerEnter) props.onPointerEnter(e);
     })
   );
 
-  const pointerLeaveHandler = stopThreePropagation<ThreeEvent<PointerEvent>>(
-    setThreeCursor('auto', (e: ThreeEvent<PointerEvent>) => {
+  const pointerLeaveHandler = stopPropagation<ThreeEvent<PointerEvent>>(
+    setCursor('auto', (e: ThreeEvent<PointerEvent>) => {
       if (props.onPointerLeave) props.onPointerLeave(e);
     })
   );

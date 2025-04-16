@@ -1,5 +1,15 @@
 import * as THREE from 'three';
 import { EventEmitter } from './EventEmitter';
+import { 
+  disposeMesh, 
+  disposeSceneResources
+} from './memory/ResourceDisposal';
+import { 
+  disposeTexture, 
+  disposeTexturesFromMaterial 
+} from './memory/TextureUtils';
+import { disposeGeometry } from './memory/GeometryUtils';
+import { logger } from './logger';
 
 interface ResourceItem {
   resource: THREE.Object3D | THREE.Material | THREE.Texture | THREE.BufferGeometry;
@@ -14,9 +24,11 @@ interface ResourceManagerOptions {
   logLevel?: 'none' | 'basic' | 'detailed';
 }
 
-type MaterialWithMaps = THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial | THREE.MeshBasicMaterial;
-type TextureWithDispose = THREE.Texture & { dispose: () => void };
-
+/**
+ * 리소스 관리자 클래스
+ * 씬, 머티리얼, 텍스처, 지오메트리와 같은 Three.js 리소스를 관리하고
+ * 일정 시간 사용되지 않은 리소스를 자동으로 처분합니다.
+ */
 export class ResourceManager extends EventEmitter {
   private resources: Map<string, ResourceItem> = new Map();
   private options: Required<ResourceManagerOptions>;
@@ -26,8 +38,8 @@ export class ResourceManager extends EventEmitter {
     super();
     this.resources = new Map();
     this.options = {
-      maxInactiveTime: options.maxInactiveTime || 5 * 60 * 1000,
-      checkInterval: options.checkInterval || 60 * 1000,
+      maxInactiveTime: options.maxInactiveTime || 5 * 60 * 1000, // 기본 5분
+      checkInterval: options.checkInterval || 60 * 1000, // 기본 1분
       logLevel: options.logLevel || 'basic'
     };
     this.cleanupInterval = null;
@@ -36,6 +48,9 @@ export class ResourceManager extends EventEmitter {
 
   /**
    * 리소스 등록
+   * @param id 리소스 식별자
+   * @param resource 관리할 Three.js 리소스
+   * @param type 리소스 유형
    */
   registerResource(
     id: string,
@@ -54,6 +69,7 @@ export class ResourceManager extends EventEmitter {
 
   /**
    * 리소스 사용 시간 업데이트
+   * @param id 리소스 식별자
    */
   updateResourceUsage(id: string): void {
     const item = this.resources.get(id);
@@ -64,6 +80,8 @@ export class ResourceManager extends EventEmitter {
 
   /**
    * 특정 리소스 해제
+   * @param resource 처분할 리소스
+   * @param type 리소스 유형
    */
   private disposeResource(resource: any, type: ResourceItem['type']): void {
     if (!resource) return;
@@ -72,83 +90,35 @@ export class ResourceManager extends EventEmitter {
       switch (type) {
         case 'scene':
           if (resource instanceof THREE.Scene || resource instanceof THREE.Group) {
-            resource.traverse((object: THREE.Object3D) => {
-              if (object instanceof THREE.Mesh) {
-                if (object.geometry) {
-                  object.geometry.dispose();
-                }
-                if (object.material) {
-                  if (Array.isArray(object.material)) {
-                    object.material.forEach((material: THREE.Material) => {
-                      this.disposeMaterial(material);
-                    });
-                  } else {
-                    this.disposeMaterial(object.material);
-                  }
-                }
-              }
+            disposeSceneResources(resource, {
+              logDisposal: this.options.logLevel !== 'none',
+              logLevel: this.options.logLevel,
+              resourceManager: this
             });
           }
           break;
 
         case 'geometry':
           if (resource instanceof THREE.BufferGeometry) {
-            resource.dispose();
+            disposeGeometry(resource);
           }
           break;
 
         case 'material':
           if (resource instanceof THREE.Material) {
-            this.disposeMaterial(resource);
+            disposeTexturesFromMaterial(resource);
+            resource.dispose();
           }
           break;
 
         case 'texture':
           if (resource instanceof THREE.Texture) {
-            resource.dispose();
+            disposeTexture(resource);
           }
           break;
       }
     } catch (error) {
-      console.error(`리소스 해제 중 오류 발생: ${error}`);
-    }
-  }
-
-  /**
-   * Material의 모든 리소스 해제
-   */
-  private disposeMaterial(material: THREE.Material): void {
-    // 구체적인 Material 타입으로 캐스팅
-    const mat = material as MaterialWithMaps;
-    
-    // 기본 텍스처 맵
-    if (mat.map) this.disposeTextureMap(mat.map);
-
-    // PBR 관련 맵
-    if ('metalnessMap' in mat) this.disposeTextureMap(mat.metalnessMap);
-    if ('roughnessMap' in mat) this.disposeTextureMap(mat.roughnessMap);
-    if ('normalMap' in mat) this.disposeTextureMap(mat.normalMap);
-    if ('bumpMap' in mat) this.disposeTextureMap(mat.bumpMap);
-    if ('displacementMap' in mat) this.disposeTextureMap(mat.displacementMap);
-    if ('aoMap' in mat) this.disposeTextureMap(mat.aoMap);
-    if ('emissiveMap' in mat) this.disposeTextureMap(mat.emissiveMap);
-    if ('lightMap' in mat) this.disposeTextureMap(mat.lightMap);
-    if ('alphaMap' in mat) this.disposeTextureMap(mat.alphaMap);
-    if ('envMap' in mat) this.disposeTextureMap(mat.envMap);
-
-    // 기타 맵
-    if ('specularMap' in mat) this.disposeTextureMap(mat.specularMap);
-    if ('gradientMap' in mat) this.disposeTextureMap(mat.gradientMap);
-
-    material.dispose();
-  }
-
-  /**
-   * 텍스처 맵 해제
-   */
-  private disposeTextureMap(map: unknown): void {
-    if (map && typeof map === 'object' && 'dispose' in map) {
-      (map as TextureWithDispose).dispose();
+      logger.error(`리소스 해제 중 오류 발생: ${error}`);
     }
   }
 
@@ -162,17 +132,21 @@ export class ResourceManager extends EventEmitter {
     for (const [id, item] of this.resources.entries()) {
       if (!item.isDisposed && (now - item.lastUsed > this.options.maxInactiveTime)) {
         this.disposeResource(item.resource, item.type);
+        item.isDisposed = true;
         disposedCount++;
       }
     }
 
     if (disposedCount > 0 && this.options.logLevel !== 'none') {
-      console.log(`Cleaned up ${disposedCount} unused resources`);
+      logger.log(`${disposedCount}개의 사용하지 않는 리소스 정리됨`, 'resource');
     }
 
     this.emit('cleanup', { disposedCount });
   }
 
+  /**
+   * 자동 정리 타이머 시작
+   */
   private startCleanupInterval(): void {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
@@ -183,58 +157,77 @@ export class ResourceManager extends EventEmitter {
     }, this.options.checkInterval);
   }
 
+  /**
+   * 수동 리소스 정리 실행
+   */
   public cleanup(): void {
     this.cleanupUnusedResources();
   }
 
+  /**
+   * 모든 리소스 해제 및 관리자 정리
+   */
   public dispose(): void {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
     }
 
+    // 모든 리소스 해제
     this.resources.forEach((item) => {
-      if (item && item.resource) {
+      if (item && !item.isDisposed && item.resource) {
         this.disposeResource(item.resource, item.type);
+        item.isDisposed = true;
       }
     });
-    
+
     this.resources.clear();
     this.emit('disposed');
   }
 
   /**
-   * 모든 리소스를 강제로 즉시 정리
-   * 새로고침 시 메모리 누수 방지용
+   * 모든 리소스 강제 정리
    */
   public forceCleanup(): void {
-    // 모든 리소스 정리
-    const disposedItems: string[] = [];
+    let disposedCount = 0;
 
+    // 모든 리소스 해제
     this.resources.forEach((item, id) => {
-      if (!item.isDisposed) {
+      if (!item.isDisposed && item.resource) {
         this.disposeResource(item.resource, item.type);
         item.isDisposed = true;
-        disposedItems.push(id);
+        disposedCount++;
       }
     });
-    
-    // 정리된 항목 수 기록
-    const disposedCount = disposedItems.length;
-    
-    if (disposedCount > 0) {
-      if (this.options.logLevel !== 'none') {
-        console.log(`강제 정리: ${disposedCount}개 리소스 해제됨`);
-      }
-      
-      this.emit('cleanup', { disposedCount, isForced: true });
+
+    if (disposedCount > 0 && this.options.logLevel !== 'none') {
+      logger.log(`${disposedCount}개의 리소스 강제 정리됨`, 'resource');
     }
-    
-    // Three.js 캐시 비우기 시도
-    if (THREE.Cache && typeof THREE.Cache.clear === 'function') {
-      THREE.Cache.clear();
-    }
+
+    // 정리 이벤트 발생
+    this.emit('forceCleanup', { disposedCount });
   }
 
-  // ... rest of existing code ...
+  /**
+   * 특정 접두사로 시작하는 리소스 정리
+   * @param prefix 정리할 리소스 ID 접두사
+   * @returns 정리된 리소스 수
+   */
+  public disposeResources(prefix: string): number {
+    let disposedCount = 0;
+
+    for (const [id, item] of this.resources.entries()) {
+      if (id.startsWith(prefix) && !item.isDisposed && item.resource) {
+        this.disposeResource(item.resource, item.type);
+        item.isDisposed = true;
+        disposedCount++;
+      }
+    }
+
+    if (disposedCount > 0 && this.options.logLevel !== 'none') {
+      logger.log(`'${prefix}' 접두사를 가진 ${disposedCount}개의 리소스 정리됨`, 'resource');
+    }
+
+    return disposedCount;
+  }
 } 

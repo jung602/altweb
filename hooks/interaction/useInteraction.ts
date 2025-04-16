@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { devLog } from '../../utils/logger';
 import { ANIMATION_CONFIG } from '../../config/animation';
 import { useEventHandlers } from '../interaction/useEventHandlers';
-import { useSpring } from '@react-spring/three';
+import { useSpring, SpringValue, SpringRef } from '@react-spring/three';
+import { ThreeEvent } from '@react-three/fiber';
 
 interface PointerPosition {
   x: number;
@@ -21,8 +22,11 @@ interface UseInteractionOptions {
   setBlurred?: (isBlurred: boolean) => void;
   
   // 회전 관련
-  rotationApi?: any;
-  rotationY?: any;
+  rotationApi?: SpringRef<{
+    rotationX: number;
+    rotationY: number;
+  }>;
+  rotationY?: SpringValue<number>;
   enableRotation?: boolean;
   
   // 마우스 트래킹 관련
@@ -36,9 +40,9 @@ interface UseInteractionOptions {
 }
 
 interface UseInteractionResult {
-  handlePointerDown: (e: any) => void;
-  handlePointerUp: (e: any) => void;
-  handlePointerMove: (e: any) => void;
+  handlePointerDown: (e: ThreeEvent<PointerEvent> | PointerEvent) => void;
+  handlePointerUp: (e: ThreeEvent<PointerEvent> | PointerEvent) => void;
+  handlePointerMove: (e: ThreeEvent<PointerEvent> | PointerEvent) => void;
   isUserInteracting: React.MutableRefObject<boolean>;
   isDragging: boolean;
 }
@@ -148,9 +152,9 @@ export function useInteraction(options: UseInteractionOptions = {}): UseInteract
   // 포인터 이동 이벤트 리스너 등록
   useEffect(() => {
     if (enableRotation) {
-      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointermove', handlePointerMove as (e: PointerEvent) => void);
       return () => {
-        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointermove', handlePointerMove as (e: PointerEvent) => void);
       };
     }
   }, [handlePointerMove, enableRotation]);
@@ -159,10 +163,10 @@ export function useInteraction(options: UseInteractionOptions = {}): UseInteract
   useEffect(() => {
     if (enableMouseTracking) {
       window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('touchmove', handleMouseMove);
+      window.addEventListener('touchmove', handleMouseMove as unknown as (e: TouchEvent) => void);
       return () => {
         window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('touchmove', handleMouseMove);
+        window.removeEventListener('touchmove', handleMouseMove as unknown as (e: TouchEvent) => void);
       };
     }
   }, [handleMouseMove, enableMouseTracking]);

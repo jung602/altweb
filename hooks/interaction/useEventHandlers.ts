@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { devLog } from '../../utils/logger';
+import { ThreeEvent } from '@react-three/fiber';
 
 interface PointerPosition {
   x: number;
@@ -17,6 +18,13 @@ interface UseEventHandlersOptions {
   onBlurChange?: (isBlurred: boolean) => void;
   onClick?: () => void;
 }
+
+// 포인터 이벤트 타입 정의
+type PointerEventWithClientPosition = 
+  | PointerEvent 
+  | MouseEvent 
+  | TouchEvent 
+  | ThreeEvent<PointerEvent>;
 
 /**
  * 기본적인 이벤트 핸들러와 상태 관리를 위한 훅
@@ -115,49 +123,80 @@ export function useEventHandlers({
     }
   }, [onMove]);
 
+  // 이벤트에서 클라이언트 좌표 추출
+  const getClientCoordinates = (e: PointerEventWithClientPosition): { x: number, y: number } | null => {
+    // React Three Fiber의 ThreeEvent인 경우
+    if ('nativeEvent' in e) {
+      return {
+        x: e.clientX || e.nativeEvent.clientX,
+        y: e.clientY || e.nativeEvent.clientY
+      };
+    }
+    // TouchEvent인 경우
+    else if ('touches' in e) {
+      if (e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e.changedTouches && e.changedTouches.length > 0) {
+        return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+      }
+      return null;
+    }
+    // 일반 MouseEvent/PointerEvent인 경우
+    else {
+      return { x: e.clientX, y: e.clientY };
+    }
+  };
+
   // 포인터 다운 이벤트 처리
-  const handlePointerDown = useCallback((e: any) => {
-    e.stopPropagation();
-    const x = e.clientX || e.touches?.[0]?.clientX;
-    const y = e.clientY || e.touches?.[0]?.clientY;
-    startInteraction(x, y);
+  const handlePointerDown = useCallback((e: PointerEventWithClientPosition) => {
+    if ('stopPropagation' in e) {
+      e.stopPropagation();
+    }
+    
+    const coords = getClientCoordinates(e);
+    if (!coords) return;
+    
+    startInteraction(coords.x, coords.y);
   }, [startInteraction]);
 
   // 포인터 업 이벤트 처리
-  const handlePointerUp = useCallback((e: any) => {
-    e.stopPropagation();
+  const handlePointerUp = useCallback((e: PointerEventWithClientPosition) => {
+    if ('stopPropagation' in e) {
+      e.stopPropagation();
+    }
     
     if (!clickStartPosition.current) return;
     
-    const endX = e.clientX || e.changedTouches?.[0]?.clientX;
-    const endY = e.clientY || e.changedTouches?.[0]?.clientY;
+    const coords = getClientCoordinates(e);
+    if (!coords) return;
+    
     const clickDuration = performance.now() - clickStartTime.current;
     
     const moveDistance = Math.sqrt(
-      Math.pow(endX - clickStartPosition.current.x, 2) +
-      Math.pow(endY - clickStartPosition.current.y, 2)
+      Math.pow(coords.x - clickStartPosition.current.x, 2) +
+      Math.pow(coords.y - clickStartPosition.current.y, 2)
     );
 
     // 짧은 시간 내에 적은 움직임이 있었을 때만 클릭으로 처리
     const isClick = clickDuration < clickThreshold && moveDistance < moveThreshold;
-    endInteraction(endX, endY, isClick);
+    endInteraction(coords.x, coords.y, isClick);
   }, [clickThreshold, moveThreshold, endInteraction]);
 
   // 포인터 이동 이벤트 처리
-  const handlePointerMove = useCallback((e: any) => {
+  const handlePointerMove = useCallback((e: PointerEventWithClientPosition) => {
     if (!isUserInteracting.current || !clickStartPosition.current) return;
     
-    const currentX = e.clientX || e.touches?.[0]?.clientX;
-    const currentY = e.clientY || e.touches?.[0]?.clientY;
+    const coords = getClientCoordinates(e);
+    if (!coords) return;
     
     const moveDistance = Math.sqrt(
-      Math.pow(currentX - clickStartPosition.current.x, 2) +
-      Math.pow(currentY - clickStartPosition.current.y, 2)
+      Math.pow(coords.x - clickStartPosition.current.x, 2) +
+      Math.pow(coords.y - clickStartPosition.current.y, 2)
     );
 
     // 일정 거리 이상 움직였을 때는 드래그 시작
     if (moveDistance > moveThreshold) {
-      handleDrag(currentX, currentY);
+      handleDrag(coords.x, coords.y);
     }
   }, [moveThreshold, handleDrag]);
 

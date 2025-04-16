@@ -1,6 +1,15 @@
 /**
- * 통합 설정 내보내기
+ * 설정 시스템 통합 내보내기
+ * 환경별(개발, 테스트, 프로덕션) 설정 관리 시스템
  */
+
+// 환경 설정 관리 시스템 내보내기
+export {
+  getCurrentEnvironment,
+  applyEnvironmentConfig,
+  getEnvironmentValue,
+  getEnvVar
+} from './environment';
 
 // 카메라 관련 설정
 export {
@@ -35,4 +44,18 @@ export {
 } from './model';
 
 // 타입 내보내기
-export * from './types'; 
+export * from './types';
+
+/**
+ * 환경별 설정 사용 예시:
+ * 
+ * import { applyEnvironmentConfig } from './config';
+ * 
+ * const myConfig = applyEnvironmentConfig({
+ *   default: { value: 'default' },
+ *   development: { value: 'dev' },
+ *   production: { value: 'prod' }
+ * });
+ * 
+ * console.log(myConfig.value); // 현재 환경에 따라 'default', 'dev', 또는 'prod'
+ */ 

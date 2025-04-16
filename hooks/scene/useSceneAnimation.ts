@@ -1,4 +1,4 @@
-import { useSpring, SpringValue } from '@react-spring/three';
+import { useSpring, SpringValue, SpringRef } from '@react-spring/three';
 import { useEffect, useMemo, useCallback, useState } from 'react';
 import { debounce } from 'lodash';
 import { ANIMATION_CONFIG } from '../../config/animation';
@@ -13,6 +13,12 @@ interface UseSceneAnimationOptions {
   basePosition: [number, number, number];
 }
 
+// 회전 애니메이션 상태 타입 정의
+interface RotationSpringState {
+  rotationX: number;
+  rotationY: number;
+}
+
 interface UseSceneAnimationResult {
   springs: {
     scale: SpringValue<[number, number, number]>;
@@ -21,7 +27,7 @@ interface UseSceneAnimationResult {
     rotationX: SpringValue<number>;
     rotationY: SpringValue<number>;
   };
-  rotationApi: any;
+  rotationApi: SpringRef<RotationSpringState>;
   responsiveScale: number;
   responsivePosition: [number, number, number];
   debouncedHoverHandler: (hovering: boolean) => void;
@@ -48,7 +54,7 @@ export function useSceneAnimation({
   const responsivePosition = getResponsivePosition(basePosition);
 
   // 회전 애니메이션 스프링
-  const [rotationSpring, rotationApi] = useSpring(() => ({
+  const [rotationSpring, rotationApi] = useSpring<RotationSpringState>(() => ({
     rotationX: 0,
     rotationY: 0,
     config: ANIMATION_CONFIG.SPRING

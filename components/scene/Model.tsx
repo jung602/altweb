@@ -1,4 +1,4 @@
-import React, { memo, useRef, useEffect, useCallback } from 'react';
+import React, { memo, useRef, useEffect, useCallback, forwardRef } from 'react';
 import * as THREE from 'three';
 import { animated } from '@react-spring/three';
 import { OrbitControls } from '@react-three/drei';
@@ -10,11 +10,7 @@ import type { SceneConfig } from '../../types/scene';
 import { useModelRotation, useModelScale, useModelPosition, useModelEmission, useModelOrbitControl } from '../../hooks/model';
 import { useScrollEvents } from '../../hooks/interaction';
 import { ORBIT_CONTROLS_CONFIG } from '../../config/camera';
-
-// OrbitControls의 인스턴스 타입을 any로 지정 (타입 안전성을 희생하고 실용성 추구)
-// 정확한 타입을 사용하려면 @react-three/drei의 내부 타입을 가져와야 하지만,
-// 라이브러리 버전 변경에 따라 깨질 수 있음
-type OrbitControlsType = any;
+import { OrbitControlsType, OrbitControlsInterface } from '../../types/controls/orbitControls';
 
 interface ModelProps {
   sceneConfig: SceneConfig;
@@ -25,7 +21,7 @@ interface ModelProps {
   handlePointerUp: (e: ThreeEvent<PointerEvent>) => void;
   setModelHovered: (isHovered: boolean) => void;
   setBlurred?: (isBlurred: boolean) => void;
-  controlsRef?: React.RefObject<OrbitControlsType>;
+  controlsRef?: React.MutableRefObject<OrbitControlsInterface | null>;
 }
 
 /**
@@ -45,7 +41,7 @@ export const Model = memo(({
   const { getResponsiveScale, getResponsivePosition, width } = useResponsiveDevice();
   const isCurrentModel = index === currentIndex;
   const modelRef = useRef<THREE.Group>(null);
-  const orbitControlsRef = useRef<OrbitControlsType>(null);
+  const orbitControlsRef = useRef<OrbitControlsType | null>(null);
   
   // 회전 로직 커스텀 훅으로 분리
   const { 
@@ -106,13 +102,15 @@ export const Model = memo(({
   });
 
   // OrbitControls가 마운트되면 외부 controlsRef가 있을 경우 해당 정보를 외부 컴포넌트에 전달
-  const handleOrbitControlsRef = useCallback((node: OrbitControlsType) => {
+  const handleOrbitControlsRef = useCallback((node: OrbitControlsType | null) => {
     orbitControlsRef.current = node;
     
-    // 외부 컴포넌트의 ref에 현재 OrbitControls 인스턴스 전달
+    // 외부 컴포넌트의 ref에 현재 OrbitControls 인스턴스의 필요한 메서드만 전달
     if (controlsRef && node) {
-      // @ts-ignore - read-only 속성 문제 우회
-      controlsRef.current = node;
+      controlsRef.current = {
+        reset: () => node.reset(),
+        update: () => node.update()
+      };
     }
   }, [controlsRef]);
 

@@ -128,16 +128,6 @@ export class Logger extends EventEmitter {
   }
   
   /**
-   * 성공 메시지 출력
-   */
-  public success(message: string, condition: boolean = isDev): void {
-    if (this.detailLevel === 'none' || !condition) return;
-    
-    console.log(`%c${message}`, this.styles.success);
-    this.emit('success', { message });
-  }
-  
-  /**
    * 로그 그룹 시작
    */
   public group(title: string, collapsed: boolean = false, condition: boolean = isDev): void {
@@ -159,24 +149,6 @@ export class Logger extends EventEmitter {
     
     console.groupEnd();
     this.emit('groupEnd');
-  }
-  
-  /**
-   * 성능 측정 시작
-   */
-  public startPerformance(label: string, condition: boolean = isDev): void {
-    if (!condition) return;
-    console.time(label);
-    this.emit('perfStart', { label });
-  }
-  
-  /**
-   * 성능 측정 종료
-   */
-  public endPerformance(label: string, condition: boolean = isDev): void {
-    if (!condition) return;
-    console.timeEnd(label);
-    this.emit('perfEnd', { label });
   }
   
   /**
@@ -251,13 +223,6 @@ export function devLog(message: string, level: LogLevel = 'info'): void {
 }
 
 /**
- * 성공 로그 출력 함수 (래퍼)
- */
-export function successLog(message: string, condition: boolean = isDev): void {
-  logger.success(message, condition);
-}
-
-/**
  * 로그 그룹 시작 함수 (래퍼)
  */
 export function startGroup(title: string, condition: boolean = isDev): void {
@@ -269,18 +234,4 @@ export function startGroup(title: string, condition: boolean = isDev): void {
  */
 export function endGroup(condition: boolean = isDev): void {
   logger.groupEnd(condition);
-}
-
-/**
- * 성능 측정 시작 함수 (래퍼)
- */
-export function startPerformance(label: string, condition: boolean = isDev): void {
-  logger.startPerformance(label, condition);
-}
-
-/**
- * 성능 측정 종료 함수 (래퍼)
- */
-export function endPerformance(label: string, condition: boolean = isDev): void {
-  logger.endPerformance(label, condition);
 } 

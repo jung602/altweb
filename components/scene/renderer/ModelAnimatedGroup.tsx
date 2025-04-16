@@ -3,11 +3,11 @@ import { animated, useSpring } from '@react-spring/three';
 import { ThreeEvent } from '@react-three/fiber';
 import { useResponsiveDevice } from '../../../hooks/device';
 import { SceneConfig } from '../../../types/scene';
+import { OrbitControlsType, OrbitControlsInterface } from '../../../types/controls/orbitControls';
 import { Model } from '../Model';
 import { ANIMATION_CONFIG } from '../../../config/animation';
 
-// OrbitControls의 인스턴스 타입을 any로 지정
-type OrbitControlsType = any;
+// OrbitControls 타입 정의는 types/controls/orbitControls.ts로 이동
 
 interface ModelAnimatedGroupProps {
   scenes: SceneConfig[];
@@ -18,7 +18,7 @@ interface ModelAnimatedGroupProps {
   handlePointerUp: (e: ThreeEvent<PointerEvent>) => void;
   setModelHovered: (isHovered: boolean) => void;
   setBlurred: (isBlurred: boolean) => void;
-  modelControlsRefs: {[key: number]: React.RefObject<OrbitControlsType>};
+  modelControlsRefs: {[key: number]: React.RefObject<OrbitControlsType | null>};
 }
 
 /**
@@ -50,7 +50,7 @@ const ModelAnimatedGroup: React.FC<ModelAnimatedGroupProps> = React.memo(({
   });
 
   // 컨트롤러 ref 생성 함수를 useCallback으로 메모이제이션
-  const getOrCreateControlsRef = useCallback((index: number): React.RefObject<OrbitControlsType> => {
+  const getOrCreateControlsRef = useCallback((index: number): React.RefObject<OrbitControlsType | null> => {
     if (!modelControlsRefs[index]) {
       modelControlsRefs[index] = React.createRef();
     }
