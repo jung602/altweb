@@ -22,7 +22,8 @@ export {
 // 렌더러 관련 설정
 export {
   RENDERER_CONFIG,
-  setupRenderer
+  EFFECT_COMPOSER_CONFIG,
+  PIXEL_RATIO
 } from './renderer';
 
 // 씬 관련 설정
