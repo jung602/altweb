@@ -12,4 +12,11 @@ const Product1Page = () => {
   )
 }
 
+// 정적 생성 방식 선택
+export const getStaticProps = async () => {
+  return {
+    props: {},
+  }
+}
+
 export default Product1Page 
