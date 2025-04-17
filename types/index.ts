@@ -38,4 +38,10 @@ export type {
   ResponsiveInfo,
   UseDeviceNavigationOptions,
   UseDeviceNavigationResult
-} from './controls'; 
+} from './controls';
+
+// Rarerow 관련 타입
+export type {
+  RarerowConfig,
+  RarerowModelConfig
+} from './rarerow'; 
