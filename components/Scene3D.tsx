@@ -174,13 +174,16 @@ function Controls() {
 const Scene3D = () => {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [isGrabbing, setIsGrabbing] = useState(false);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   
   useEffect(() => {
     // 초기 크기 설정
     updateSize();
+    updateViewportSize();
     
     // 화면 크기가 변경될 때마다 크기 업데이트
     window.addEventListener('resize', updateSize);
+    window.addEventListener('resize', updateViewportSize);
     
     // 마우스 다운/업 이벤트 리스너
     const handleMouseDown = () => setIsGrabbing(true);
@@ -193,6 +196,7 @@ const Scene3D = () => {
     
     return () => {
       window.removeEventListener('resize', updateSize);
+      window.removeEventListener('resize', updateViewportSize);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('touchstart', handleMouseDown);
@@ -208,8 +212,24 @@ const Scene3D = () => {
     });
   };
 
+  const updateViewportSize = () => {
+    setViewportSize({
+      width: window.innerWidth,
+      height: window.innerHeight
+    });
+  };
+
   return (
-    <div className={`w-screen h-screen bg-white flex items-center justify-center`}>
+    <div 
+      style={{ 
+        width: `${viewportSize.width}px`, 
+        height: `${viewportSize.height}px`,
+        backgroundColor: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
       <div 
         style={{ 
           width: `${size.width}px`, 
@@ -232,7 +252,7 @@ const Scene3D = () => {
             intensity={1}
             castShadow
           />
-                    <directionalLight 
+          <directionalLight 
             position={[-5, 3, 7]} 
             intensity={1}
             castShadow
