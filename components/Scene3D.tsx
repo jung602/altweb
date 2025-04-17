@@ -174,16 +174,14 @@ function Controls() {
 const Scene3D = () => {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [isGrabbing, setIsGrabbing] = useState(false);
-  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     // 초기 크기 설정
     updateSize();
-    updateViewportSize();
     
     // 화면 크기가 변경될 때마다 크기 업데이트
     window.addEventListener('resize', updateSize);
-    window.addEventListener('resize', updateViewportSize);
     
     // 마우스 다운/업 이벤트 리스너
     const handleMouseDown = () => setIsGrabbing(true);
@@ -196,7 +194,6 @@ const Scene3D = () => {
     
     return () => {
       window.removeEventListener('resize', updateSize);
-      window.removeEventListener('resize', updateViewportSize);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('touchstart', handleMouseDown);
@@ -205,30 +202,48 @@ const Scene3D = () => {
   }, []);
   
   const updateSize = () => {
-    const minDimension = Math.min(window.innerWidth, window.innerHeight);
-    setSize({
-      width: minDimension,
-      height: minDimension
-    });
-  };
-
-  const updateViewportSize = () => {
-    setViewportSize({
-      width: window.innerWidth,
-      height: window.innerHeight
-    });
+    if (!containerRef.current) return;
+    
+    const containerWidth = containerRef.current.clientWidth;
+    const containerHeight = containerRef.current.clientHeight;
+    
+    // 화면이 가로모드인지 세로모드인지 확인
+    const isLandscape = containerWidth > containerHeight;
+    
+    if (isLandscape) {
+      // 가로 화면 - 4:3 비율 적용
+      // 높이를 기준으로 4:3 비율의 너비 계산 또는 너비를 기준으로 3:4 비율의 높이 계산
+      const heightBasedWidth = (containerHeight * 4) / 3;
+      const widthBasedHeight = (containerWidth * 3) / 4;
+      
+      // 컨테이너에 맞는 최대 크기 선택
+      if (heightBasedWidth <= containerWidth) {
+        // 높이를 기준으로 너비 결정
+        setSize({
+          width: heightBasedWidth,
+          height: containerHeight
+        });
+      } else {
+        // 너비를 기준으로 높이 결정
+        setSize({
+          width: containerWidth,
+          height: widthBasedHeight
+        });
+      }
+    } else {
+      // 세로 화면 - 1:1 비율 유지
+      const minDimension = Math.min(containerWidth, containerHeight);
+      setSize({
+        width: minDimension,
+        height: minDimension
+      });
+    }
   };
 
   return (
     <div 
-      style={{ 
-        width: `${viewportSize.width}px`, 
-        height: `${viewportSize.height}px`,
-        backgroundColor: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
+      ref={containerRef}
+      className="w-full h-[100dvh] bg-white flex items-center justify-center"
     >
       <div 
         style={{ 
