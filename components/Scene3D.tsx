@@ -7,6 +7,7 @@ import Image from 'next/image'
 
 function RarerowModel() {
   const { scene } = useGLTF('/models/rarerow/1.glb')
+  
   // 모델이 그림자를 받고 생성하도록 설정
   scene.traverse((child) => {
     if (child instanceof THREE.Mesh) {
@@ -109,24 +110,31 @@ function Controls() {
   
   useFrame(() => {
     if (controlsRef.current && !isControlActive && !rotationInactiveRef.current && mouseMoved) {
-      // OrbitControls 제약 내에서 마우스/터치 위치 기반 회전 적용
+      // 현재 카메라 각도 가져오기
+      const currentAzimuth = controlsRef.current.getAzimuthalAngle();
+      const currentPolar = controlsRef.current.getPolarAngle();
+      
+      // 마우스 위치에 따른 상대적 회전 계산 (중앙이 0,0)
+      const azimuthOffset = mousePosition.x * 0.03; // 마우스 X 위치에 따른 방위각 변화량
+      const polarOffset = mousePosition.y * 0.03; // 마우스 Y 위치에 따른 극각 변화량
+      
+      // 제약 범위 설정
       const minAzimuth = -Math.PI / 6;
       const maxAzimuth = Math.PI / 8;
       const minPolar = Math.PI / 2.8;
       const maxPolar = Math.PI * .46;
       
-      // mousePosition 값을 이용해 제약 범위 내에서 회전 계산 (회전 효과 감소)
-      // 0.5 -> 0.2로 변경하여 회전 효과 감소
-      const targetAzimuth = minAzimuth + (mousePosition.x * 0.1 + 0.5) * (maxAzimuth - minAzimuth);
-      const targetPolar = minPolar + (mousePosition.y * 0.1 + 0.5) * (maxPolar - minPolar);
+      // 목표 각도를 현재 각도에 상대적인 오프셋으로 계산
+      let targetAzimuth = currentAzimuth + azimuthOffset;
+      let targetPolar = currentPolar + polarOffset;
+      
+      // 제약 범위 내에 있는지 확인
+      targetAzimuth = THREE.MathUtils.clamp(targetAzimuth, minAzimuth, maxAzimuth);
+      targetPolar = THREE.MathUtils.clamp(targetPolar, minPolar, maxPolar);
       
       // 부드러운 회전을 위해 현재 값에서 목표 값으로 보간
-      const currentAzimuth = controlsRef.current.getAzimuthalAngle();
-      const currentPolar = controlsRef.current.getPolarAngle();
-      
-      // 현재 각도에서 목표 각도로 부드럽게 보간 (더 천천히 변경)
-      const newAzimuth = THREE.MathUtils.lerp(currentAzimuth, targetAzimuth, 0.02); // 0.05 -> 0.03으로 변경
-      const newPolar = THREE.MathUtils.lerp(currentPolar, targetPolar, 0.02); // 0.05 -> 0.03으로 변경
+      const newAzimuth = THREE.MathUtils.lerp(currentAzimuth, targetAzimuth, 0.03);
+      const newPolar = THREE.MathUtils.lerp(currentPolar, targetPolar, 0.03);
       
       // 수동으로 카메라 위치 업데이트
       const phi = newPolar;
@@ -232,9 +240,8 @@ const Scene3D = () => {
           <RarerowModel />
         </Canvas>
         
-        {/* 로고 컨테이너 - 배경 블러 효과 적용 */}
-        <div className="absolute bottom-3 right-3 z-[10000] mix-blend-screen">
-          {/* 로고 링크 - mix-blend-mode: difference 적용 */}
+        {/* 로고 컨테이너 - z-인덱스 9900 (로딩보다 낮게, 캔버스보다 높게) */}
+        <div className="absolute bottom-3 right-3 z-[9900] mix-blend-screen">
           <a 
             href="https://www.altroom3d.com/" 
             target="_blank" 
