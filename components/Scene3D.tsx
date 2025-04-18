@@ -15,140 +15,14 @@ function RarerowModel() {
       child.receiveShadow = true;
     }
   });
-  return <primitive object={scene} scale={.6} position={[-.4, -.55, 1]} rotation={[0,3,0]} />
+  return <primitive object={scene} scale={.6} position={[-.35, -.55, 1]} rotation={[0, (Math.PI * 3) - 0.1 ,0]} />
 }
 
-function Lights() {
-  const lightRef = useRef<THREE.DirectionalLight>(null!)
- /** useHelper(lightRef, THREE.DirectionalLightHelper, 1, 'red') */
-  
-  return (
-    <directionalLight 
-      ref={lightRef}
-      position={[-5, 3, -7]} 
-      intensity={0}
-      castShadow
-    />
-  )
-}
 
 function Controls() {
   const controlsRef = useRef<OrbitControlsImpl>(null!);
-  const { camera, gl } = useThree();
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isControlActive, setIsControlActive] = useState(false);
-  const [mouseMoved, setMouseMoved] = useState(false);
-  const lastMousePosRef = useRef({ x: 0, y: 0 });
-  const rotationInactiveRef = useRef(false);
-  
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent | TouchEvent) => {
-      // 마우스 또는 터치 이벤트 처리
-      let clientX, clientY;
-      
-      if ('touches' in e) {
-        // 터치 이벤트인 경우
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-      } else {
-        // 마우스 이벤트인 경우
-        clientX = (e as MouseEvent).clientX;
-        clientY = (e as MouseEvent).clientY;
-      }
-      
-      // 화면 중앙 기준으로 -1에서 1 사이의 값으로 정규화
-      const x = (clientX / window.innerWidth) * 2 - 1;
-      const y = -(clientY / window.innerHeight) * 2 + 1;
-      
-      // 마우스 움직임 감지 
-      const deltaX = Math.abs(x - lastMousePosRef.current.x);
-      const deltaY = Math.abs(y - lastMousePosRef.current.y);
-      
-      // 일정 임계값 이상 움직였을 때만 마우스 움직임으로 간주
-      if (deltaX > 0.01 || deltaY > 0.01) {
-        setMouseMoved(true);
-        
-        // OrbitControl이 비활성화된 상태에서 마우스가 움직였을 때만 회전 재개
-        if (!isControlActive && rotationInactiveRef.current) {
-          rotationInactiveRef.current = false;
-        }
-      }
-      
-      lastMousePosRef.current = { x, y };
-      setMousePosition({ x, y });
-    };
-    
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchmove', handleMouseMove);
-    
-    // 컨트롤이 동작하는 이벤트를 감지하여 isControlActive 상태 업데이트
-    const handlePointerDown = () => {
-      setIsControlActive(true);
-    };
-    
-    const handlePointerUp = () => {
-      // 일정 시간 후에 컨트롤 비활성화 (드래그 후 관성 효과가 끝난 후)
-      setTimeout(() => {
-        setIsControlActive(false);
-        // 컨트롤이 끝난 직후에는 마우스 위치 기반 회전을 비활성화
-        rotationInactiveRef.current = true;
-        // 마우스 움직임 상태 초기화
-        setMouseMoved(false);
-      }, 500);
-    };
-    
-    window.addEventListener('pointerdown', handlePointerDown);
-    window.addEventListener('pointerup', handlePointerUp);
-    
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchmove', handleMouseMove);
-      window.removeEventListener('pointerdown', handlePointerDown);
-      window.removeEventListener('pointerup', handlePointerUp);
-    };
-  }, [isControlActive]);
   
   useFrame(() => {
-    if (controlsRef.current && !isControlActive && !rotationInactiveRef.current && mouseMoved) {
-      // 현재 카메라 각도 가져오기
-      const currentAzimuth = controlsRef.current.getAzimuthalAngle();
-      const currentPolar = controlsRef.current.getPolarAngle();
-      
-      // 마우스 위치에 따른 상대적 회전 계산 (중앙이 0,0)
-      const azimuthOffset = mousePosition.x * 0.03; // 마우스 X 위치에 따른 방위각 변화량
-      const polarOffset = mousePosition.y * 0.03; // 마우스 Y 위치에 따른 극각 변화량
-      
-      // 제약 범위 설정
-      const minAzimuth = -Math.PI / 6;
-      const maxAzimuth = Math.PI / 8;
-      const minPolar = Math.PI / 2.8;
-      const maxPolar = Math.PI * .46;
-      
-      // 목표 각도를 현재 각도에 상대적인 오프셋으로 계산
-      let targetAzimuth = currentAzimuth + azimuthOffset;
-      let targetPolar = currentPolar + polarOffset;
-      
-      // 제약 범위 내에 있는지 확인
-      targetAzimuth = THREE.MathUtils.clamp(targetAzimuth, minAzimuth, maxAzimuth);
-      targetPolar = THREE.MathUtils.clamp(targetPolar, minPolar, maxPolar);
-      
-      // 부드러운 회전을 위해 현재 값에서 목표 값으로 보간
-      const newAzimuth = THREE.MathUtils.lerp(currentAzimuth, targetAzimuth, 0.03);
-      const newPolar = THREE.MathUtils.lerp(currentPolar, targetPolar, 0.03);
-      
-      // 수동으로 카메라 위치 업데이트
-      const phi = newPolar;
-      const theta = newAzimuth;
-      const radius = 10; // 카메라와 타겟 사이의 거리
-      
-      // 구면 좌표계 -> 데카르트 좌표계 변환
-      camera.position.x = radius * Math.sin(phi) * Math.sin(theta);
-      camera.position.y = radius * Math.cos(phi);
-      camera.position.z = radius * Math.sin(phi) * Math.cos(theta);
-      
-      camera.lookAt(0, 0, 0);
-    }
-    
     if (controlsRef.current) {
       controlsRef.current.update();
     }
@@ -172,17 +46,9 @@ function Controls() {
 }
 
 const Scene3D = () => {
-  const [size, setSize] = useState({ width: 0, height: 0 });
   const [isGrabbing, setIsGrabbing] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    // 초기 크기 설정
-    updateSize();
-    
-    // 화면 크기가 변경될 때마다 크기 업데이트
-    window.addEventListener('resize', updateSize);
-    
     // 마우스 다운/업 이벤트 리스너
     const handleMouseDown = () => setIsGrabbing(true);
     const handleMouseUp = () => setIsGrabbing(false);
@@ -193,64 +59,20 @@ const Scene3D = () => {
     window.addEventListener('touchend', handleMouseUp);
     
     return () => {
-      window.removeEventListener('resize', updateSize);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('touchstart', handleMouseDown);
       window.removeEventListener('touchend', handleMouseUp);
     };
   }, []);
-  
-  const updateSize = () => {
-    if (!containerRef.current) return;
-    
-    const containerWidth = containerRef.current.clientWidth;
-    const containerHeight = containerRef.current.clientHeight;
-    
-    // 화면이 가로모드인지 세로모드인지 확인
-    const isLandscape = containerWidth > containerHeight;
-    
-    if (isLandscape) {
-      // 가로 화면 - 4:3 비율 적용
-      // 높이를 기준으로 4:3 비율의 너비 계산 또는 너비를 기준으로 3:4 비율의 높이 계산
-      const heightBasedWidth = (containerHeight * 4) / 3;
-      const widthBasedHeight = (containerWidth * 3) / 4;
-      
-      // 컨테이너에 맞는 최대 크기 선택
-      if (heightBasedWidth <= containerWidth) {
-        // 높이를 기준으로 너비 결정
-        setSize({
-          width: heightBasedWidth,
-          height: containerHeight
-        });
-      } else {
-        // 너비를 기준으로 높이 결정
-        setSize({
-          width: containerWidth,
-          height: widthBasedHeight
-        });
-      }
-    } else {
-      // 세로 화면 - 1:1 비율 유지
-      const minDimension = Math.min(containerWidth, containerHeight);
-      setSize({
-        width: minDimension,
-        height: minDimension
-      });
-    }
-  };
 
   return (
-    <div 
-      ref={containerRef}
-      className="w-full h-[100dvh] bg-white flex items-center justify-center"
-    >
+    <div className="w-full h-[100dvh] bg-white flex items-center justify-center">
       <div 
+        className="w-full max-h-[100dvh] aspect-[4/3] relative"
         style={{ 
-          width: `${size.width}px`, 
-          height: `${size.height}px`, 
-          position: 'relative',
-          cursor: isGrabbing ? 'grabbing' : 'grab'
+          cursor: isGrabbing ? 'grabbing' : 'grab',
+          maxWidth: 'calc(100dvh * 4 / 3)'
         }}
       >
         <Canvas gl={{ toneMapping: THREE.ACESFilmicToneMapping }} shadows="soft">
@@ -259,9 +81,8 @@ const Scene3D = () => {
             samples={16} 
             focus={0.5} 
           />
-          <PerspectiveCamera makeDefault position={[0,1,10]} fov={10} />
+          <PerspectiveCamera makeDefault position={[0,1,10]} rotation={[0, 0, 0]} fov={10} />
           <Controls />
-          <Lights />
           <directionalLight 
             position={[-5, 3, -7]} 
             intensity={1}
