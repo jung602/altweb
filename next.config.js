@@ -38,7 +38,17 @@ const nextConfig = {
         defaultVendors: {
           test: /[\\/]node_modules[\\/]/,
           name(module) {
-            const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
+            // module.context가 없을 경우 기본값 반환
+            if (!module.context) {
+              return 'vendor';
+            }
+            
+            const packageNameMatch = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/);
+            if (!packageNameMatch || !packageNameMatch[1]) {
+              return 'vendor';
+            }
+            
+            const packageName = packageNameMatch[1];
             if (['three', 'react-three-fiber', '@react-three'].some(pkg => packageName.includes(pkg))) {
               return `vendor.${packageName.replace('@', '')}`;
             }
@@ -112,7 +122,6 @@ const nextConfig = {
     buildActivity: true,
     buildActivityPosition: 'bottom-right',
   },
-  swcMinify: true,
 };
 
 module.exports = nextConfig;

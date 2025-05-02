@@ -46,7 +46,7 @@ function getGLTFLoader(): GLTFLoader {
  * @param component 모델 컴포넌트 타입
  * @returns 모델 파일 경로
  */
-function getModelPath(component: ModelComponentType, isMobile: boolean = false): string {
+export function getModelPath(component: ModelComponentType, isMobile: boolean = false): string {
   const basePath = isMobile ? 
     '/models/main/draco-mobile/' : 
     '/models/main/draco/';
