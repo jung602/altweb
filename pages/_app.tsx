@@ -77,6 +77,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <>
       <Head>
         <title>altroom</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <LoadingScreen isLoading={isLoading} />
       {isClient ? <Component {...pageProps} /> : null}

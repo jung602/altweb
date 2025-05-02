@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { GLTFLoader, GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { ModelComponentType } from '../../types/model';
-import { logger } from '../logger';
+import { logger, devLog } from '../logger';
 import { MODEL_PRELOAD_MAP } from '../../config/model';
 import { disposeSceneResources } from './ResourceDisposal';
 import { Preloader } from './Preloader';
@@ -42,15 +42,25 @@ function getGLTFLoader(): GLTFLoader {
 }
 
 /**
- * 모델 컴포넌트 타입에 따른 경로를 생성합니다.
+ * 모델 경로를 가져옵니다.
  * @param component 모델 컴포넌트 타입
- * @returns 모델 경로
+ * @returns 모델 파일 경로
  */
-export function getModelPath(component: ModelComponentType): string {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-  const modelFolder = 'models';
+function getModelPath(component: ModelComponentType, isMobile: boolean = false): string {
+  const basePath = isMobile ? 
+    '/models/main/draco-mobile/' : 
+    '/models/main/draco/';
   
-  return `${basePath}/${modelFolder}/${component}.glb`;
+  switch (component) {
+    case 'Alt1':
+      return `${basePath}compressed_alt1_draco.glb`;
+    case 'Alt2':
+      return `${basePath}compressed_alt2_draco.glb`;
+    case 'Alt3':
+      return `${basePath}compressed_alt3_draco.glb`;
+    default:
+      return `${basePath}compressed_alt1_draco.glb`;
+  }
 }
 
 /**
@@ -101,57 +111,104 @@ export function cloneScene(source: THREE.Group): THREE.Group {
 }
 
 /**
- * GLTF 모델을 로드합니다.
- * @param component 모델 컴포넌트 타입
- * @param options 추가 로딩 옵션
- * @returns Promise<GLTF>
+ * GLTF 모델을 로드하는 함수
+ * @param componentName 모델 컴포넌트 이름
+ * @param textureOptions 텍스처 옵션
+ * @returns GLTF 객체 Promise
  */
 export async function loadGLTFModel(
-  component: ModelComponentType, 
-  options: any = {}
+  componentName: ModelComponentType, 
+  textureOptions: Record<string, any> = {}
 ): Promise<GLTF> {
-  const modelPath = getModelPath(component);
-  
-  // 캐시에서 모델 찾기
-  if (modelCache.has(modelPath)) {
-    const cachedModel = modelCache.get(modelPath)!;
-    
-    // 새 인스턴스를 반환하여 독립적으로 조작할 수 있게 함
-    const clonedScene = cloneScene(cachedModel.scene);
-    
-    return {
-      ...cachedModel,
-      scene: clonedScene
-    };
+  // 이미 캐시된 모델이 있는지 확인
+  if (modelCache.has(componentName)) {
+    devLog(`캐시된 모델 사용: ${componentName}`, 'debug');
+    return modelCache.get(componentName)!;
   }
   
-  // 로더 가져오기
-  const loader = getGLTFLoader();
+  // 모델 로딩 시작
+  devLog(`모델 로딩 시작: ${componentName}`, 'info');
   
   try {
-    // 모델 로드
-    const gltf = await new Promise<GLTF>((resolve, reject) => {
-      loader.load(
-        modelPath,
-        (gltf) => resolve(gltf),
-        undefined, // onProgress
-        (error) => reject(error)
-      );
+    // 로더 인스턴스 가져오기
+    const loader = getGLTFLoader();
+    
+    // 모델 경로 결정 (모바일/데스크톱)
+    const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const modelPath = getModelPath(componentName, isMobile);
+    
+    // 로드 타임아웃 설정 (30초)
+    const LOAD_TIMEOUT = 30000;
+    
+    // 타임아웃과 로딩을 Promise.race로 경쟁
+    const loadPromise = loader.loadAsync(modelPath);
+    const timeoutPromise = new Promise<GLTF>((_, reject) => {
+      const timeoutId = setTimeout(() => {
+        // 타임아웃 발생 시 훨씬 작은 모델로 폴백
+        devLog(`모델 로딩 타임아웃: ${modelPath}`, 'warn');
+        reject(new Error(`모델 로딩 타임아웃: ${modelPath}`));
+      }, LOAD_TIMEOUT);
+      
+      // 타임아웃 Promise 클리어 함수 (loadPromise가 먼저 완료된 경우 사용)
+      loadPromise.then(() => clearTimeout(timeoutId)).catch(() => clearTimeout(timeoutId));
     });
     
-    // 모델 캐시에 저장
-    modelCache.set(modelPath, gltf);
-    
-    // 프리로드 맵 업데이트
-    if (MODEL_PRELOAD_MAP[component] !== undefined) {
-      MODEL_PRELOAD_MAP[component] = true;
+    // 로딩 또는 타임아웃 중 먼저 완료되는 것 선택
+    try {
+      const gltf = await Promise.race([loadPromise, timeoutPromise]);
+      
+      // 캐시에 저장
+      modelCache.set(componentName, gltf);
+      
+      // 모델 로드 완료 알림
+      devLog(`모델 로드 완료: ${componentName}`, 'debug');
+      
+      return gltf;
+    } catch (error: any) {
+      // 타임아웃 또는 로드 실패시 대체 모델 시도
+      devLog(`대체 모델 로드 시도 중: ${componentName}`, 'warn');
+      
+      // 폴백 모델 로드 시도
+      const fallbackModelPath = getFallbackModelPath(componentName);
+      const fallbackGltf = await loader.loadAsync(fallbackModelPath);
+      
+      // 캐시에 저장
+      modelCache.set(componentName, fallbackGltf);
+      
+      // 성공 알림
+      devLog(`대체 모델 로드 성공: ${componentName}`, 'info');
+      
+      return fallbackGltf;
     }
+  } catch (error: any) {
+    // 에러 로깅
+    devLog(`모델 로드 실패 (${componentName}): ${error.message}`, 'error');
     
-    // 원본 반환
-    return gltf;
-  } catch (error) {
-    logger.error(`모델 로드 에러 (${component}): ${error}`);
+    // 에러 전파
     throw error;
+  }
+}
+
+/**
+ * 폴백용 간소화 모델 경로를 가져옵니다.
+ * @param componentName 모델 컴포넌트 이름
+ * @returns 폴백 모델 경로
+ */
+function getFallbackModelPath(componentName: ModelComponentType): string {
+  // 폴백 모델 경로 결정 (모바일 최적화 버전 사용)
+  const basePath = '/models/main/draco-mobile/';
+  
+  // 폴백 모델은 항상 모바일 최적화 버전 사용
+  switch (componentName) {
+    case 'Alt1':
+      return `${basePath}compressed_alt1_draco_mobile.glb`;
+    case 'Alt2':
+      return `${basePath}compressed_alt2_draco_mobile.glb`;
+    case 'Alt3':
+      return `${basePath}compressed_alt3_draco_mobile.glb`;
+    default:
+      // 기본 폴백 모델 (가장 작은 모델)
+      return `${basePath}compressed_alt2_draco_mobile.glb`;
   }
 }
 

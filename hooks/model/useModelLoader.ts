@@ -1,7 +1,7 @@
 import { useGLTF } from '@react-three/drei';
 import { useCallback, useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { DRACOLoader, KTX2Loader } from 'three-stdlib';
+import { DRACOLoader } from 'three-stdlib';
 import { ModelComponentType, MODEL_COMPONENTS } from '../../types/scene';
 import { MODEL_PRELOAD_MAP } from '../../config/model';
 import { devLog } from '../../utils/logger';
@@ -14,34 +14,7 @@ import {
   SceneOptions
 } from '../../utils/memory';
 import { getModelQualitySetting } from '../../utils/performance';
-
-/**
- * KTX2Loader 싱글톤 관리를 위한 변수
- */
-const globalKTX2Loader = {
-  instance: null as KTX2Loader | null,
-  initialized: false, // 초기화 여부 추적
-  loggedThisSession: false, // 세션 중 로깅 여부 추적
-  initialize: (renderer: THREE.WebGLRenderer) => {
-    if (!globalKTX2Loader.instance) {
-      devLog('KTX2Loader 싱글톤 인스턴스 생성', 'info');
-      const ktx2Loader = new KTX2Loader();
-      ktx2Loader.setTranscoderPath('/basis/');
-      ktx2Loader.detectSupport(renderer);
-      globalKTX2Loader.instance = ktx2Loader;
-      globalKTX2Loader.initialized = true;
-      globalKTX2Loader.loggedThisSession = true;
-      return ktx2Loader;
-    } else {
-      // 이미 초기화된 경우, 중복 로그 방지
-      if (!globalKTX2Loader.loggedThisSession) {
-        devLog('KTX2Loader 싱글톤 인스턴스 재사용', 'debug');
-        globalKTX2Loader.loggedThisSession = true;
-      }
-      return globalKTX2Loader.instance;
-    }
-  }
-};
+import { TextureLoaderManager } from '../../utils/loaders/TextureLoaders';
 
 /**
  * 최적의 텍스처 압축 포맷을 결정하는 함수

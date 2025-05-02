@@ -6,7 +6,7 @@ const repo = process.env.GITHUB_REPOSITORY?.replace(/.*?\//, '') || ''
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    unoptimized: true,
+    unoptimized: false,
   },
   experimental: {
     // 실험적인 기능 제거
@@ -69,7 +69,6 @@ const nextConfig = {
     buildActivity: true,
     buildActivityPosition: 'bottom-right',
   },
-  swcMinify: true, // SWC 미니파이어 사용
 };
 
 module.exports = nextConfig;

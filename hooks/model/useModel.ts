@@ -1,7 +1,7 @@
 import { useGLTF } from '@react-three/drei';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
-import { DRACOLoader, KTX2Loader } from 'three-stdlib';
+import { DRACOLoader } from 'three-stdlib';
 import { ModelComponentType, MODEL_COMPONENTS } from '../../types/scene';
 import { MODEL_PRELOAD_MAP } from '../../config/model';
 import { devLog, startGroup, endGroup, conditionalLog } from '../../utils/logger';
@@ -28,6 +28,7 @@ import {
 } from '../../utils/memory';
 import { useResponsiveDevice } from '../device';
 import { ResourceManager } from '../../utils/ResourceManager';
+import { TextureLoaderManager } from '../../utils/loaders/TextureLoaders';
 
 interface UseModelOptions {
   component: ModelComponentType;
@@ -51,66 +52,6 @@ interface UseModelResult {
 interface ExtendedTextureOptions extends TextureOptimizationOptions {
   onTextureLoad?: (texture: THREE.Texture) => void;
   logInfo?: boolean;
-}
-
-// KTX2Loader 싱글톤 관리를 위한 변수 추가
-const globalKTX2Loader = {
-  instance: null as KTX2Loader | null,
-  initialized: false, // 초기화 여부 추적
-  loggedThisSession: false, // 세션 중 로깅 여부 추적
-  initialize: (renderer: THREE.WebGLRenderer) => {
-    if (!globalKTX2Loader.instance) {
-      devLog('KTX2Loader 싱글톤 인스턴스 생성', 'info');
-      const ktx2Loader = new KTX2Loader();
-      ktx2Loader.setTranscoderPath('/basis/');
-      ktx2Loader.detectSupport(renderer);
-      globalKTX2Loader.instance = ktx2Loader;
-      globalKTX2Loader.initialized = true;
-      globalKTX2Loader.loggedThisSession = true;
-      return ktx2Loader;
-    } else {
-      // 이미 초기화된 경우, 중복 로그 방지
-      if (!globalKTX2Loader.loggedThisSession) {
-        devLog('KTX2Loader 싱글톤 인스턴스 재사용', 'debug');
-        globalKTX2Loader.loggedThisSession = true;
-      }
-      return globalKTX2Loader.instance;
-    }
-  }
-};
-
-// 최적의 텍스처 압축 포맷을 결정하는 함수
-function getOptimalTextureFormat(renderer: THREE.WebGLRenderer): string {
-  const capabilities = renderer.capabilities;
-  const extensions = renderer.extensions;
-  
-  // 성능 우선 모드 추가 (비활성화)
-  const isLowPerformanceMode = false;
-  
-  // macOS (Apple Silicon)
-  if (navigator.platform.includes('Mac') && /arm/i.test(navigator.userAgent)) {
-    if (extensions.get('WEBGL_compressed_texture_astc')) {
-      return 'ASTC';
-    }
-  }
-  
-  // Windows/Linux
-  if (extensions.get('WEBGL_compressed_texture_s3tc')) {
-    return 'S3TC';
-  }
-  
-  // Android
-  if (extensions.get('WEBGL_compressed_texture_etc')) {
-    return 'ETC2';
-  }
-  
-  // iOS
-  if (extensions.get('WEBGL_compressed_texture_pvrtc')) {
-    return 'PVRTC';
-  }
-  
-  // 기본값으로 KTX2 반환 (압축되지 않은 텍스처로 폴백)
-  return 'KTX2';
 }
 
 /**
@@ -192,17 +133,6 @@ export function useModel({
           resourceManagerRef.current.forceCleanup(); // 모든 리소스 강제 정리
         }
         
-        // KTX2Loader 인스턴스 초기화
-        if (globalKTX2Loader.instance) {
-          // @ts-ignore - dispose 메서드가 없을 수 있음
-          if (globalKTX2Loader.instance.dispose) {
-            globalKTX2Loader.instance.dispose();
-          }
-          globalKTX2Loader.instance = null;
-          globalKTX2Loader.initialized = false;
-          globalKTX2Loader.loggedThisSession = false;
-        }
-        
         // 텍스처 최적화 캐시 리셋
         cleanupTextureReferences();
         
@@ -255,25 +185,19 @@ export function useModel({
     dracoLoader.setDecoderConfig({ type: 'js' }); // 웹어셈블리 대신 JS 디코더 사용 (초기 로딩 시간 단축)
     loader.setDRACOLoader(dracoLoader);
 
-    // KTX2 로더 설정 - 싱글톤 패턴 적용
+    // KTX2 로더 설정 - 통합된 TextureLoaderManager 사용
     if (renderer) {
-      // 최적의 텍스처 포맷 결정
-      const optimalFormat = getOptimalTextureFormat(renderer);
+      const textureLoaderManager = TextureLoaderManager.getInstance();
       
-      // 기존 KTX2Loader 인스턴스 재사용
-      const ktx2Loader = globalKTX2Loader.initialize(renderer);
+      // 최적의 텍스처 포맷 결정
+      const optimalFormat = textureLoaderManager.getOptimalTextureFormat(renderer);
+      
+      // KTX2Loader 인스턴스 가져오기
+      const ktx2Loader = textureLoaderManager.initializeKTX2Loader(renderer);
       loader.setKTX2Loader(ktx2Loader);
       
       // 압축 텍스처 지원 여부 확인
-      const capabilities = renderer.capabilities;
-      const extensions = renderer.extensions;
-      const isCompressedTexturesSupported = 
-        capabilities.isWebGL2 && 
-        (extensions.get('WEBGL_compressed_texture_astc') || 
-         extensions.get('WEBGL_compressed_texture_etc') || 
-         extensions.get('WEBGL_compressed_texture_etc1') ||
-         extensions.get('WEBGL_compressed_texture_s3tc') ||
-         extensions.get('WEBGL_compressed_texture_pvrtc'));
+      const isCompressedTexturesSupported = textureLoaderManager.isCompressedTexturesSupported(renderer);
       
       if (!isCompressedTexturesSupported && isDev) {
         devLog(`현재 브라우저는 ${optimalFormat} 압축 텍스처를 지원하지 않습니다. 압축되지 않은 텍스처가 대신 사용될 수 있습니다.`, 'warn');
@@ -281,13 +205,11 @@ export function useModel({
         devLog(`최적의 텍스처 압축 포맷: ${optimalFormat}`, 'info');
       }
       
-      // 세션별 한 번만 로그 출력 (첫 초기화 또는 재사용 시)
-      if (globalKTX2Loader.loggedThisSession) {
-        if (isDev) devLog('KTX2 텍스처 로더가 활성화되었습니다.', 'info');
-        globalKTX2Loader.loggedThisSession = false; // 다음 로그를 방지하기 위해 리셋
+      // 세션별 한 번만 로그 출력
+      if (textureLoaderManager.isInitialized() && isDev) {
+        devLog('KTX2 텍스처 로더가 활성화되었습니다.', 'info');
+        textureLoaderManager.resetLogState(); // 다음 로그를 위해 상태 리셋
       }
-    } else if (isDev) {
-      devLog('렌더러가 제공되지 않아 KTX2 텍스처 로더를 설정할 수 없습니다.', 'warn');
     }
 
     // 로더에 타임아웃 설정 (10초)

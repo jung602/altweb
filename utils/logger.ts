@@ -218,8 +218,26 @@ export function conditionalLog(
 /**
  * 개발 모드 로그 출력 함수 (래퍼)
  */
-export function devLog(message: string, level: LogLevel = 'info'): void {
-  logger.devLog(message, level);
+export function devLog(message: string, type: 'info' | 'warn' | 'error' | 'debug' = 'info', ...args: any[]): void {
+  if (process.env.NODE_ENV !== 'development') return;
+  
+  // 스타일 설정
+  const styles: Record<string, string> = {
+    info: 'color: #2196F3;',
+    warn: 'color: #FF9800; font-weight: bold;',
+    error: 'color: #F44336; font-weight: bold;',
+    debug: 'color: #9E9E9E;',
+    success: 'color: #CDDC39;',
+    bold: 'font-weight: bold;'
+  };
+  
+  const style = styles[type] || styles.info;
+  
+  try {
+    console.log(`%c${message}`, style, ...args);
+  } catch (err) {
+    // 로깅 오류 발생 시 무시
+  }
 }
 
 /**
