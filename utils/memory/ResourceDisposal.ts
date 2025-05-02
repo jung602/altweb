@@ -188,7 +188,10 @@ export function cleanupGLTFModel(
     useGLTF.clear(modelPath);
     logger.log(`GLTF 캐시 정리: ${modelPath}`, 'resource');
   } catch (error) {
-    console.warn('GLTF 캐시 정리 실패:', error);
+    // 개발 환경에서만 경고 로그 출력
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('GLTF 캐시 정리 실패:', error);
+    }
   }
   
   return stats;
@@ -234,6 +237,9 @@ export function forceGlobalMemoryCleanup(): void {
     
     logger.log('전역 메모리 정리 완료', 'resource');
   } catch (error) {
-    console.error('전역 메모리 정리 중 오류 발생:', error);
+    // 개발 환경에서만 오류 로그 출력
+    if (process.env.NODE_ENV === 'development') {
+      console.error('전역 메모리 정리 중 오류 발생:', error);
+    }
   }
 } 

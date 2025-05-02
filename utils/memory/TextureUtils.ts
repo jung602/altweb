@@ -180,7 +180,10 @@ export function disposeTexture(texture: THREE.Texture | null | undefined): numbe
     texture.dispose();
     logger.log(`텍스처 처분: ${texture.name || '이름 없음'} (${memoryEstimate} bytes)`, 'resource');
   } catch (error) {
-    console.error('텍스처 처분 중 오류 발생:', error);
+    // 개발 환경에서만 오류 로그 출력
+    if (process.env.NODE_ENV === 'development') {
+      console.error('텍스처 처분 중 오류 발생:', error);
+    }
   }
   
   return memoryEstimate;

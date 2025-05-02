@@ -74,7 +74,7 @@ export class Logger extends EventEmitter {
    * 일반 로그 출력
    */
   public log(message: string, style: keyof typeof this.styles = 'info', condition: boolean = true): void {
-    if (this.detailLevel === 'none' || !condition) return;
+    if (this.detailLevel === 'none' || !condition || process.env.NODE_ENV !== 'development') return;
     
     console.log(`%c${message}`, this.styles[style] || this.styles.info);
     this.emit('log', { message, style });
@@ -113,7 +113,7 @@ export class Logger extends EventEmitter {
    * 경고 메시지 출력
    */
   public warn(message: string, condition: boolean = true): void {
-    if (this.detailLevel === 'none' || !condition) return;
+    if (this.detailLevel === 'none' || !condition || process.env.NODE_ENV !== 'development') return;
     
     console.warn(`%c${message}`, this.styles.warn);
     this.emit('warning', { message });
@@ -123,6 +123,8 @@ export class Logger extends EventEmitter {
    * 오류 메시지 출력
    */
   public error(message: string): void {
+    if (process.env.NODE_ENV !== 'development') return;
+    
     console.error(`%c${message}`, this.styles.error);
     this.emit('error', { message });
   }
@@ -131,7 +133,7 @@ export class Logger extends EventEmitter {
    * 로그 그룹 시작
    */
   public group(title: string, collapsed: boolean = false, condition: boolean = isDev): void {
-    if (this.detailLevel === 'none' || !condition) return;
+    if (this.detailLevel === 'none' || !condition || process.env.NODE_ENV !== 'development') return;
     
     if (collapsed) {
       console.groupCollapsed(`%c${title}`, this.styles.title);
@@ -145,7 +147,7 @@ export class Logger extends EventEmitter {
    * 로그 그룹 종료
    */
   public groupEnd(condition: boolean = isDev): void {
-    if (this.detailLevel === 'none' || !condition) return;
+    if (this.detailLevel === 'none' || !condition || process.env.NODE_ENV !== 'development') return;
     
     console.groupEnd();
     this.emit('groupEnd');

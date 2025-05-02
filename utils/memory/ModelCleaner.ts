@@ -77,7 +77,10 @@ export function cleanupAndDisposeModel(
       useGLTF.clear(modelPath);
       logger.log(`모델 캐시 제거: ${modelPath}`, 'resource');
     } catch (error) {
-      console.warn(`모델 캐시 제거 실패: ${modelPath}`, error);
+      // 개발 환경에서만 경고 로그 출력
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`모델 캐시 제거 실패: ${modelPath}`, error);
+      }
     }
   }
   

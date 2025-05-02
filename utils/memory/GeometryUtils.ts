@@ -42,7 +42,10 @@ export function disposeGeometry(geometry: THREE.BufferGeometry | null | undefine
     geometry.dispose();
     logger.log(`지오메트리 처분: ${geometry.name || '이름 없음'} (${memoryEstimate} bytes)`, 'resource');
   } catch (error) {
-    console.error('지오메트리 처분 중 오류 발생:', error);
+    // 개발 환경에서만 오류 로그 출력
+    if (process.env.NODE_ENV === 'development') {
+      console.error('지오메트리 처분 중 오류 발생:', error);
+    }
   }
   
   return memoryEstimate;
