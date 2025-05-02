@@ -1,47 +1,66 @@
-import { useRef, useMemo, useEffect } from 'react'
+import { useRef, useMemo, useEffect, useCallback } from 'react'
 import { useThree, useFrame, extend } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Reflector as ThreeReflector } from 'three/examples/jsm/objects/Reflector.js'
 import { optimizeMaterial } from '../../utils/memory'
 import { useResponsiveDevice } from '../../hooks/device'
 import { SceneConfig } from '../../types/scene';
-import { FrontSide, Shape, BufferGeometry, Group, Mesh, Material } from 'three';
+import { FrontSide, Shape, Group, Mesh, Material } from 'three';
 
 interface ReflectorProps {
   config: SceneConfig['reflector'];
   isCurrentModel?: boolean;
 }
 
-// 라운딩된 직사각형 셰이프를 생성하는 함수
+// ThreeReflector 옵션 인터페이스
+interface ReflectorOptions {
+  clipBias?: number;
+  textureWidth?: number;
+  textureHeight?: number;
+  color?: number;
+  blur?: number[];
+  mixBlur?: number;
+  mixStrength?: number;
+  [key: string]: any;
+}
+
+// 라운드 렉트 셰이프 생성 함수
 const createRoundedRectShape = (width: number, height: number, radius: number) => {
-  const shape = new Shape();
-  const w = width / 2;
-  const h = height / 2;
-  const r = radius;
+  const shape = new THREE.Shape();
+  const x = -width / 2;
+  const y = -height / 2;
   
-  // 시작점 (오른쪽 상단 모서리)
-  shape.moveTo(w - r, -h);
-  // 오른쪽 변
-  shape.lineTo(w, -h + r);
-  shape.quadraticCurveTo(w, -h, w - r, -h);
-  // 위쪽 변
-  shape.lineTo(-w + r, -h);
-  shape.quadraticCurveTo(-w, -h, -w, -h + r);
-  // 왼쪽 변
-  shape.lineTo(-w, h - r);
-  shape.quadraticCurveTo(-w, h, -w + r, h);
-  // 아래쪽 변
-  shape.lineTo(w - r, h);
-  shape.quadraticCurveTo(w, h, w, h - r);
-  // 오른쪽 상단 모서리까지 돌아옴
-  shape.lineTo(w, -h + r);
+  shape.moveTo(x, y + radius);
+  shape.lineTo(x, y + height - radius);
+  shape.quadraticCurveTo(x, y + height, x + radius, y + height);
+  shape.lineTo(x + width - radius, y + height);
+  shape.quadraticCurveTo(x + width, y + height, x + width, y + height - radius);
+  shape.lineTo(x + width, y + radius);
+  shape.quadraticCurveTo(x + width, y, x + width - radius, y);
+  shape.lineTo(x + radius, y);
+  shape.quadraticCurveTo(x, y, x, y + radius);
   
   return shape;
 };
 
+// Three.js 네임스페이스에 리플렉터 추가
+extend({ ThreeReflector });
+
 export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = true }) => {
-  const { isMobile } = useResponsiveDevice();
+  const { isMobile, isTablet } = useResponsiveDevice();
+  const cameraRef = useRef(new THREE.Vector3());
+  const reflectorsRef = useRef<THREE.Object3D[]>([]);
+  const { camera } = useThree();
+  const groupRef = useRef<Group>(null);
   
+  // 해상도 최적화 - 디바이스 성능에 따라 리플렉터 해상도 조절
+  const getOptimalResolution = useCallback(() => {
+    if (isMobile) return 256;
+    if (isTablet) return 512;
+    return 1024;
+  }, [isMobile, isTablet]);
+  
+  // 리플렉터 아이템 생성
   const reflectorItems = useMemo(() => {
     if (!config?.enabled) return [];
     
@@ -52,9 +71,12 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
       
       const shape = radius > 0 ? createRoundedRectShape(width, height, radius) : null;
       
-      // overlayOffset과 overlayOpacity 값을 명시적으로 추출
       const overlayOpacity = item.overlayOpacity ?? 0.5;
       const overlayOffset = item.overlayOffset ?? [0, 0, 0];
+      
+      const blur = item.blur ?? [1, 1];
+      const mixBlur = item.mixBlur ?? 0.5;
+      const mixStrength = item.mixStrength ?? 0.5;
       
       return {
         key: `reflector-${index}`,
@@ -64,13 +86,31 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
         radius,
         overlayOpacity,
         overlayOffset,
+        blur,
+        mixBlur,
+        mixStrength,
         ...item
       };
     });
   }, [config?.enabled, config?.items]);
   
-  const groupRef = useRef<Group>(null);
+  // 카메라 이동에 따른 리플렉터 업데이트
+  useFrame(() => {
+    // 카메라 움직임 체크
+    const cameraMoved = !camera.position.equals(cameraRef.current);
+    if (cameraMoved) {
+      cameraRef.current.copy(camera.position);
+      
+      // 리플렉터 업데이트 필요 플래그 설정
+      reflectorsRef.current.forEach(reflector => {
+        if (reflector && (reflector as any).needsUpdate !== undefined) {
+          (reflector as any).needsUpdate = true;
+        }
+      });
+    }
+  });
   
+  // 리플렉터 생성
   useEffect(() => {
     if (!groupRef.current || !config?.enabled || !isCurrentModel) return;
     
@@ -92,30 +132,40 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
       if (mesh.geometry) mesh.geometry.dispose();
     });
     
+    // 리플렉터 배열 초기화
+    reflectorsRef.current = [];
+    
     // 새로운 리플렉터 생성
     reflectorItems.forEach(item => {
       // 지오메트리 생성
       let geometry;
       if (item.radius > 0) {
-        // ExtrudeGeometry 대신 ShapeGeometry 사용하여 두께를 제거
         geometry = new THREE.ShapeGeometry(item.shape as Shape);
       } else {
         geometry = new THREE.PlaneGeometry(item.width, item.height);
       }
       
-      // 디바이스 타입에 따라 해상도 설정
-      const resolution = isMobile ? 512 : 2048;
+      // 해상도 최적화
+      const resolution = getOptimalResolution();
       
-      // 리플렉터 생성 - 바닐라 Three.js Reflector에서 지원하는 속성만 사용
-      const reflector = new ThreeReflector(
-        geometry,
-        {
-          clipBias: item.clipBias ?? 0.1,
-          textureWidth: resolution,
-          textureHeight: resolution,
-          color: item.color ? new THREE.Color(item.color).getHex() : 0x202020
-        }
-      );
+      // 리플렉터 생성
+      const reflectorOptions: ReflectorOptions = {
+        clipBias: item.clipBias ?? 0.1,
+        textureWidth: resolution,
+        textureHeight: resolution,
+        color: item.color ? new THREE.Color(item.color).getHex() : 0x202020
+      };
+      
+      const reflector = new ThreeReflector(geometry, reflectorOptions);
+      
+      // 속성 추가
+      try {
+        if (item.blur) (reflector as any).blur = item.blur;
+        if (item.mixBlur) (reflector as any).mixBlur = item.mixBlur;
+        if (item.mixStrength) (reflector as any).mixStrength = item.mixStrength;
+      } catch (e) {
+        // 에러 무시
+      }
       
       // 리플렉터 속성 설정
       reflector.position.set(
@@ -135,23 +185,23 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
       
       reflector.userData.isReflector = true;
       
-      // 모든 리플렉터의 그림자 비활성화
+      // 그림자 비활성화
       reflector.castShadow = false;
       reflector.receiveShadow = false;
       
-      // 리플렉터의 재질 최적화
+      (reflector as any).needsUpdate = false;
+      
+      // 재질 최적화
       if (reflector.material) {
         if (Array.isArray(reflector.material)) {
           reflector.material.forEach(material => {
-            // 투명도 설정 추가
             material.transparent = true;
-            material.opacity = 0.3; // 투명도 값 조정 (0-1 사이 값)
+            material.opacity = 0.3;
             optimizeMaterial(material, { isMobile });
           });
         } else {
-          // 투명도 설정 추가
           reflector.material.transparent = true;
-          reflector.material.opacity = 0.3; // 투명도 값 조정 (0-1 사이 값)
+          reflector.material.opacity = 0.3;
           optimizeMaterial(reflector.material, { isMobile });
         }
       }
@@ -159,36 +209,29 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
       // 그룹에 추가
       groupRef.current?.add(reflector);
       
-      // overlayOpacity가 0인 경우 오버레이 매쉬를 생성하지 않음
+      // 참조 배열에 추가
+      reflectorsRef.current.push(reflector);
+      
+      // 오버레이 생성
       if (item.overlayOpacity !== 0) {
-        // 검은색 면 메쉬 생성 (리플렉터와 동일한 지오메트리 사용)
         const clonedGeometry = geometry.clone();
         
-        // 검은색 재질 생성
         const overlayMaterial = new THREE.MeshBasicMaterial({
           color: 0x000000,
           transparent: true,
-          opacity: item.overlayOpacity ?? 0.5, // 기본 불투명도, 설정값이 있으면 해당 값 사용
+          opacity: item.overlayOpacity ?? 0.5,
           side: FrontSide
         });
         
-        // 오버레이 메쉬 생성
         const overlay = new THREE.Mesh(clonedGeometry, overlayMaterial);
         
-        // 오버레이 위치 설정 - 리플렉터와 동일하게 또는 오프셋 적용
         const overlayOffsetX = item.overlayOffset?.[0] ?? 0;
         const overlayOffsetY = item.overlayOffset?.[1] ?? 0;
         const overlayOffsetZ = item.overlayOffset?.[2] ?? 0;
         
-        // offset 값 로그 출력
-        console.log(`오버레이 ${item.key} 오프셋:`, overlayOffsetX, overlayOffsetY, overlayOffsetZ);
-        
-        // 위치 설정 시 오프셋 적용
         const posX = item.position[0] + overlayOffsetX;
         const posY = item.position[1] + overlayOffsetY;
         const posZ = item.position[2] + overlayOffsetZ;
-        
-        console.log(`오버레이 ${item.key} 위치:`, posX, posY, posZ);
         
         overlay.position.set(posX, posY, posZ);
         
@@ -204,26 +247,15 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
         
         overlay.userData.isReflectorOverlay = true;
         
-        // 오버레이의 그림자 비활성화
         overlay.castShadow = false;
         overlay.receiveShadow = false;
         
-        // 그룹에 추가
         groupRef.current?.add(overlay);
       }
     });
-    
-    console.log('리플렉터 항목 다시 생성됨:', reflectorItems.length);
-  }, [reflectorItems, isCurrentModel, isMobile]);
+  }, [reflectorItems, isCurrentModel, isMobile, isTablet, getOptimalResolution]);
   
-  // 콘솔에 현재 reflectorItems 값 출력
-  useEffect(() => {
-    if (config?.enabled && reflectorItems.length > 0) {
-      console.log('Current reflectorItems:', reflectorItems);
-    }
-  }, [reflectorItems, config?.enabled]);
-  
-  // Move the condition check here, after all hooks
+  // 조건부 렌더링
   if (!isCurrentModel || !config?.enabled) return null;
   
   return <group ref={groupRef} />;

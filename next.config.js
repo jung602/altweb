@@ -7,6 +7,8 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     unoptimized: false,
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
   },
   experimental: {
     // 실험적인 기능 제거
@@ -27,6 +29,25 @@ const nextConfig = {
         publicPath: isGithubActions ? `/${repo}/` : '/',
       }
     });
+
+    config.optimization.splitChunks = {
+      chunks: 'all',
+      maxInitialRequests: 25,
+      minSize: 20000,
+      cacheGroups: {
+        defaultVendors: {
+          test: /[\\/]node_modules[\\/]/,
+          name(module) {
+            const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
+            if (['three', 'react-three-fiber', '@react-three'].some(pkg => packageName.includes(pkg))) {
+              return `vendor.${packageName.replace('@', '')}`;
+            }
+            return 'vendor';
+          },
+          priority: 10,
+        },
+      }
+    };
 
     return config;
   },
@@ -57,6 +78,28 @@ const nextConfig = {
           {
             key: 'X-Frame-Options',
             value: 'ALLOW-FROM *'
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, stale-while-revalidate=86400'
+          }
+        ]
+      },
+      {
+        source: '/(.*).(jpg|jpeg|png|gif|ico|svg|webp|avif|woff|woff2|ttf|eot)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
+          }
+        ]
+      },
+      {
+        source: '/(.*).(js|css)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
           }
         ]
       }
@@ -69,6 +112,7 @@ const nextConfig = {
     buildActivity: true,
     buildActivityPosition: 'bottom-right',
   },
+  swcMinify: true,
 };
 
 module.exports = nextConfig;

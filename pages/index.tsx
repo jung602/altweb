@@ -4,35 +4,33 @@ import dynamic from 'next/dynamic';
 import localFont from "next/font/local";
 import Image from 'next/image';
 import { useEffect } from 'react';
-import { Navigation } from '../components/layout/Nav';
+import LoadingScreen from '@/components/ui/LoadingScreen';
+import { Navigation } from '@/components/layout/Nav';
 
-// 로딩 컴포넌트 추가
-const LoadingScreen = () => (
-  <div className="fixed inset-0 flex items-center justify-center bg-black z-50">
-    <div className="flex flex-col items-center">
-      <div className="w-16 h-16 border-4 border-t-white border-opacity-20 rounded-full animate-spin"></div>
-    </div>
-  </div>
-);
-
+// 필수가 아닌 컴포넌트는 지연 로딩
 const UnifiedScene = dynamic(
   () => import('../components/scene/UnifiedScene'),
   { 
     ssr: false,
-    loading: () => <LoadingScreen />
+    loading: () => <LoadingScreen isLoading={true} />
   }
 );
 
+// 폰트 최적화 - display 속성 추가
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
   weight: "100 900",
+  display: 'swap', // 폰트 로딩 중 시스템 폰트로 대체
+  preload: true,
 });
 
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
+  display: 'swap', // 폰트 로딩 중 시스템 폰트로 대체
+  preload: true,
 });
 
 export default function Home() {
