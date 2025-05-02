@@ -23,12 +23,15 @@ export const Navigation = ({}: NavigationProps) => {
         >
           INFO
         </button>
-        <button 
-          onClick={() => setIndexView(!isIndexView)}
-          className="bg-slate-100 hover:bg-slate-100/50 rounded-[50px] text-slate-800 no-underline shadow-[0px_4px_10px_rgba(0,0,0,0.1)] text-center leading-[15px] px-2 py-[7px] font-geist-sans text-xs hover:bg-gray-50 transition-colors"
-        >
-          {isIndexView ? 'BACK' : 'INDEX'}
-        </button>
+        <div className="relative">
+          <button 
+            disabled
+            className="bg-slate-100 rounded-[50px] text-slate-800 no-underline shadow-[0px_4px_10px_rgba(0,0,0,0.1)] text-center leading-[15px] px-2 py-[7px] font-geist-sans text-xs opacity-50 cursor-not-allowed"
+            aria-label="Feature not available"
+          >
+            INDEX
+          </button>
+        </div>
       </nav>
     </>
   );
