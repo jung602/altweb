@@ -6,9 +6,21 @@ import Image from 'next/image';
 import { useEffect } from 'react';
 import { Navigation } from '../components/layout/Nav';
 
+// 로딩 컴포넌트 추가
+const LoadingScreen = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-black z-50">
+    <div className="flex flex-col items-center">
+      <div className="w-16 h-16 border-4 border-t-white border-opacity-20 rounded-full animate-spin"></div>
+    </div>
+  </div>
+);
+
 const UnifiedScene = dynamic(
   () => import('../components/scene/UnifiedScene'),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => <LoadingScreen />
+  }
 );
 
 const geistSans = localFont({

@@ -1,13 +1,16 @@
 import React from 'react';
 import { Canvas } from '@react-three/fiber';
-import * as THREE from 'three';
 import { CanvasConfig, CameraConfig } from '../../../config/types';
 import { setupRenderer } from '../../../config/renderer/index';
 
+/**
+ * 씬 캔버스 컴포넌트
+ * 3D 씬을 렌더링하기 위한 캔버스 및 카메라 설정
+ */
 interface SceneCanvasProps {
-  children: React.ReactNode;
   cameraConfig: CameraConfig;
   canvasConfig: CanvasConfig;
+  children: React.ReactNode;
   className?: string;
 }
 
@@ -27,6 +30,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({
         style={{ width: '100%', height: '100%' }}
         camera={cameraConfig}
         gl={canvasConfig.gl}
+        dpr={[1, 2]} // 기본 해상도 설정
         onCreated={({ gl }) => {
           setupRenderer(gl);
         }}

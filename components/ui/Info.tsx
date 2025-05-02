@@ -51,9 +51,7 @@ const Info = ({ isOpen, onClose }: InfoProps) => {
         <div className='pt-14 md:pt-16 grid grid-cols-1 leading-5 md:grid-cols-2 items-end bg-slate-100/80 shadow-[0px_4px_10px_rgba(0,0,0,0.1)] p-2 rounded text-base font-geist-sans text-slate-800'>
           <div>
             <p>
-            Altroom brings real spaces into the digital realm through digital twins, faithfully recreating their essence.
-            It’s not just about replication. Altroom captures the unique characteristics of each space and reimagine its possibilities from a fresh perspective.
-            Experiments with reality in the digital realm, seeking out untapped possibilities within the familiar.
+            Altroom transforms real spaces into immersive digital twins, not merely replicating but reimagining them with a human-centered lens. By blending AI and 3D design, Altroom explores new narratives within familiar environments—seeking emotional depth, spatial nuance, and untapped possibilities in the digital realm.
             </p>
           </div>
             <div className='flex md:flex-col cursor-pointer mt-4 ml-0 md:mt-0 md:ml-3'>

@@ -5,11 +5,11 @@ const repo = process.env.GITHUB_REPOSITORY?.replace(/.*?\//, '') || ''
 
 const nextConfig = {
   reactStrictMode: true,
-  output: 'export',
   images: {
     unoptimized: true,
   },
   experimental: {
+    // 실험적인 기능 제거
   },
   assetPrefix: isGithubActions ? `/${repo}/` : '',
   basePath: isGithubActions ? `/${repo}` : '',
@@ -61,7 +61,15 @@ const nextConfig = {
         ]
       }
     ]
-  }
+  },
+  compress: true, // 압축 활성화
+  poweredByHeader: false, // 'X-Powered-By' 헤더 비활성화
+  productionBrowserSourceMaps: false, // 프로덕션용 소스맵 비활성화 (성능 향상)
+  devIndicators: {
+    buildActivity: true,
+    buildActivityPosition: 'bottom-right',
+  },
+  swcMinify: true, // SWC 미니파이어 사용
 };
 
 module.exports = nextConfig;

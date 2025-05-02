@@ -84,6 +84,9 @@ function getOptimalTextureFormat(renderer: THREE.WebGLRenderer): string {
   const capabilities = renderer.capabilities;
   const extensions = renderer.extensions;
   
+  // 성능 우선 모드 추가 (비활성화)
+  const isLowPerformanceMode = false;
+  
   // macOS (Apple Silicon)
   if (navigator.platform.includes('Mac') && /arm/i.test(navigator.userAgent)) {
     if (extensions.get('WEBGL_compressed_texture_astc')) {
@@ -249,6 +252,7 @@ export function useModel({
     // Draco 로더 설정
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
+    dracoLoader.setDecoderConfig({ type: 'js' }); // 웹어셈블리 대신 JS 디코더 사용 (초기 로딩 시간 단축)
     loader.setDRACOLoader(dracoLoader);
 
     // KTX2 로더 설정 - 싱글톤 패턴 적용
@@ -286,8 +290,25 @@ export function useModel({
       devLog('렌더러가 제공되지 않아 KTX2 텍스처 로더를 설정할 수 없습니다.', 'warn');
     }
 
+    // 로더에 타임아웃 설정 (10초)
+    loader.manager.onStart = (url) => {
+      setTimeout(() => {
+        // 10초 이상 로딩이 안 되면 로딩 완료로 간주
+        if (!isNewModelReady) {
+          setIsNewModelReady(true);
+          if (onLoad) onLoad();
+          if (isDev) devLog(`모델 로딩 타임아웃: ${url}`, 'warn');
+        }
+      }, 10000);
+    };
+
     loader.manager.onError = (url) => {
       devLog(`텍스처 로드 에러: ${url}`, 'error');
+      // 에러가 발생해도 모델 로딩을 차단하지 않도록 함
+      if (!isNewModelReady) {
+        setIsNewModelReady(true);
+        if (onLoad) onLoad();
+      }
       if (onError) onError(url);
     };
 
@@ -306,6 +327,9 @@ export function useModel({
 
     // 씬의 회전 초기화
     currentScene.rotation.set(0, 0, 0);
+    
+    // 메모리 사용량 최적화를 위한 플래그 (비활성화)
+    const isLowPerformanceMode = false;
     
     // 각 메시 초기화 및 최적화
     currentScene.traverse((child: THREE.Object3D) => {
@@ -356,6 +380,7 @@ export function useModel({
     // 텍스처 최적화 설정
     const textureOptions: ExtendedTextureOptions = {
       logInfo: isDev,
+      anisotropy: 4,
       onTextureLoad: (texture: THREE.Texture) => {
         resourceManager.registerResource(
           `${component}_texture_${texture.uuid}`,
