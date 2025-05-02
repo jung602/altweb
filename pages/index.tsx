@@ -64,7 +64,8 @@ export default function Home() {
           width={54}
           height={54}
           priority
-          className="w-auto h-[48px]"
+          className="w-auto h-[48px] cursor-pointer"
+          onClick={() => window.location.reload()}
         />
       </div>
 

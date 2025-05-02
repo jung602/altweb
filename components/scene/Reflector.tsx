@@ -1,5 +1,5 @@
 import { useRef, useMemo, useEffect, useCallback } from 'react'
-import { useThree, useFrame, extend } from '@react-three/fiber'
+import { useThree, extend } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Reflector as ThreeReflector } from 'three/examples/jsm/objects/Reflector.js'
 import { optimizeMaterial } from '../../utils/memory'
@@ -48,7 +48,6 @@ extend({ ThreeReflector });
 
 export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = true }) => {
   const { isMobile, isTablet } = useResponsiveDevice();
-  const cameraRef = useRef(new THREE.Vector3());
   const reflectorsRef = useRef<THREE.Object3D[]>([]);
   const { camera } = useThree();
   const groupRef = useRef<Group>(null);
@@ -94,23 +93,7 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
     });
   }, [config?.enabled, config?.items]);
   
-  // 카메라 이동에 따른 리플렉터 업데이트
-  useFrame(() => {
-    // 카메라 움직임 체크
-    const cameraMoved = !camera.position.equals(cameraRef.current);
-    if (cameraMoved) {
-      cameraRef.current.copy(camera.position);
-      
-      // 리플렉터 업데이트 필요 플래그 설정
-      reflectorsRef.current.forEach(reflector => {
-        if (reflector && (reflector as any).needsUpdate !== undefined) {
-          (reflector as any).needsUpdate = true;
-        }
-      });
-    }
-  });
-  
-  // 리플렉터 생성
+  // 리플렉터 생성 - useFrame 제거
   useEffect(() => {
     if (!groupRef.current || !config?.enabled || !isCurrentModel) return;
     
@@ -189,8 +172,6 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
       reflector.castShadow = false;
       reflector.receiveShadow = false;
       
-      (reflector as any).needsUpdate = false;
-      
       // 재질 최적화
       if (reflector.material) {
         if (Array.isArray(reflector.material)) {
@@ -253,7 +234,33 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
         groupRef.current?.add(overlay);
       }
     });
-  }, [reflectorItems, isCurrentModel, isMobile, isTablet, getOptimalResolution]);
+    
+    // 카메라 이동 이벤트 핸들러 - 별도 함수로 분리
+    const handleCameraMove = () => {
+      if (!isCurrentModel || !config?.enabled || reflectorsRef.current.length === 0) return;
+      
+      reflectorsRef.current.forEach(reflector => {
+        if (reflector && (reflector as any).needsUpdate !== undefined) {
+          (reflector as any).needsUpdate = true;
+        }
+      });
+    };
+    
+    // 씬 렌더링할 때 이벤트 등록
+    const renderer = THREE.WebGLRenderer.prototype;
+    if (renderer.render) {
+      const originalRender = renderer.render;
+      renderer.render = function(...args) {
+        handleCameraMove();
+        return originalRender.apply(this, args);
+      };
+    }
+    
+    // 정리 함수 - 이벤트 제거
+    return () => {
+      renderer.render = THREE.WebGLRenderer.prototype.render;
+    };
+  }, [reflectorItems, isCurrentModel, isMobile, isTablet, getOptimalResolution, config?.enabled]);
   
   // 조건부 렌더링
   if (!isCurrentModel || !config?.enabled) return null;
