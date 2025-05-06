@@ -2,12 +2,10 @@ import { useState } from 'react';
 import { useSceneStore } from '../../store/sceneStore';
 import Info from '../ui/Info';
 
-interface NavigationProps {}
+interface NavProps {}
 
-export const Navigation = ({}: NavigationProps) => {
+export const Nav = ({}: NavProps) => {
   const isExpanded = useSceneStore((state) => state.isExpanded);
-  const setIndexView = useSceneStore((state) => state.setIndexView);
-  const isIndexView = useSceneStore((state) => state.isIndexView);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
   if (isExpanded) return null;

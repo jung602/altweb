@@ -2,36 +2,14 @@ import { useSceneStore } from '../../store/sceneStore';
 import { MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-
-const useWindowSize = () => {
-  const [windowSize, setWindowSize] = useState({
-    width: 0,
-    height: 0,
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  return windowSize;
-};
+import { useResponsiveDevice } from '../../hooks/device';
 
 export const IndexView = () => {
   const scenes = useSceneStore((state) => state.scenes);
   const setCurrentScene = useSceneStore((state) => state.setCurrentScene);
   const isIndexView = useSceneStore((state) => state.isIndexView);
   const setExpanded = useSceneStore((state) => state.setExpanded);
-  const { width } = useWindowSize();
+  const { width } = useResponsiveDevice();
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {

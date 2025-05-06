@@ -5,10 +5,6 @@ import { ArrowRight, ArrowLeft } from 'lucide-react';
 
 export const LabelNavigation = () => {
   const isExpanded = useSceneStore((state) => state.isExpanded);
-  const isLabelsVisible = useSceneStore((state) => state.isLabelsVisible);
-  const areLabelsOpen = useSceneStore((state) => state.areLabelsOpen);
-  const setLabelsVisible = useSceneStore((state) => state.setLabelsVisible);
-  const setLabelsOpen = useSceneStore((state) => state.setLabelsOpen);
   const scenes = useSceneStore((state) => state.scenes);
   const currentIndex = useSceneStore((state) => state.currentIndex);
   const setCurrentScene = useSceneStore((state) => state.setCurrentScene);

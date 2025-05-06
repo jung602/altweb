@@ -13,9 +13,6 @@ export default function Document() {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         
-        {/* 중요 CSS 파일 미리 로드 */}
-        <link rel="preload" href="/styles/globals.css" as="style" />
-        
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:title" content="altroom" />

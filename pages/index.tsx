@@ -5,7 +5,7 @@ import localFont from "next/font/local";
 import Image from 'next/image';
 import { useEffect } from 'react';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import { Navigation } from '@/components/layout/Nav';
+import { Nav } from '@/components/layout/Nav';
 
 // 필수가 아닌 컴포넌트는 지연 로딩
 const UnifiedScene = dynamic(
@@ -69,7 +69,7 @@ export default function Home() {
         />
       </div>
 
-      <Navigation />
+      <Nav />
       
       <div className="w-full h-screen absolute inset-0 bg-black">
         <UnifiedScene />
