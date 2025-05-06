@@ -6,11 +6,10 @@
 import * as THREE from 'three';
 import { GLTFLoader, GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { ModelComponentType } from '../../types/model';
+import { ModelComponentType, MODEL_COMPONENTS } from '../../types/model';
 import { logger, devLog } from '../logger';
 import { MODEL_PRELOAD_MAP } from '../../config/model';
 import { disposeSceneResources } from './ResourceDisposal';
-import { Preloader } from './Preloader';
 
 // GLTF 로더 캐시
 let gltfLoader: GLTFLoader | null = null;
@@ -218,19 +217,21 @@ function getFallbackModelPath(componentName: ModelComponentType): string {
  */
 export function clearModelCache(component?: ModelComponentType): void {
   if (component) {
+    // 특정 컴포넌트 캐시만 삭제
     const modelPath = getModelPath(component);
     modelCache.delete(modelPath);
     
-    // 프리로드 맵 업데이트
-    if (MODEL_PRELOAD_MAP[component] !== undefined) {
+    // 프리로드 맵 업데이트 - 실제 맵에 존재하는 키만 처리
+    if (Object.prototype.hasOwnProperty.call(MODEL_PRELOAD_MAP, component)) {
       MODEL_PRELOAD_MAP[component] = false;
     }
     
     logger.log(`모델 캐시 지움: ${component}`, 'resource');
   } else {
+    // 전체 캐시 삭제
     modelCache.clear();
     
-    // 프리로드 맵 초기화
+    // 프리로드 맵 초기화 - 모든 모델을 false로 설정
     Object.keys(MODEL_PRELOAD_MAP).forEach(key => {
       MODEL_PRELOAD_MAP[key as ModelComponentType] = false;
     });
@@ -244,11 +245,27 @@ export function clearModelCache(component?: ModelComponentType): void {
  * @param components 사전 로드할 모델 컴포넌트 목록
  */
 export async function preloadModels(components: ModelComponentType[]): Promise<void> {
-  // Preloader를 사용하여 모델 프리로드
-  const preloader = Preloader.getInstance();
-  preloader.enqueueModels(components);
-
-  logger.log(`${components.length}개 모델 프리로더에 등록됨`, 'resource');
+  // 중복 제거와 유효한 컴포넌트만 필터링
+  const uniqueValidComponents = [...new Set(components)].filter(comp => 
+    MODEL_COMPONENTS.includes(comp) && !MODEL_PRELOAD_MAP[comp]
+  );
+  
+  if (uniqueValidComponents.length === 0) return;
+  
+  logger.log(`${uniqueValidComponents.length}개 모델 프리로드 시작`, 'resource');
+  
+  // 각 모델 순차적으로 로드
+  for (const component of uniqueValidComponents) {
+    try {
+      await loadGLTFModel(component);
+      MODEL_PRELOAD_MAP[component] = true;
+      logger.log(`모델 프리로드 완료: ${component}`, 'resource');
+    } catch (error) {
+      logger.log(`모델 프리로드 실패: ${component} - ${error}`, 'error');
+    }
+  }
+  
+  logger.log(`모델 프리로드 완료`, 'resource');
 }
 
 /**
@@ -257,6 +274,11 @@ export async function preloadModels(components: ModelComponentType[]): Promise<v
  * @returns 로드 여부
  */
 export function isModelLoaded(component: ModelComponentType): boolean {
+  // 모델 컴포넌트가 유효한지 확인
+  if (!MODEL_COMPONENTS.includes(component)) {
+    return false;
+  }
+  
   return MODEL_PRELOAD_MAP[component] === true;
 }
 

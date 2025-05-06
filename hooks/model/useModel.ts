@@ -158,24 +158,33 @@ export function useModel({
 
   // 다음 모델 프리로드
   const preloadNextModel = useCallback(async () => {
-    if (!hasPreloaded.current && !MODEL_PRELOAD_MAP[component]) {
+    // 이미 프리로드 완료되었거나 이미 프리로드 맵에 있는 경우 건너뛰기
+    if (hasPreloaded.current || MODEL_PRELOAD_MAP[component]) {
+      return;
+    }
+    
+    try {
+      // 현재 인덱스 기반으로 다음 모델 결정
       const currentIndex = MODEL_COMPONENTS.indexOf(component);
       const nextIndex = (currentIndex + 1) % MODEL_COMPONENTS.length;
       const nextComponent = MODEL_COMPONENTS[nextIndex];
       
-      // 다음 모델의 경로도 현재 디바이스 타입에 맞게 설정
-      const nextModelPath = `${basePath}/models/main/${modelFolder}/compressed_${nextComponent.toLowerCase()}${modelSuffix}.glb`;
+      // ModelLoader의 preloadModels 함수 사용
+      const { preloadModels } = await import('../../utils/memory');
+      await preloadModels([nextComponent]);
       
-      try {
-        await useGLTF.preload(nextModelPath);
-        MODEL_PRELOAD_MAP[component] = true;
-        hasPreloaded.current = true;
+      // 상태 업데이트
+      hasPreloaded.current = true;
+      
+      if (isDev) {
         devLog(`다음 모델 프리로드 완료: ${nextComponent}`, 'debug');
-      } catch (error) {
+      }
+    } catch (error) {
+      if (isDev) {
         devLog(`다음 모델 프리로드 실패: ${error}`, 'error');
       }
     }
-  }, [basePath, component, modelFolder, modelSuffix]);
+  }, [component, isDev]);
 
   // GLTF 모델 로드
   const { scene } = useGLTF(modelPath, true, undefined, (loader) => {
@@ -471,8 +480,14 @@ export function useModel({
 
   // 모델 변경 시 프리로드
   useEffect(() => {
-    if (previousScene !== scene && scene) {
-      preloadNextModel();
+    // 현재 모델이 로드되었고 이전과 다른 모델인 경우에만 다음 모델 프리로드
+    if (scene && previousScene !== scene) {
+      // 다음 프레임에서 프리로드 실행 (비차단 방식)
+      const timeoutId = setTimeout(() => {
+        preloadNextModel();
+      }, 0);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [previousScene, scene, preloadNextModel]);
 

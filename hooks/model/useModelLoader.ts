@@ -49,16 +49,18 @@ function getOptimalTextureFormat(renderer: THREE.WebGLRenderer): string {
   return 'KTX2';
 }
 
-interface UseModelLoaderOptions {
+// 옵션 인터페이스
+export interface UseModelLoaderOptions {
   component: ModelComponentType;
-  scene?: Scene;
+  scene?: THREE.Scene;
   autoOptimize?: boolean;
   basePath?: string;
   onLoad?: () => void;
-  onError?: (error: any) => void;
+  onError?: (error: Error) => void;
 }
 
-interface UseModelLoaderResult {
+// 결과 인터페이스
+export interface UseModelLoaderResult {
   model: Group | null;
   isLoading: boolean;
   error: Error | null;
@@ -88,26 +90,6 @@ export function useModelLoader({
   const modelFolder = isUsingMobileModel ? 'draco-mobile' : 'draco';
   const modelSuffix = isUsingMobileModel ? '_mobile_draco' : '_draco';
   const modelPath = `${basePath}/models/main/${modelFolder}/compressed_${component.toLowerCase()}${modelSuffix}.glb`;
-  
-  // 다음 모델 프리로드
-  const preloadNextModel = useCallback(async () => {
-    if (!MODEL_PRELOAD_MAP[component]) {
-      const currentIndex = MODEL_COMPONENTS.indexOf(component);
-      const nextIndex = (currentIndex + 1) % MODEL_COMPONENTS.length;
-      const nextComponent = MODEL_COMPONENTS[nextIndex];
-      
-      // 다음 모델의 경로도 현재 디바이스 타입에 맞게 설정
-      const nextModelPath = `${basePath}/models/main/${modelFolder}/compressed_${nextComponent.toLowerCase()}${modelSuffix}.glb`;
-      
-      try {
-        await useGLTF.preload(nextModelPath);
-        MODEL_PRELOAD_MAP[component] = true;
-        devLog(`다음 모델 프리로드 완료: ${nextComponent}`, 'debug');
-      } catch (error) {
-        devLog(`다음 모델 프리로드 실패: ${error}`, 'error');
-      }
-    }
-  }, [basePath, component, modelFolder, modelSuffix]);
 
   useEffect(() => {
     let isMounted = true;
@@ -138,6 +120,9 @@ export function useModelLoader({
         
         // 모델 최적화 적용
         if (autoOptimize) {
+          // 동적 임포트를 사용하여 최적화 유틸리티 가져오기
+          const { optimizeScene } = await import('../../utils/memory');
+          
           // 모델 텍스처와 물리 속성 최적화
           optimizeScene(modelGroup, { 
             isMobile: modelQuality === 'low',
@@ -178,14 +163,15 @@ export function useModelLoader({
         console.error(`Error loading model ${component}:`, e);
         setError(e instanceof Error ? e : new Error(String(e)));
         setIsLoading(false);
-        if (onError) onError(e);
+        if (onError) onError(e instanceof Error ? e : new Error(String(e)));
       }
     };
 
     // 이미 프리로드된 모델인 경우 로딩 건너뛰기
     if (MODEL_PRELOAD_MAP[component]) {
       setIsLoading(false);
-      // TODO: 캐시에서 모델 가져오기 구현
+      // TODO: 캐시에서 모델 가져오기 구현 - 미래 개선 사항
+      loadModel();
     } else {
       loadModel();
     }

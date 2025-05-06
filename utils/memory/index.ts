@@ -82,9 +82,6 @@ export {
   isModelLoaded
 } from './ModelLoader';
 
-// 프리로더 관련 유틸리티
-export { Preloader } from './Preloader';
-
 // 재질 및 씬 최적화 관련 유틸리티
 export {
   optimizeMaterial,
