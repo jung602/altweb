@@ -1,5 +1,5 @@
 import { useRef, useMemo, useEffect, useCallback } from 'react'
-import { useThree, extend } from '@react-three/fiber'
+import { useFrame, extend } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Reflector as ThreeReflector } from 'three/examples/jsm/objects/Reflector.js'
 import { optimizeMaterial } from '../../utils/memory'
@@ -49,7 +49,6 @@ extend({ ThreeReflector });
 export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = true }) => {
   const { isMobile, isTablet } = useResponsiveDevice();
   const reflectorsRef = useRef<THREE.Object3D[]>([]);
-  const { camera } = useThree();
   const groupRef = useRef<Group>(null);
   
   // 해상도 최적화 - 디바이스 성능에 따라 리플렉터 해상도 조절
@@ -93,7 +92,7 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
     });
   }, [config?.enabled, config?.items]);
   
-  // 리플렉터 생성 - useFrame 제거
+  // 리플렉터 생성
   useEffect(() => {
     if (!groupRef.current || !config?.enabled || !isCurrentModel) return;
     
@@ -235,32 +234,19 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
       }
     });
     
-    // 카메라 이동 이벤트 핸들러 - 별도 함수로 분리
-    const handleCameraMove = () => {
-      if (!isCurrentModel || !config?.enabled || reflectorsRef.current.length === 0) return;
-      
-      reflectorsRef.current.forEach(reflector => {
-        if (reflector && (reflector as any).needsUpdate !== undefined) {
-          (reflector as any).needsUpdate = true;
-        }
-      });
-    };
-    
-    // 씬 렌더링할 때 이벤트 등록
-    const renderer = THREE.WebGLRenderer.prototype;
-    if (renderer.render) {
-      const originalRender = renderer.render;
-      renderer.render = function(...args) {
-        handleCameraMove();
-        return originalRender.apply(this, args);
-      };
-    }
-    
-    // 정리 함수 - 이벤트 제거
-    return () => {
-      renderer.render = THREE.WebGLRenderer.prototype.render;
-    };
+    // 정리 함수 없음 (리플렉터들은 그룹 언마운트 시 정리됨)
+    return () => {};
   }, [reflectorItems, isCurrentModel, isMobile, isTablet, getOptimalResolution, config?.enabled]);
+
+  // 프레임 루프에서 리플렉터 업데이트 플래그 설정 (로컬 범위)
+  useFrame(() => {
+    if (!isCurrentModel || !config?.enabled || reflectorsRef.current.length === 0) return;
+    reflectorsRef.current.forEach(reflector => {
+      if (reflector && (reflector as any).needsUpdate !== undefined) {
+        (reflector as any).needsUpdate = true;
+      }
+    });
+  });
   
   // 조건부 렌더링
   if (!isCurrentModel || !config?.enabled) return null;

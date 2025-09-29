@@ -46,19 +46,30 @@ function getGLTFLoader(): GLTFLoader {
  * @returns 모델 파일 경로
  */
 export function getModelPath(component: ModelComponentType, isMobile: boolean = false): string {
-  const basePath = isMobile ? 
-    '/models/main/draco-mobile/' : 
-    '/models/main/draco/';
-  
+  const basePath = isMobile ? '/models/main/draco-mobile/' : '/models/main/draco/';
+  const suffix = isMobile ? '_mobile_draco' : '_draco';
+
   switch (component) {
     case 'Alt1':
-      return `${basePath}compressed_alt1_draco.glb`;
+      return `${basePath}compressed_alt1${suffix}.glb`;
     case 'Alt2':
-      return `${basePath}compressed_alt2_draco.glb`;
+      return `${basePath}compressed_alt2${suffix}.glb`;
     case 'Alt3':
-      return `${basePath}compressed_alt3_draco.glb`;
+      return `${basePath}compressed_alt3${suffix}.glb`;
+    case 'Alt4':
+      return `${basePath}compressed_alt4${suffix}.glb`;
+    case 'Alt5':
+      return `${basePath}compressed_alt5${suffix}.glb`;
+    case 'Alt6':
+      return `${basePath}compressed_alt6${suffix}.glb`;
+    case 'Alt7':
+      return `${basePath}compressed_alt7${suffix}.glb`;
+    case 'Alt8':
+      return `${basePath}compressed_alt8${suffix}.glb`;
+    case 'Alt9':
+      return `${basePath}compressed_alt9${suffix}.glb`;
     default:
-      return `${basePath}compressed_alt1_draco.glb`;
+      return `${basePath}compressed_alt1${suffix}.glb`;
   }
 }
 
@@ -194,20 +205,31 @@ export async function loadGLTFModel(
  * @returns 폴백 모델 경로
  */
 function getFallbackModelPath(componentName: ModelComponentType): string {
-  // 폴백 모델 경로 결정 (모바일 최적화 버전 사용)
+  // 폴백 모델 경로 결정 (항상 모바일 최적화 버전 사용)
   const basePath = '/models/main/draco-mobile/';
-  
-  // 폴백 모델은 항상 모바일 최적화 버전 사용
+
   switch (componentName) {
     case 'Alt1':
-      return `${basePath}compressed_alt1_draco_mobile.glb`;
+      return `${basePath}compressed_alt1_mobile_draco.glb`;
     case 'Alt2':
-      return `${basePath}compressed_alt2_draco_mobile.glb`;
+      return `${basePath}compressed_alt2_mobile_draco.glb`;
     case 'Alt3':
-      return `${basePath}compressed_alt3_draco_mobile.glb`;
+      return `${basePath}compressed_alt3_mobile_draco.glb`;
+    case 'Alt4':
+      return `${basePath}compressed_alt4_mobile_draco.glb`;
+    case 'Alt5':
+      return `${basePath}compressed_alt5_mobile_draco.glb`;
+    case 'Alt6':
+      return `${basePath}compressed_alt6_mobile_draco.glb`;
+    case 'Alt7':
+      return `${basePath}compressed_alt7_mobile_draco.glb`;
+    case 'Alt8':
+      return `${basePath}compressed_alt8_mobile_draco.glb`;
+    case 'Alt9':
+      return `${basePath}compressed_alt9_mobile_draco.glb`;
     default:
-      // 기본 폴백 모델 (가장 작은 모델)
-      return `${basePath}compressed_alt2_draco_mobile.glb`;
+      // 기본 폴백 모델
+      return `${basePath}compressed_alt2_mobile_draco.glb`;
   }
 }
 
