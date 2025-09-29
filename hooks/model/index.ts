@@ -1,7 +1,5 @@
 // model 관련 hooks 내보내기
-export { useModelPosition } from './useModelPosition';
-export { useModelRotation } from './useModelRotation';
-export { useModelScale } from './useModelScale';
+export { useModelTransform } from './useModelTransform';
 export { useModelVisibility } from './useModelVisibility';
 export { useModelControls } from './useModelControls';
 export { useModelEmission } from './useModelEmission';

@@ -1,7 +1,7 @@
 /**
  * 렌더러 관련 설정 통합 내보내기
  */
-export { DEFAULT_RENDERER_CONFIG } from './default';
+// default.ts는 제거되었습니다. 내보낼 기본 렌더러 설정 없음
 
 // 렌더러 설정 다시 내보내기
 export { RENDERER_CONFIG, EFFECT_COMPOSER_CONFIG, PIXEL_RATIO } from '../renderer';

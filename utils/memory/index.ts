@@ -9,7 +9,6 @@ export * from './MemoryStats';
 export * from './GeometryUtils';
 export * from './TextureUtils';
 export * from './ModelAnalyzer';
-export * from './ModelLoader';
 export * from './MaterialOptimizer';
 export * from './GeometryOptimizer';
 export * from './SceneOptimizer';
@@ -73,14 +72,7 @@ export {
 } from './ModelAnalyzer';
 
 // 모델 로더 관련 유틸리티
-export {
-  loadGLTFModel,
-  clearModelCache,
-  preloadModels,
-  getModelPath,
-  cloneScene,
-  isModelLoaded
-} from './ModelLoader';
+// ModelLoader 유틸은 제거되었습니다 (useGLTF.preload 및 hooks/useModel 경로로 통합)
 
 // 재질 및 씬 최적화 관련 유틸리티
 export {

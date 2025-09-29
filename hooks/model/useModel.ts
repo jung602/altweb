@@ -3,7 +3,6 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
 import { DRACOLoader } from 'three-stdlib';
 import { ModelComponentType, MODEL_COMPONENTS } from '../../types/scene';
-import { MODEL_PRELOAD_MAP } from '../../config/model';
 import { devLog, startGroup, endGroup, conditionalLog } from '../../utils/logger';
 import { 
   optimizeScene,
@@ -83,7 +82,7 @@ export function useModel({
   const [isNewModelReady, setIsNewModelReady] = useState(false);
   const [previousScene, setPreviousScene] = useState<THREE.Group | null>(null);
   const isInitialMount = useRef(true);
-  const hasPreloaded = useRef(false);
+  
   const cleanupRef = useRef<(() => void) | null>(null);
   const memoryStatsRef = useRef<MemoryStats | null>(null);
   const modelAnalysisRef = useRef<any>(null);
@@ -156,42 +155,19 @@ export function useModel({
     }
   }, [checkInterval, isDev]);
 
-  // 다음 모델 프리로드
-  const preloadNextModel = useCallback(async () => {
-    // 이미 프리로드 완료되었거나 이미 프리로드 맵에 있는 경우 건너뛰기
-    if (hasPreloaded.current || MODEL_PRELOAD_MAP[component]) {
-      return;
-    }
-    
-    try {
-      // 현재 인덱스 기반으로 다음 모델 결정
-      const currentIndex = MODEL_COMPONENTS.indexOf(component);
-      const nextIndex = (currentIndex + 1) % MODEL_COMPONENTS.length;
-      const nextComponent = MODEL_COMPONENTS[nextIndex];
-      
-      // ModelLoader의 preloadModels 함수 사용
-      const { preloadModels } = await import('../../utils/memory');
-      await preloadModels([nextComponent]);
-      
-      // 상태 업데이트
-      hasPreloaded.current = true;
-      
-      if (isDev) {
-        devLog(`다음 모델 프리로드 완료: ${nextComponent}`, 'debug');
-      }
-    } catch (error) {
-      if (isDev) {
-        devLog(`다음 모델 프리로드 실패: ${error}`, 'error');
-      }
-    }
-  }, [component, isDev]);
+  // (삭제됨) 커스텀 GLTF 프리로드: useGLTF.preload로 통합
 
   // GLTF 모델 로드
   const { scene } = useGLTF(modelPath, true, undefined, (loader) => {
     // Draco 로더 설정
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
-    dracoLoader.setDecoderConfig({ type: 'js' }); // 웹어셈블리 대신 JS 디코더 사용 (초기 로딩 시간 단축)
+    // WASM 우선, 실패 시 JS 폴백
+    try {
+      dracoLoader.setDecoderConfig({ type: 'wasm' });
+    } catch (_e) {
+      dracoLoader.setDecoderConfig({ type: 'js' });
+    }
     loader.setDRACOLoader(dracoLoader);
 
     // KTX2 로더 설정 - 통합된 TextureLoaderManager 사용
@@ -224,7 +200,6 @@ export function useModel({
     // 로더에 타임아웃 설정 (10초)
     loader.manager.onStart = (url) => {
       setTimeout(() => {
-        // 10초 이상 로딩이 안 되면 로딩 완료로 간주
         if (!isNewModelReady) {
           setIsNewModelReady(true);
           if (onLoad) onLoad();
@@ -249,6 +224,24 @@ export function useModel({
       if (onLoad) onLoad();
     };
   });
+
+  // useGLTF 프리로드를 사용한 사전 로드 통합
+  useEffect(() => {
+    // 현재 모델 로드 후 다음 모델 프리로드
+    const currentIndex = MODEL_COMPONENTS.indexOf(component);
+    const nextIndex = (currentIndex + 1) % MODEL_COMPONENTS.length;
+    const nextComponent = MODEL_COMPONENTS[nextIndex];
+    const isNextMobile = isMobile || isTablet;
+    const nextFolder = isNextMobile ? 'draco-mobile' : 'draco';
+    const nextSuffix = isNextMobile ? '_mobile_draco' : '_draco';
+    const nextPath = `${basePath}/models/main/${nextFolder}/compressed_${nextComponent.toLowerCase()}${nextSuffix}.glb`;
+    try {
+      useGLTF.preload(nextPath);
+      if (isDev) devLog(`useGLTF 프리로드: ${nextComponent}`, 'debug');
+    } catch (_e) {
+      // 무시: preload는 런타임 오류 없이 건너뛸 수 있음
+    }
+  }, [component, basePath, isMobile, isTablet, isDev]);
 
   // 씬 초기화 및 최적화 함수를 분리하여 효율성 향상
   const optimizeCurrentScene = useCallback((currentScene: THREE.Group) => {
@@ -478,18 +471,7 @@ export function useModel({
     }
   }, [component, scene, isDev]);
 
-  // 모델 변경 시 프리로드
-  useEffect(() => {
-    // 현재 모델이 로드되었고 이전과 다른 모델인 경우에만 다음 모델 프리로드
-    if (scene && previousScene !== scene) {
-      // 다음 프레임에서 프리로드 실행 (비차단 방식)
-      const timeoutId = setTimeout(() => {
-        preloadNextModel();
-      }, 0);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [previousScene, scene, preloadNextModel]);
+  // (삭제됨) 커스텀 프리로드 호출: useGLTF.preload로 대체
 
   // 이전 씬 정리
   useEffect(() => {

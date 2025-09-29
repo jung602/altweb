@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { SCENE_RENDER_CONFIG } from '../../config/scene';
 
 interface UseModelVisibilityProps {
   currentIndex: number;
@@ -15,11 +16,13 @@ export function useModelVisibility({
   const [prevIndex, setPrevIndex] = useState(currentIndex);
   
   // 로드된 모델을 추적
-  const [visibleModels, setVisibleModels] = useState<number[]>([
-    Math.max(0, currentIndex - 1),
-    currentIndex,
-    Math.min(allConfigsLength - 1, currentIndex + 1)
-  ].filter((idx, i, arr) => arr.indexOf(idx) === i)); // 중복 제거
+  const initialDistance = SCENE_RENDER_CONFIG.RENDER_DISTANCE;
+  const initialVisible = [] as number[];
+  for (let d = -initialDistance; d <= initialDistance; d++) {
+    const idx = currentIndex + d;
+    if (idx >= 0 && idx < allConfigsLength) initialVisible.push(idx);
+  }
+  const [visibleModels, setVisibleModels] = useState<number[]>([...new Set(initialVisible)]);
   
   // 언로드 타이머
   const unloadTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -34,16 +37,15 @@ export function useModelVisibility({
       return;
     }
 
-    // 인덱스가 변경되었거나 isExpanded가 false로 변경된 경우 
+    // 인덱스가 변경되었거나 isExpanded가 false로 변경된 경우
     if (currentIndex !== prevIndex || visibleModels.length === 1) {
-      // 현재 모델, 이전 모델, 다음 모델 순서로 배열 구성 (현재 모델이 1순위)
-      const newVisibleModels = [
-        currentIndex, // 현재 모델 먼저 로드 (1순위)
-        Math.max(0, currentIndex - 1), // 이전 모델
-        Math.min(allConfigsLength - 1, currentIndex + 1) // 다음 모델
-      ].filter((idx, i, arr) => arr.indexOf(idx) === i); // 중복 제거
-      
-      setVisibleModels(newVisibleModels);
+      const distance = SCENE_RENDER_CONFIG.RENDER_DISTANCE;
+      const newVisible: number[] = [];
+      for (let d = -distance; d <= distance; d++) {
+        const idx = currentIndex + d;
+        if (idx >= 0 && idx < allConfigsLength) newVisible.push(idx);
+      }
+      setVisibleModels([...new Set(newVisible)]);
       setPrevIndex(currentIndex);
     }
   }, [currentIndex, allConfigsLength, visibleModels, prevIndex, isExpanded]);

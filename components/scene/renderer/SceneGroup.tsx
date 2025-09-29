@@ -7,7 +7,10 @@ import { useModelVisibility, useModelControls } from '../../../hooks/model';
 import { useInteraction } from '../../../hooks/interaction';
 import { SceneConfig } from '../../../types/scene';
 import { OrbitControlsType, OrbitControlsInterface } from '../../../types/controls/orbitControls';
-import ModelAnimatedGroup from './ModelAnimatedGroup';
+import { animated, useSpring } from '@react-spring/three';
+import { useResponsiveDevice } from '../../../hooks/device';
+import { Model } from '../Model';
+import { ANIMATION_CONFIG } from '../../../config/animation';
 
 // OrbitControls 타입 정의는 types/controls/orbitControls.ts로 이동
 
@@ -31,6 +34,7 @@ const SceneGroup: React.FC<SceneGroupProps> = React.memo(({
   const setBlurred = useSceneStore((state) => state.setBlurred);
   const toggleExpanded = useSceneStore((state) => state.toggleExpanded);
   const isDev = process.env.NODE_ENV === 'development';
+  const { width } = useResponsiveDevice();
   
   // 모델별 controlsRef를 관리하는 객체
   const modelControlsRefs = useRef<{[key: number]: React.RefObject<OrbitControlsType>}>({});
@@ -85,22 +89,40 @@ const SceneGroup: React.FC<SceneGroupProps> = React.memo(({
     setBlurred(isBlurred);
   }, [setBlurred]);
 
+  // y 간격 및 그룹 위치 스프링
+  const ySpacing = useMemo(() => (width <= 768 ? 4 : width <= 1440 ? 5 : 6), [width]);
+  const modelsPositionY = useSpring({
+    y: currentIndex * ySpacing,
+    config: ANIMATION_CONFIG.SPRING
+  });
+
+  const getOrCreateControlsRef = useCallback((index: number): React.RefObject<OrbitControlsType | null> => {
+    if (!modelControlsRefs.current[index]) {
+      modelControlsRefs.current[index] = React.createRef<OrbitControlsType>();
+    }
+    return modelControlsRefs.current[index] as React.RefObject<OrbitControlsType | null>;
+  }, []);
+
   return (
-    <group>
+    <animated.group position-y={modelsPositionY.y}>
       <color attach="background" args={['black']} />
-      
-      <ModelAnimatedGroup 
-        scenes={scenes} 
-        currentIndex={currentIndex}
-        visibleModels={visibleModels}
-        isExpanded={isExpanded}
-        handlePointerDown={handlePointerDown}
-        handlePointerUp={handlePointerUp}
-        setModelHovered={memoizedSetModelHovered}
-        setBlurred={memoizedSetBlurred}
-        modelControlsRefs={modelControlsRefs.current}
-      />
-    </group>
+      {scenes.map((sceneConfig, index) => (
+        visibleModels.includes(index) && (
+          <Model
+            key={`model-${index}`}
+            sceneConfig={sceneConfig}
+            index={index}
+            currentIndex={currentIndex}
+            isExpanded={isExpanded}
+            handlePointerDown={handlePointerDown}
+            handlePointerUp={handlePointerUp}
+            setModelHovered={memoizedSetModelHovered}
+            setBlurred={memoizedSetBlurred}
+            controlsRef={getOrCreateControlsRef(index)}
+          />
+        )
+      ))}
+    </animated.group>
   );
 });
 

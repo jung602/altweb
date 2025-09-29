@@ -53,9 +53,9 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
   
   // 해상도 최적화 - 디바이스 성능에 따라 리플렉터 해상도 조절
   const getOptimalResolution = useCallback(() => {
-    if (isMobile) return 512;
-    if (isTablet) return 1024;
-    return 2048;
+    if (isMobile) return 384; // 더 낮게
+    if (isTablet) return 768;
+    return 1024; // 데스크탑도 1024로 하향
   }, [isMobile, isTablet]);
   
   // 리플렉터 아이템 생성
@@ -239,8 +239,12 @@ export const Reflector: React.FC<ReflectorProps> = ({ config, isCurrentModel = t
   }, [reflectorItems, isCurrentModel, isMobile, isTablet, getOptimalResolution, config?.enabled]);
 
   // 프레임 루프에서 리플렉터 업데이트 플래그 설정 (로컬 범위)
+  // 업데이트 스로틀링
+  const frameCounterRef = useRef(0);
   useFrame(() => {
     if (!isCurrentModel || !config?.enabled || reflectorsRef.current.length === 0) return;
+    frameCounterRef.current = (frameCounterRef.current + 1) % 6; // 6프레임마다 업데이트 (~10fps @60fps)
+    if (frameCounterRef.current !== 0) return;
     reflectorsRef.current.forEach(reflector => {
       if (reflector && (reflector as any).needsUpdate !== undefined) {
         (reflector as any).needsUpdate = true;

@@ -1,4 +1,4 @@
-import React, { memo, useRef, useEffect, useCallback, forwardRef } from 'react';
+import React, { memo, useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { animated } from '@react-spring/three';
 import { OrbitControls } from '@react-three/drei';
@@ -7,8 +7,7 @@ import { ModelLoader } from './ModelLoader';
 import { Reflector } from './Reflector';
 import { useResponsiveDevice } from '../../hooks/device';
 import type { SceneConfig } from '../../types/scene';
-import { useModelRotation, useModelScale, useModelPosition, useModelEmission, useModelOrbitControl } from '../../hooks/model';
-import { useScrollEvents } from '../../hooks/interaction';
+import { useModelTransform, useModelEmission, useModelOrbitControl } from '../../hooks/model';
 import { ORBIT_CONTROLS_CONFIG } from '../../config/camera';
 import { OrbitControlsType, OrbitControlsInterface } from '../../types/controls/orbitControls';
 
@@ -43,39 +42,26 @@ export const Model = memo(({
   const modelRef = useRef<THREE.Group>(null);
   const orbitControlsRef = useRef<OrbitControlsType | null>(null);
   
-  // 회전 로직 커스텀 훅으로 분리
-  const { 
+  const {
     rotationY,
     handleModelPointerDown: handleRotationPointerDown,
     handleModelPointerUp: handleRotationPointerUp,
-    resetRotation
-  } = useModelRotation({
+    resetRotation,
+    finalScale,
+    positionSpring: spring
+  } = useModelTransform({
     modelRef,
     isCurrentModel,
     isExpanded,
     initialRotation: sceneConfig.model.rotation[1],
-    handlePointerDown,
-    handlePointerUp
-  });
-
-  // 스케일 로직 커스텀 훅으로 분리
-  const { 
-    finalScale,
-    handleScroll 
-  } = useModelScale({
     baseScale: sceneConfig.model.scale,
-    isCurrentModel,
-    isExpanded,
-    resetRotation,
-    getResponsiveScale
-  });
-  
-  // 위치 계산 로직 커스텀 훅으로 분리
-  const { spring } = useModelPosition({
     basePosition: sceneConfig.model.position,
     index,
     width,
-    getResponsivePosition
+    getResponsiveScale,
+    getResponsivePosition,
+    handlePointerDown,
+    handlePointerUp
   });
   
   // Emission 텍스처 밝기 조정 로직 커스텀 훅으로 분리
@@ -84,13 +70,7 @@ export const Model = memo(({
     isCurrentModel 
   });
 
-  // 스크롤 이벤트 리스너 등록 로직 커스텀 훅으로 분리
-  useScrollEvents({
-    isCurrentModel,
-    isExpanded,
-    resetRotation,
-    handleScroll
-  });
+  // 스크롤 이벤트는 컨테이너 wheel 경로에서만 처리
 
   // OrbitControls 관리 로직 커스텀 훅으로 분리
   const { resetOrbitControls } = useModelOrbitControl({

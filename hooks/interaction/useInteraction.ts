@@ -137,17 +137,21 @@ export function useInteraction(options: UseInteractionOptions = {}): UseInteract
     onClick: toggleExpanded
   });
 
-  // 인터랙션 종료 시 드래깅 상태 리셋
+  // 인터랙션 종료 시 드래깅 상태 리셋: 이벤트 기반으로 전환
   useEffect(() => {
-    const checkInteraction = () => {
-      if (!isUserInteracting.current && isDragging) {
-        setIsDragging(false);
-      }
+    const handlePointerUpGlobal = () => {
+      if (isDragging) setIsDragging(false);
     };
-    
-    const intervalId = setInterval(checkInteraction, 100);
-    return () => clearInterval(intervalId);
-  }, [isUserInteracting, isDragging]);
+    const handlePointerCancelGlobal = () => {
+      if (isDragging) setIsDragging(false);
+    };
+    window.addEventListener('pointerup', handlePointerUpGlobal);
+    window.addEventListener('pointercancel', handlePointerCancelGlobal);
+    return () => {
+      window.removeEventListener('pointerup', handlePointerUpGlobal);
+      window.removeEventListener('pointercancel', handlePointerCancelGlobal);
+    };
+  }, [isDragging]);
 
   // 포인터 이동 이벤트 리스너 등록
   useEffect(() => {

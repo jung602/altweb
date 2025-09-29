@@ -30,11 +30,11 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({
         style={{ width: '100%', height: '100%' }}
         camera={cameraConfig}
         gl={canvasConfig.gl}
-        dpr={[1, 2]} // 기본 해상도 설정
+        dpr={canvasConfig.dpr}
         onCreated={({ gl }) => {
           setupRenderer(gl);
         }}
-        shadows
+        // shadows는 필요 시 하위에서 개별적으로 활성화
       >
         {children}
       </Canvas>
