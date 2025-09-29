@@ -4,14 +4,15 @@ const isGithubActions = process.env.GITHUB_ACTIONS || false
 const repo = process.env.GITHUB_REPOSITORY?.replace(/.*?\//, '') || ''
 
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   images: {
-    unoptimized: false,
+    unoptimized: true,
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
   },
   experimental: {
-    // 실험적인 기능 제거
+    // Fast Refresh 완전 비활성화
+    fastRefresh: false,
   },
   assetPrefix: isGithubActions ? `/${repo}/` : '',
   basePath: isGithubActions ? `/${repo}` : '',
@@ -20,7 +21,15 @@ const nextConfig = {
   },
   
   // GLB 파일 처리를 위한 webpack 설정
-  webpack: (config) => {
+  webpack: (config, { dev }) => {
+    // 개발 모드에서 HMR 완전 비활성화
+    if (dev) {
+      config.watchOptions = {
+        poll: false,
+        ignored: /node_modules/
+      };
+      config.cache = false;
+    }
     config.module.rules.push({
       test: /\.(glb|gltf)$/,
       type: 'asset/resource',
@@ -122,6 +131,11 @@ const nextConfig = {
     buildActivity: true,
     buildActivityPosition: 'bottom-right',
   },
+  
+  // Fast Refresh 비활성화 (무한 루프 문제 해결)
+  swcMinify: false,
+  output: 'export',
+  trailingSlash: true,
 };
 
 module.exports = nextConfig;

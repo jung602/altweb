@@ -4,8 +4,8 @@ import { OrbitControlsConfig } from '../types';
  * OrbitControls 기본 설정
  */
 export const ORBIT_CONTROLS_CONFIG: OrbitControlsConfig = {
-  MIN_POLAR_ANGLE: Math.PI / 3,
-  MAX_POLAR_ANGLE: Math.PI,
+  MIN_POLAR_ANGLE: Math.PI / 6,
+  MAX_POLAR_ANGLE: Math.PI / 2,
   MIN_AZIMUTH_ANGLE: -Infinity,
   MAX_AZIMUTH_ANGLE: Infinity,
   MIN_DISTANCE: 380 * 0.8,

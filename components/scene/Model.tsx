@@ -128,7 +128,6 @@ export const Model = memo(({
       scale-y={finalScale}
       scale-z={finalScale}
       rotation-x={sceneConfig.model.rotation[0]}
-      rotation-y={rotationY}
       rotation-z={sceneConfig.model.rotation[2]}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}

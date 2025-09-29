@@ -188,6 +188,41 @@ export function useModelTransform({
     }
   });
 
+  // 자동 회전 처리 - 예전 방식 그대로 구현
+  useEffect(() => {
+    if (!isCurrentModel || isExpanded) return;
+    
+    let animationId: number;
+    
+    const autoRotate = () => {
+      if (
+        modelRef.current && 
+        !isDragging.current && 
+        Math.abs(rotationVelocity.current) < 0.0001 &&
+        !inertiaAnimationRef.current
+      ) {
+        // 예전과 동일한 회전 속도
+        rotationRef.current += 0.0003;
+        
+        // 360도(2π) 완료되면 0으로 초기화
+        if (rotationRef.current >= Math.PI * 2) {
+          rotationRef.current = 0;
+        }
+        
+        modelRef.current.rotation.y = rotationRef.current;
+      }
+      animationId = requestAnimationFrame(autoRotate);
+    };
+    
+    animationId = requestAnimationFrame(autoRotate);
+    
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, [isCurrentModel, isExpanded]);
+
   useEffect(() => {
     if (!isExpanded) resetRotation();
   }, [isExpanded, resetRotation]);

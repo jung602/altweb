@@ -36,8 +36,8 @@ const orbitControlsConfig: EnvironmentConfig<OrbitControlsConfig> = {
   default: BASE_ORBIT_CONTROLS_CONFIG,
   development: {
     // 개발 환경에서는 더 넓은 범위의 컨트롤 허용
-    MIN_POLAR_ANGLE: Math.PI / 4,
-    MAX_POLAR_ANGLE: Math.PI * 0.9
+    MIN_POLAR_ANGLE: Math.PI / 8,
+    MAX_POLAR_ANGLE: Math.PI / 2
   },
   production: {
     // 프로덕션 환경에서는 제한된 컨트롤 설정

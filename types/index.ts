@@ -39,9 +39,3 @@ export type {
   UseDeviceNavigationOptions,
   UseDeviceNavigationResult
 } from './controls';
-
-// Rarerow 관련 타입
-export type {
-  RarerowConfig,
-  RarerowModelConfig
-} from './rarerow'; 
