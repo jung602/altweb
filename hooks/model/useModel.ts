@@ -100,46 +100,24 @@ export function useModel({
   // ResourceManager 인스턴스 생성
   const resourceManagerRef = useRef<ResourceManager | null>(null);
 
-  // ResourceManager 초기화
+  // ResourceManager 초기화 - 간소화된 버전
   useEffect(() => {
     if (!resourceManagerRef.current) {
       resourceManagerRef.current = new ResourceManager({
         maxInactiveTime: 5 * 60 * 1000, // 5분
-        checkInterval: checkInterval,
-        logLevel: isDev ? 'detailed' : 'basic'
+        checkInterval: 10000, // 10초로 고정
+        logLevel: isDev ? 'basic' : 'basic' // 로그 레벨 간소화
       });
 
-      // 리소스 이벤트 리스너 설정
-      resourceManagerRef.current.on('resourceDisposed', ({ id, type }) => {
-        if (isDev) devLog(`리소스 해제됨: ${id} (${type})`, 'debug');
-      });
-
-      resourceManagerRef.current.on('cleanup', ({ disposedCount }) => {
-        if (isDev && disposedCount > 0) {
-          devLog(`미사용 리소스 정리: ${disposedCount}개 해제됨`, 'info');
-        }
-      });
-
-      // 페이지 언로드(새로고침 포함) 시 메모리 정리
+      // 페이지 언로드 시 간단한 정리만 수행
       const handleBeforeUnload = () => {
-        // Three.js 캐시 비우기
         if (THREE.Cache && typeof THREE.Cache.clear === 'function') {
           THREE.Cache.clear();
         }
         
-        // 모든 리소스 정리
         if (resourceManagerRef.current) {
-          resourceManagerRef.current.forceCleanup(); // 모든 리소스 강제 정리
+          resourceManagerRef.current.forceCleanup();
         }
-        
-        // 텍스처 최적화 캐시 리셋
-        cleanupTextureReferences();
-        
-        // 경고 표시 상태 초기화
-        resetDisplayedWarnings();
-        
-        // 전역 메모리 정리 함수 호출
-        forceGlobalMemoryCleanup();
       };
 
       window.addEventListener('beforeunload', handleBeforeUnload);
@@ -153,7 +131,7 @@ export function useModel({
         }
       };
     }
-  }, [checkInterval, isDev]);
+  }, [isDev]);
 
   // (삭제됨) 커스텀 GLTF 프리로드: useGLTF.preload로 통합
 
@@ -197,7 +175,7 @@ export function useModel({
       }
     }
 
-    // 로더에 타임아웃 설정 (10초)
+    // 로더에 타임아웃 설정 (5초로 단축)
     loader.manager.onStart = (url) => {
       setTimeout(() => {
         if (!isNewModelReady) {
@@ -205,7 +183,7 @@ export function useModel({
           if (onLoad) onLoad();
           if (isDev) devLog(`모델 로딩 타임아웃: ${url}`, 'warn');
         }
-      }, 10000);
+      }, 5000);
     };
 
     loader.manager.onError = (url) => {
@@ -243,89 +221,39 @@ export function useModel({
     }
   }, [component, basePath, isMobile, isTablet, isDev]);
 
-  // 씬 초기화 및 최적화 함수를 분리하여 효율성 향상
+  // 씬 초기화 및 최적화 함수 - 간소화된 버전
   const optimizeCurrentScene = useCallback((currentScene: THREE.Group) => {
-    if (!currentScene || !resourceManagerRef.current) return;
-
-    const resourceManager = resourceManagerRef.current;
+    if (!currentScene) return;
 
     // 씬의 회전 초기화
     currentScene.rotation.set(0, 0, 0);
     
-    // 메모리 사용량 최적화를 위한 플래그 (비활성화)
-    const isLowPerformanceMode = false;
-    
-    // 각 메시 초기화 및 최적화
+    // 기본적인 메시 초기화만 수행
     currentScene.traverse((child: THREE.Object3D) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
-        // 각 메시의 회전 초기화
         mesh.rotation.set(0, 0, 0);
         
-        // 지오메트리 계산 및 등록
+        // 기본 지오메트리 계산만 수행
         if (mesh.geometry) {
           mesh.geometry.computeBoundingSphere();
-          mesh.geometry.computeBoundingBox();
-          resourceManager.registerResource(
-            `${component}_${mesh.name}_geometry`,
-            mesh.geometry,
-            'geometry'
-          );
-        }
-
-        // 재질 등록
-        if (mesh.material) {
-          if (Array.isArray(mesh.material)) {
-            mesh.material.forEach((material: THREE.Material, index: number) => {
-              resourceManager.registerResource(
-                `${component}_${mesh.name}_material_${index}`,
-                material,
-                'material'
-              );
-            });
-          } else {
-            resourceManager.registerResource(
-              `${component}_${mesh.name}_material`,
-              mesh.material,
-              'material'
-            );
-          }
         }
       }
     });
-
-    // 씬 자체를 리소스로 등록
-    resourceManager.registerResource(
-      `${component}_scene`,
-      currentScene,
-      'scene'
-    );
     
-    // 텍스처 최적화 설정
-    const textureOptions: ExtendedTextureOptions = {
-      logInfo: isDev,
-      anisotropy: 4,
-      onTextureLoad: (texture: THREE.Texture) => {
-        resourceManager.registerResource(
-          `${component}_texture_${texture.uuid}`,
-          texture,
-          'texture'
-        );
-      }
-    };
-    
-    // 모바일 기기인 경우 모바일 옵션 추가
+    // 간소화된 최적화 옵션
     const sceneOptions: SceneOptions = {
-      ...textureOptions,
+      logInfo: false, // 로그 비활성화
+      anisotropy: 2, // anisotropy 값 감소
       defaultColor,
-      checkTextureLoaded: true,
-      setShadows: true,
+      checkTextureLoaded: false, // 텍스처 체크 비활성화
+      setShadows: false, // 그림자 비활성화
       isMobile
     };
     
-    // 하나의 통합된 최적화 호출로 대체
+    // 최적화 실행
     optimizeScene(currentScene, sceneOptions);
-  }, [component, isMobile, isDev, defaultColor]);
+  }, [component, isMobile, defaultColor]);
 
   // 씬 초기화 및 최적화
   useEffect(() => {
@@ -361,21 +289,12 @@ export function useModel({
     
   }, [scene, optimizeCurrentScene, isDev]);
 
-  // 메테리얼 정기 점검
+  // 메테리얼 정기 점검 - 간소화된 버전
   useEffect(() => {
-    if (!scene) return;
+    if (!scene || !isDev) return;
     
-    // 중복 실행 방지를 위한 플래그
-    let isCheckingMaterials = false;
-
-    // 메테리얼 상태 확인 및 업데이트를 더 적은 빈도로 수행
-    const intervalId = setInterval(() => {
-      // 이미 체크 중이면 건너뛰기
-      if (isCheckingMaterials) return;
-      
-      isCheckingMaterials = true;
-      
-      // 메테리얼 확인 - 간단한 로드 상태 체크로 대체
+    // 단순한 텍스처 로드 상태 확인 (한 번만 실행)
+    const checkTextures = () => {
       let hasMissingTextures = false;
       
       scene.traverse((object) => {
@@ -384,7 +303,6 @@ export function useModel({
           
           materials.forEach(material => {
             if (material instanceof THREE.MeshStandardMaterial) {
-              // 텍스처 로드 상태 확인
               if (material.map && !material.map.image) {
                 hasMissingTextures = true;
               }
@@ -393,17 +311,18 @@ export function useModel({
         }
       });
       
-      if (hasMissingTextures && isDev) {
+      if (hasMissingTextures) {
         devLog('일부 텍스처가 아직 로드되지 않았습니다.', 'info');
       }
-      
-      isCheckingMaterials = false;
-    }, checkInterval * 5); // 체크 간격을 5배로 늘림
+    };
     
-    return () => clearInterval(intervalId);
-  }, [scene, checkInterval, isDev]);
+    // 5초 후 한 번만 체크
+    const timeoutId = setTimeout(checkTextures, 5000);
+    
+    return () => clearTimeout(timeoutId);
+  }, [scene, isDev]);
 
-  // 컴포넌트 변경 시 처리
+  // 컴포넌트 변경 시 처리 - 간소화된 버전
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -417,56 +336,17 @@ export function useModel({
       const clonedScene = scene.clone();
       setPreviousScene(clonedScene);
 
-      // 이전 리소스 정리
+      // 기본적인 정리만 수행
       if (resourceManagerRef.current) {
-        resourceManagerRef.current.cleanup(); // cleanupUnusedResources 대신 public cleanup 메서드 사용
-        
-        // 텍스처 최적화 캐시 리셋 - 모델이 변경될 때 캐시를 초기화하여 새로운 모델에 대한 최적화 보장
-        cleanupTextureReferences();
+        resourceManagerRef.current.cleanup();
         optimizedSceneIds.current.clear();
         
-        // 경고 표시 상태 초기화 - 모델이 변경될 때마다 경고를 다시 표시할 수 있도록
-        resetDisplayedWarnings();
-        
-        // 최적화 상태 초기화
-        optimizationStateRef.current = {
-          isOptimizingScene: false,
-          hasOptimized: false,
-          hasAnalyzed: false,
-          lastOptimizedUUID: '',
-        };
-        
-        // 메모리 정리 강화
+        // Three.js 캐시만 정리
         if (THREE.Cache && typeof THREE.Cache.clear === 'function') {
-          THREE.Cache.clear(); // Three.js 캐시 비우기
+          THREE.Cache.clear();
         }
         
-        // 가비지 컬렉션 힌트
-        if ('gc' in window) {
-          try {
-            (window as unknown as { gc: () => void }).gc();
-          } catch (e) {
-            // gc 함수가 없거나 호출할 수 없는 경우 무시
-          }
-        }
-        
-        if (isDev) devLog('불필요한 리소스 정리 완료', 'info');
-      }
-      
-      // 모델 변경 시 한 번만 모델 분석 수행
-      if (isDev && !optimizationStateRef.current.hasAnalyzed) {
-        // 분리된 유틸리티 함수 사용하여 모델 분석 및 로깅
-        const analysis = analyzeAndLogModelInfo(
-          scene, 
-          component, 
-          devLog, 
-          startGroup, 
-          endGroup
-        );
-        
-        // 분석 결과 저장
-        modelAnalysisRef.current = analysis;
-        optimizationStateRef.current.hasAnalyzed = true;
+        if (isDev) devLog('리소스 정리 완료', 'info');
       }
     }
   }, [component, scene, isDev]);
