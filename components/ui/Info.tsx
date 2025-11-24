@@ -55,7 +55,7 @@ const Info = ({ isOpen, onClose }: InfoProps) => {
             </p>
           </div>
             <div className='flex md:flex-col cursor-pointer mt-4 ml-0 md:mt-0 md:ml-3'>
-            <a target="_blank" href="mailto:altsroom753@gmail.com" className='flex mr-3 items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Email </a>
+            <a target="_blank" href="mailto:hello@altroom3d.com" className='flex mr-3 items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Email </a>
             <a target="_blank" href="https://www.instagram.com/altroom_3d/" className='flex mr-3 items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Instagram </a>
             <a target="_blank" href="https://www.tiktok.com/@altroom3d" className='flex mr-3 items-center hover:text-slate-800/70'> <CornerDownRight strokeWidth={2.2} className="w-3 h-3 mr-1" /> Tiktok </a>
           </div>
